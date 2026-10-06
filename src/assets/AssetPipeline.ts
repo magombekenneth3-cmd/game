@@ -75,17 +75,21 @@ export class AssetPipeline {
       return this.createFallbackMesh(assetId);
     }
 
+    const isNodeTest = typeof process !== 'undefined' && process.env?.NODE_ENV === 'test';
+    const timeoutDuration = isNodeTest ? 50 : 15000;
+
     const loadPromise = new Promise<THREE.Group>((resolve) => {
       let resolved = false;
       const timeoutId = setTimeout(() => {
         if (!resolved) {
           resolved = true;
+          console.warn(`GLB load for '${assetId}' timed out after ${timeoutDuration}ms. Using procedural fallback.`);
           const fallback = this.createFallbackMesh(assetId);
           this.glbCache.set(assetId, fallback);
           this.loadingPromises.delete(assetId);
           resolve(fallback.clone(true));
         }
-      }, 50);
+      }, timeoutDuration);
 
       try {
         this.gltfLoader.load(
