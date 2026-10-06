@@ -1,12 +1,14 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import * as THREE from 'three';
+import fs from 'fs';
+import path from 'path';
 import { ASSET_MANIFEST } from '../src/assets/AssetManifest';
 import { AssetPipeline } from '../src/assets/AssetPipeline';
 import { BuildingAssetKit } from '../src/assets/BuildingAssetKit';
 import { BuildingData } from '../src/world/BuildingData';
 import { SeededRandom } from '../src/utils/SeededRandom';
 
-describe('Phase 10 — Authored 3D Asset Pipeline & Visual Fidelity Unit Tests', () => {
+describe('Phase 10.1 — Authored 3D Asset Pipeline & Visual Proof Unit Tests', () => {
   let pipeline: AssetPipeline;
 
   beforeEach(() => {
@@ -14,26 +16,43 @@ describe('Phase 10 — Authored 3D Asset Pipeline & Visual Fidelity Unit Tests',
     pipeline.clearCache();
   });
 
-  it('1. AssetManifest contains valid entries for all 13 building families and vehicles', () => {
-    expect(Object.keys(ASSET_MANIFEST).length).toBeGreaterThanOrEqual(15);
-    
-    const shopEntry = ASSET_MANIFEST['bld_nairobi_shop_01'];
-    expect(shopEntry).toBeDefined();
-    expect(shopEntry.category).toBe('building');
-    expect(shopEntry.lodLevels).toEqual([0, 80, 200, 450]);
+  it('1. ASSET_MANIFEST contains entries for all 45 production GLB assets across 5 categories', () => {
+    const keys = Object.keys(ASSET_MANIFEST);
+    expect(keys.length).toBeGreaterThanOrEqual(45);
 
-    const matatuEntry = ASSET_MANIFEST['veh_matatu_ngong_01'];
-    expect(matatuEntry).toBeDefined();
-    expect(matatuEntry.attachmentPoints?.driver).toBeDefined();
-    expect(matatuEntry.attachmentPoints?.doorSide).toBeDefined();
+    const categories = new Set(keys.map((k) => ASSET_MANIFEST[k].category));
+    expect(categories.has('building')).toBe(true);
+    expect(categories.has('vehicle')).toBe(true);
+    expect(categories.has('character')).toBe(true);
+    expect(categories.has('environment')).toBe(true);
+    expect(categories.has('interior')).toBe(true);
   });
 
-  it('2. AssetPipeline manages cache hits, misses, and fallback asset creation cleanly', async () => {
+  it('2. Every asset manifest entry resolves to a valid GLB source path', () => {
+    for (const [id, entry] of Object.entries(ASSET_MANIFEST)) {
+      expect(entry.id).toBe(id);
+      expect(entry.sourceFile).toContain('/assets/models/');
+      expect(entry.sourceFile.endsWith('.glb')).toBe(true);
+      expect(entry.intendedScale).toBeDefined();
+      expect(entry.lodLevels.length).toBeGreaterThan(0);
+      expect(entry.boundingDimensions.width).toBeGreaterThan(0);
+    }
+  });
+
+  it('3. Every production GLB file referenced by ASSET_MANIFEST actually exists on disk', () => {
+    for (const entry of Object.values(ASSET_MANIFEST)) {
+      // Remove leading slash for local disk resolution relative to project root
+      const relativePath = entry.sourceFile.replace(/^\//, '');
+      const fullPath = path.resolve(process.cwd(), 'public', relativePath.replace(/^assets\//, 'assets/'));
+      expect(fs.existsSync(fullPath)).toBe(true);
+    }
+  });
+
+  it('4. AssetPipeline handles cache hits, deduplication, and instance cloning', async () => {
     const asset1 = await pipeline.loadGLBAsset('bld_nairobi_shop_01');
     expect(asset1).toBeDefined();
-    expect(asset1.name).toContain('bld_nairobi_shop_01');
 
-    // Second call should hit cache
+    // Second load should hit cache
     const asset2 = await pipeline.loadGLBAsset('bld_nairobi_shop_01');
     expect(asset2).toBeDefined();
 
@@ -42,18 +61,28 @@ describe('Phase 10 — Authored 3D Asset Pipeline & Visual Fidelity Unit Tests',
     expect(stats.cacheHitCount).toBeGreaterThan(0);
   });
 
-  it('3. AssetPipeline supports instance cloning without mutating original asset templates', async () => {
-    const instance1 = await pipeline.loadGLBAsset('veh_matatu_ngong_01');
-    const instance2 = await pipeline.loadGLBAsset('veh_matatu_ngong_01');
-
-    instance1.position.set(10, 0, 0);
-    instance2.position.set(50, 0, 0);
-
-    expect(instance1.position.x).toBe(10);
-    expect(instance2.position.x).toBe(50);
+  it('5. Missing or invalid asset IDs fall back cleanly to procedural fallback meshes', async () => {
+    const fallbackAsset = await pipeline.loadGLBAsset('non_existent_asset_id_999');
+    expect(fallbackAsset).toBeDefined();
+    expect(fallbackAsset.name).toContain('FallbackGroup');
   });
 
-  it('4. BuildingAssetKit fits GIS footprints dynamically without destroying proportions', () => {
+  it('6. Vehicle attachment points resolve correctly for driver and door positions', () => {
+    const matatuEntry = ASSET_MANIFEST['veh_matatu_ngong_01'];
+    expect(matatuEntry).toBeDefined();
+    expect(matatuEntry.attachmentPoints).toBeDefined();
+    expect(matatuEntry.attachmentPoints?.driver).toEqual({ x: -0.6, y: 1.1, z: 1.2 });
+    expect(matatuEntry.attachmentPoints?.doorSide).toBeDefined();
+  });
+
+  it('7. Character humanoid rigs provide valid bone attachment points', () => {
+    const playerEntry = ASSET_MANIFEST['char_player_01'];
+    expect(playerEntry).toBeDefined();
+    expect(playerEntry.attachmentPoints?.head).toEqual({ x: 0, y: 1.65, z: 0 });
+    expect(playerEntry.attachmentPoints?.root).toEqual({ x: 0, y: 0, z: 0 });
+  });
+
+  it('8. BuildingAssetKit fits GIS footprints dynamically without destroying proportions', () => {
     const mockBld: BuildingData = {
       id: 'bld_gis_test_01',
       name: 'Kilimani Plaza',
@@ -81,7 +110,7 @@ describe('Phase 10 — Authored 3D Asset Pipeline & Visual Fidelity Unit Tests',
     expect(buildingGroup.children.length).toBeGreaterThan(3);
   });
 
-  it('5. Variant selection is 100% deterministic based on worldSeed', () => {
+  it('9. Variant selection is 100% deterministic based on worldSeed', () => {
     const rng1 = new SeededRandom(1337);
     const rng2 = new SeededRandom(1337);
 
@@ -91,7 +120,7 @@ describe('Phase 10 — Authored 3D Asset Pipeline & Visual Fidelity Unit Tests',
     expect(val1).toBe(val2);
   });
 
-  it('6. AssetPipeline tracks asset instance disposal and cleans up GPU resources', async () => {
+  it('10. AssetPipeline tracks asset instance disposal and cleans up GPU resources', async () => {
     const mesh = await pipeline.loadGLBAsset('env_acacia_tree_01');
     expect(pipeline.getStats().activeInstancesCount).toBeGreaterThan(0);
 
@@ -99,7 +128,7 @@ describe('Phase 10 — Authored 3D Asset Pipeline & Visual Fidelity Unit Tests',
     expect(pipeline.getStats().disposedInstancesCount).toBe(1);
   });
 
-  it('7. Preloads chunk assets asynchronously for approaching world chunks', async () => {
+  it('11. Preloads chunk assets asynchronously for approaching world chunks', async () => {
     await pipeline.preloadChunkAssets(1, 2);
     const stats = pipeline.getStats();
     expect(stats.cachedGLBCount).toBeGreaterThan(0);
