@@ -43,6 +43,20 @@ export class AssetPipeline {
 
   private constructor() {
     this.gltfLoader = new GLTFLoader();
+    this.preloadCoreAssets().catch(() => {});
+  }
+
+  public async preloadCoreAssets(): Promise<void> {
+    const coreAssetIds = [
+      'bld_nairobi_shop_01', 'bld_mixed_use_01', 'bld_modern_apartment_01',
+      'bld_office_block_01', 'bld_commercial_tower_01', 'bld_residential_villa_01',
+      'bld_nightclub_01', 'bld_industrial_warehouse_01', 'bld_informal_kiosk_01',
+      'veh_matatu_ngong_01', 'veh_sedan_01', 'veh_suv_landcruiser_01', 'veh_boda_boda_01', 'veh_truck_01',
+      'char_player_01', 'char_pedestrian_business_01', 'char_pedestrian_student_01',
+      'env_acacia_tree_01', 'env_palm_tree_01', 'env_streetlight_01', 'env_mpesa_kiosk_01',
+      'interior_dj_booth_rig_01', 'interior_vip_lounge_sofa_01'
+    ];
+    await Promise.all(coreAssetIds.map((id) => this.loadGLBAsset(id).catch(() => {})));
   }
 
   public static getInstance(): AssetPipeline {
@@ -157,9 +171,45 @@ export class AssetPipeline {
     return fallbackGroup;
   }
 
+  // --- HELPER TO RETRIEVE CACHED GLB OR FALLBACK ---
+  public getCachedGLB(assetId: string): THREE.Group | null {
+    if (this.glbCache.has(assetId)) {
+      this.cacheHitCount++;
+      const cloned = this.glbCache.get(assetId)!.clone(true);
+      this.activeInstances.add(cloned);
+      return cloned;
+    }
+    // Trigger async load in background for future calls
+    this.loadGLBAsset(assetId).catch(() => {});
+    return null;
+  }
+
   // --- BUILDINGS ---
   public getBuildingMesh(bld: BuildingData): THREE.Group {
     this.buildingCount++;
+    let assetId = 'bld_nairobi_shop_01';
+    switch (bld.buildingCategory) {
+      case 'shop': assetId = 'bld_nairobi_shop_01'; break;
+      case 'mixed_use': assetId = 'bld_mixed_use_01'; break;
+      case 'apartment_block': assetId = 'bld_modern_apartment_01'; break;
+      case 'office_block': assetId = 'bld_office_block_01'; break;
+      case 'commercial_tower': assetId = 'bld_commercial_tower_01'; break;
+      case 'residential_house': assetId = 'bld_residential_villa_01'; break;
+      case 'warehouse': assetId = 'bld_industrial_warehouse_01'; break;
+      case 'market_structure': assetId = 'bld_informal_kiosk_01'; break;
+      default: assetId = 'bld_nairobi_shop_01'; break;
+    }
+
+    const glbMesh = this.getCachedGLB(assetId);
+    if (glbMesh) {
+      const wrapper = new THREE.Group();
+      wrapper.name = `BuildingGroup_${bld.id}`;
+      wrapper.add(glbMesh);
+      this.activeInstances.add(wrapper);
+      return wrapper;
+    }
+
+    // Procedural Fallback if GLB not preloaded yet
     const group = BuildingAssetKit.createBuildingGroup(bld);
     this.activeInstances.add(group);
     return group;
@@ -167,12 +217,31 @@ export class AssetPipeline {
 
   // --- VEHICLES ---
   public getVehicleMesh(category: VehicleCategory, paintColor: number = 0x1e3a8a): THREE.Group {
+    this.vehicleCount++;
+    let assetId = 'veh_sedan_01';
+    switch (category) {
+      case 'matatu': assetId = 'veh_matatu_ngong_01'; break;
+      case 'sedan': assetId = 'veh_sedan_01'; break;
+      case 'suv': assetId = 'veh_suv_landcruiser_01'; break;
+      case 'motorcycle': assetId = 'veh_boda_boda_01'; break;
+      case 'truck': assetId = 'veh_truck_01'; break;
+      case 'van': assetId = 'veh_van_01'; break;
+      case 'compact_car': assetId = 'veh_compact_01'; break;
+      case 'pickup': assetId = 'veh_pickup_01'; break;
+      default: assetId = 'veh_sedan_01'; break;
+    }
+
+    const glbMesh = this.getCachedGLB(assetId);
+    if (glbMesh) {
+      return glbMesh;
+    }
+
+    // Procedural Fallback
     const cacheKey = `veh_${category}_${paintColor}`;
     if (!this.instanceMeshCache.has(cacheKey)) {
       const mesh = VehicleAssetKit.createVehicleMesh(category, paintColor);
       this.instanceMeshCache.set(cacheKey, mesh);
     }
-    this.vehicleCount++;
     const cloned = this.instanceMeshCache.get(cacheKey)!.clone(true);
     this.activeInstances.add(cloned);
     return cloned;
@@ -180,12 +249,30 @@ export class AssetPipeline {
 
   // --- CHARACTERS ---
   public getCharacterMesh(archetype: NPCArchetype | 'player', skinTone?: number, outfitColor?: number): THREE.Group {
+    this.characterCount++;
+    let assetId = 'char_player_01';
+    switch (archetype) {
+      case 'player': assetId = 'char_player_01'; break;
+      case 'young_professional':
+      case 'office_worker':
+      case 'business_owner': assetId = 'char_pedestrian_business_01'; break;
+      case 'student': assetId = 'char_pedestrian_student_01'; break;
+      case 'driver': assetId = 'char_driver_01'; break;
+      case 'security_guard': assetId = 'char_guard_security_01'; break;
+      default: assetId = 'char_player_01'; break;
+    }
+
+    const glbMesh = this.getCachedGLB(assetId);
+    if (glbMesh) {
+      return glbMesh;
+    }
+
+    // Procedural Fallback
     const cacheKey = `char_${archetype}_${skinTone || 0}_${outfitColor || 0}`;
     if (!this.instanceMeshCache.has(cacheKey)) {
       const mesh = CharacterAssetKit.createHumanoidMesh(archetype, skinTone, outfitColor);
       this.instanceMeshCache.set(cacheKey, mesh);
     }
-    this.characterCount++;
     const cloned = this.instanceMeshCache.get(cacheKey)!.clone(true);
     this.activeInstances.add(cloned);
     return cloned;
@@ -193,6 +280,9 @@ export class AssetPipeline {
 
   // --- ENVIRONMENT FOLIAGE & PROPS ---
   public getAcaciaTreeMesh(): THREE.Group {
+    const glb = this.getCachedGLB('env_acacia_tree_01');
+    if (glb) return glb;
+
     const key = 'env_acacia_tree';
     if (!this.instanceMeshCache.has(key)) {
       this.instanceMeshCache.set(key, EnvironmentAssetKit.createAcaciaTreeMesh());
@@ -203,6 +293,9 @@ export class AssetPipeline {
   }
 
   public getPalmTreeMesh(): THREE.Group {
+    const glb = this.getCachedGLB('env_palm_tree_01');
+    if (glb) return glb;
+
     const key = 'env_palm_tree';
     if (!this.instanceMeshCache.has(key)) {
       this.instanceMeshCache.set(key, EnvironmentAssetKit.createPalmTreeMesh());
@@ -213,6 +306,9 @@ export class AssetPipeline {
   }
 
   public getStreetlightMesh(): THREE.Group {
+    const glb = this.getCachedGLB('env_streetlight_01');
+    if (glb) return glb;
+
     const key = 'env_streetlight';
     if (!this.instanceMeshCache.has(key)) {
       this.instanceMeshCache.set(key, EnvironmentAssetKit.createStreetlightMesh());
@@ -223,6 +319,9 @@ export class AssetPipeline {
   }
 
   public getMamaMbogaStallMesh(): THREE.Group {
+    const glb = this.getCachedGLB('env_mama_mboga_stall_01');
+    if (glb) return glb;
+
     const key = 'env_mama_mboga';
     if (!this.instanceMeshCache.has(key)) {
       this.instanceMeshCache.set(key, EnvironmentAssetKit.createMamaMbogaStallMesh());
@@ -233,6 +332,9 @@ export class AssetPipeline {
   }
 
   public getMPesaKioskMesh(): THREE.Group {
+    const glb = this.getCachedGLB('env_mpesa_kiosk_01');
+    if (glb) return glb;
+
     const key = 'env_mpesa';
     if (!this.instanceMeshCache.has(key)) {
       this.instanceMeshCache.set(key, EnvironmentAssetKit.createMPesaKioskMesh());
@@ -244,6 +346,9 @@ export class AssetPipeline {
 
   // --- INTERIORS ---
   public getDJBoothRigMesh(): THREE.Group {
+    const glb = this.getCachedGLB('interior_dj_booth_rig_01');
+    if (glb) return glb;
+
     const key = 'interior_dj_booth';
     if (!this.instanceMeshCache.has(key)) {
       this.instanceMeshCache.set(key, InteriorAssetKit.createDJBoothRig());
@@ -254,6 +359,9 @@ export class AssetPipeline {
   }
 
   public getVIPLoungeMesh(): THREE.Group {
+    const glb = this.getCachedGLB('interior_vip_lounge_sofa_01');
+    if (glb) return glb;
+
     const key = 'interior_vip_lounge';
     if (!this.instanceMeshCache.has(key)) {
       this.instanceMeshCache.set(key, InteriorAssetKit.createVIPLoungeMesh());
