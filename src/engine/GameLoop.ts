@@ -3,6 +3,7 @@ import { RendererManager } from './RendererManager';
 import { CameraManager } from './CameraManager';
 import { SkyAtmosphere } from './SkyAtmosphere';
 import { AssetManager } from './AssetManager';
+import { AssetPipeline } from '../assets/AssetPipeline';
 import { TimeOfDay } from '../utils/TimeOfDay';
 import { PerformanceMonitor } from '../utils/PerformanceMonitor';
 import { NairobiDistrictScene } from '../world/NairobiDistrictScene';
@@ -70,8 +71,9 @@ export class GameLoop {
 
   public async start(): Promise<void> {
     try {
-      // 1. Initialize Renderer
+      // 1. Initialize Renderer & Preload Core Authored 3D Assets
       await this.rendererManager.init();
+      await AssetPipeline.getInstance().preloadCoreAssets();
 
       // 2. Generate Real GIS Nairobi District World
       this.sceneGenerator.generate();

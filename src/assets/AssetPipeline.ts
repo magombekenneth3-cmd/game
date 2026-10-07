@@ -171,34 +171,31 @@ export class AssetPipeline {
     return fallbackGroup;
   }
 
-  // --- HELPER TO RETRIEVE CACHED GLB OR FALLBACK ---
-  public getCachedGLB(assetId: string): THREE.Group | null {
+  // --- HELPER TO RETRIEVE CACHED GLB OR ASYNC PROXY ---
+  public getCachedGLB(assetId: string): THREE.Group {
     if (this.glbCache.has(assetId)) {
       this.cacheHitCount++;
       const template = this.glbCache.get(assetId)!;
       const instance = template.clone(true);
-      // Perform deep material & geometry duplication for instance isolation
-      instance.traverse((child) => {
-        if ((child as THREE.Mesh).isMesh) {
-          const mesh = child as THREE.Mesh;
-          if (mesh.geometry) {
-            mesh.geometry = mesh.geometry.clone();
-          }
-          if (mesh.material) {
-            if (Array.isArray(mesh.material)) {
-              mesh.material = mesh.material.map((m) => m.clone());
-            } else {
-              mesh.material = mesh.material.clone();
-            }
-          }
-        }
-      });
       this.activeInstances.add(instance);
       return instance;
     }
-    // Trigger async load in background for future calls
-    this.loadGLBAsset(assetId).catch(() => {});
-    return null;
+
+    // Create a proxy group that will automatically populate when GLB load finishes
+    const proxyGroup = new THREE.Group();
+    proxyGroup.name = `ProxyGroup_${assetId}`;
+    this.activeInstances.add(proxyGroup);
+
+    this.loadGLBAsset(assetId).then((loadedGroup) => {
+      proxyGroup.clear();
+      proxyGroup.add(loadedGroup.clone(true));
+    }).catch((_err) => {
+      const fallback = this.createFallbackMesh(assetId);
+      proxyGroup.clear();
+      proxyGroup.add(fallback);
+    });
+
+    return proxyGroup;
   }
 
   // --- BUILDINGS ---
@@ -403,17 +400,22 @@ export class AssetPipeline {
     this.activeInstances.delete(object);
     this.disposedCount++;
 
+    if (object.parent) {
+      object.parent.remove(object);
+    }
+
     object.traverse((child) => {
       if ((child as THREE.Mesh).isMesh) {
         const mesh = child as THREE.Mesh;
-        if (mesh.geometry) {
-          mesh.geometry.dispose();
-        }
-        if (mesh.material) {
-          if (Array.isArray(mesh.material)) {
-            mesh.material.forEach((mat) => mat.dispose());
-          } else {
-            mesh.material.dispose();
+        // Only dispose geometries/materials if explicitly marked as unshared standalone instances
+        if (mesh.userData?.isStandaloneInstance) {
+          if (mesh.geometry) mesh.geometry.dispose();
+          if (mesh.material) {
+            if (Array.isArray(mesh.material)) {
+              mesh.material.forEach((mat) => mat.dispose());
+            } else {
+              mesh.material.dispose();
+            }
           }
         }
       }

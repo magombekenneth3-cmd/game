@@ -1,8 +1,10 @@
 /**
  * KINGMAKER: Rise of Africa — Development Placeholder Asset Generator
  * 
- * NOTICE: These assets are development fallbacks and are NOT production art.
- * Production art is loaded from genuine authored 3D GLB assets in public/assets/models/.
+ * CRITICAL NOTICE:
+ * THESE ASSETS ARE DEVELOPMENT FALLBACKS ONLY AND ARE NOT PRODUCTION ART.
+ * DO NOT USE THIS SCRIPT OR EXPORTED MESHES AS PRODUCTION ART.
+ * Production art is loaded from genuine authored 3D GLB models in public/assets/models/.
  */
 const THREE = require('three');
 const { GLTFExporter } = require('three/examples/jsm/exporters/GLTFExporter.js');

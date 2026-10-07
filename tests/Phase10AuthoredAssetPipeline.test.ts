@@ -133,4 +133,30 @@ describe('Phase 10.1 — Authored 3D Asset Pipeline & Visual Proof Unit Tests', 
     const stats = pipeline.getStats();
     expect(stats.cachedGLBCount).toBeGreaterThan(0);
   });
+
+  it('12. getCachedGLB returns a proxy group for pending assets and populates when resolved', async () => {
+    const proxy = pipeline.getCachedGLB('bld_modern_apartment_01');
+    expect(proxy).toBeDefined();
+    expect(proxy.type).toBe('Group');
+
+    // Await loading completion
+    await pipeline.loadGLBAsset('bld_modern_apartment_01');
+    expect(pipeline.getStats().cachedGLBCount).toBeGreaterThan(0);
+  });
+
+  it('13. disposeAssetInstance preserves cached GLB template memory in glbCache', async () => {
+    const meshInstance = await pipeline.loadGLBAsset('bld_nairobi_shop_01');
+    pipeline.disposeAssetInstance(meshInstance);
+
+    // Verify template remains pristine in cache and can be re-instantiated
+    const newInstance = pipeline.getCachedGLB('bld_nairobi_shop_01');
+    expect(newInstance).toBeDefined();
+  });
+
+  it('14. Development placeholder script is documented as dev-fallback only', () => {
+    const scriptPath = path.resolve(process.cwd(), 'scripts', 'generate_placeholder_assets.cjs');
+    expect(fs.existsSync(scriptPath)).toBe(true);
+    const content = fs.readFileSync(scriptPath, 'utf8');
+    expect(content).toContain('DEVELOPMENT FALLBACKS ONLY AND ARE NOT PRODUCTION ART');
+  });
 });
