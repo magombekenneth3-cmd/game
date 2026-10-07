@@ -175,9 +175,26 @@ export class AssetPipeline {
   public getCachedGLB(assetId: string): THREE.Group | null {
     if (this.glbCache.has(assetId)) {
       this.cacheHitCount++;
-      const cloned = this.glbCache.get(assetId)!.clone(true);
-      this.activeInstances.add(cloned);
-      return cloned;
+      const template = this.glbCache.get(assetId)!;
+      const instance = template.clone(true);
+      // Perform deep material & geometry duplication for instance isolation
+      instance.traverse((child) => {
+        if ((child as THREE.Mesh).isMesh) {
+          const mesh = child as THREE.Mesh;
+          if (mesh.geometry) {
+            mesh.geometry = mesh.geometry.clone();
+          }
+          if (mesh.material) {
+            if (Array.isArray(mesh.material)) {
+              mesh.material = mesh.material.map((m) => m.clone());
+            } else {
+              mesh.material = mesh.material.clone();
+            }
+          }
+        }
+      });
+      this.activeInstances.add(instance);
+      return instance;
     }
     // Trigger async load in background for future calls
     this.loadGLBAsset(assetId).catch(() => {});
