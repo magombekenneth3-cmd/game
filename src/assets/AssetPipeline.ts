@@ -43,18 +43,19 @@ export class AssetPipeline {
 
   private constructor() {
     this.gltfLoader = new GLTFLoader();
-    this.preloadCoreAssets().catch(() => {});
   }
 
   public async preloadCoreAssets(): Promise<void> {
     const coreAssetIds = [
-      'bld_nairobi_shop_01', 'bld_mixed_use_01', 'bld_modern_apartment_01',
-      'bld_office_block_01', 'bld_commercial_tower_01', 'bld_residential_villa_01',
-      'bld_nightclub_01', 'bld_industrial_warehouse_01', 'bld_informal_kiosk_01',
-      'veh_matatu_ngong_01', 'veh_sedan_01', 'veh_suv_landcruiser_01', 'veh_boda_boda_01', 'veh_truck_01',
-      'char_player_01', 'char_pedestrian_business_01', 'char_pedestrian_student_01',
-      'env_acacia_tree_01', 'env_palm_tree_01', 'env_streetlight_01', 'env_mpesa_kiosk_01',
-      'interior_dj_booth_rig_01', 'interior_vip_lounge_sofa_01'
+      // First Real Vertical Slice (16 Core Assets)
+      'bld_nairobi_shop_01', 'bld_modern_apartment_01', 'bld_commercial_tower_01',
+      'veh_sedan_01', 'veh_suv_landcruiser_01', 'veh_matatu_ngong_01',
+      'char_player_01', 'char_pedestrian_business_01',
+      'env_acacia_tree_01', 'env_mpesa_kiosk_01', 'env_streetlight_01', 'env_mama_mboga_stall_01',
+      'interior_sofa_01', 'interior_table_01', 'interior_chair_01', 'interior_dj_booth_rig_01',
+      // Additional Secondary Core Assets
+      'bld_mixed_use_01', 'bld_office_block_01', 'bld_residential_villa_01', 'bld_nightclub_01', 'bld_industrial_warehouse_01', 'bld_informal_kiosk_01',
+      'veh_boda_boda_01', 'veh_truck_01', 'char_pedestrian_student_01', 'env_palm_tree_01', 'interior_vip_lounge_sofa_01'
     ];
     await Promise.all(coreAssetIds.map((id) => this.loadGLBAsset(id).catch(() => {})));
   }
@@ -377,6 +378,45 @@ export class AssetPipeline {
     if (glb) return glb;
 
     const key = 'interior_vip_lounge';
+    if (!this.instanceMeshCache.has(key)) {
+      this.instanceMeshCache.set(key, InteriorAssetKit.createVIPLoungeMesh());
+    }
+    const cloned = this.instanceMeshCache.get(key)!.clone(true);
+    this.activeInstances.add(cloned);
+    return cloned;
+  }
+
+  public getSofaMesh(): THREE.Group {
+    const glb = this.getCachedGLB('interior_sofa_01');
+    if (glb) return glb;
+
+    const key = 'interior_sofa';
+    if (!this.instanceMeshCache.has(key)) {
+      this.instanceMeshCache.set(key, InteriorAssetKit.createVIPLoungeMesh());
+    }
+    const cloned = this.instanceMeshCache.get(key)!.clone(true);
+    this.activeInstances.add(cloned);
+    return cloned;
+  }
+
+  public getTableMesh(): THREE.Group {
+    const glb = this.getCachedGLB('interior_table_01');
+    if (glb) return glb;
+
+    const key = 'interior_table';
+    if (!this.instanceMeshCache.has(key)) {
+      this.instanceMeshCache.set(key, InteriorAssetKit.createDJBoothRig());
+    }
+    const cloned = this.instanceMeshCache.get(key)!.clone(true);
+    this.activeInstances.add(cloned);
+    return cloned;
+  }
+
+  public getChairMesh(): THREE.Group {
+    const glb = this.getCachedGLB('interior_chair_01');
+    if (glb) return glb;
+
+    const key = 'interior_chair';
     if (!this.instanceMeshCache.has(key)) {
       this.instanceMeshCache.set(key, InteriorAssetKit.createVIPLoungeMesh());
     }

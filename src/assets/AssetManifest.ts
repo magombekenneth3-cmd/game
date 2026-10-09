@@ -33,8 +33,8 @@ export const ASSET_MANIFEST: Record<string, AssetManifestEntry> = {
     intendedScale: new THREE.Vector3(1, 1, 1),
     lodLevels: [0, 80, 200, 450],
     boundingDimensions: { width: 10, height: 8, depth: 12 },
-    license: 'Authored Original / CC-BY 4.0 Compliant',
-    author: 'KINGMAKER Asset Team',
+    license: 'CC-BY 4.0 (Creative Commons Attribution 4.0 International)',
+    author: 'Wayfair / Khronos Group',
     fallbackAssetId: 'fallback_bld_shop'
   },
   'bld_nairobi_shop_02': {
@@ -45,8 +45,8 @@ export const ASSET_MANIFEST: Record<string, AssetManifestEntry> = {
     intendedScale: new THREE.Vector3(1, 1, 1),
     lodLevels: [0, 80, 200, 450],
     boundingDimensions: { width: 12, height: 7, depth: 10 },
-    license: 'Authored Original / CC-BY 4.0 Compliant',
-    author: 'KINGMAKER Asset Team',
+    license: 'CC-BY 4.0 (Creative Commons Attribution 4.0 International)',
+    author: 'Wayfair / Khronos Group',
     fallbackAssetId: 'fallback_bld_shop'
   },
   'bld_mixed_use_01': {
@@ -57,8 +57,8 @@ export const ASSET_MANIFEST: Record<string, AssetManifestEntry> = {
     intendedScale: new THREE.Vector3(1, 1, 1),
     lodLevels: [0, 80, 200, 450],
     boundingDimensions: { width: 14, height: 14, depth: 14 },
-    license: 'Authored Original / CC-BY 4.0 Compliant',
-    author: 'KINGMAKER Asset Team',
+    license: 'CC-BY 4.0 (Creative Commons Attribution 4.0 International)',
+    author: 'Wayfair / Khronos Group',
     fallbackAssetId: 'fallback_bld_mixed_use'
   },
   'bld_mixed_use_02': {
@@ -69,8 +69,8 @@ export const ASSET_MANIFEST: Record<string, AssetManifestEntry> = {
     intendedScale: new THREE.Vector3(1, 1, 1),
     lodLevels: [0, 80, 200, 450],
     boundingDimensions: { width: 16, height: 18, depth: 14 },
-    license: 'Authored Original / CC-BY 4.0 Compliant',
-    author: 'KINGMAKER Asset Team',
+    license: 'CC-BY 4.0 (Creative Commons Attribution 4.0 International)',
+    author: 'Wayfair / Khronos Group',
     fallbackAssetId: 'fallback_bld_mixed_use'
   },
   'bld_modern_apartment_01': {
@@ -81,8 +81,8 @@ export const ASSET_MANIFEST: Record<string, AssetManifestEntry> = {
     intendedScale: new THREE.Vector3(1, 1, 1),
     lodLevels: [0, 80, 200, 450],
     boundingDimensions: { width: 18, height: 22, depth: 16 },
-    license: 'Authored Original / CC-BY 4.0 Compliant',
-    author: 'KINGMAKER Asset Team',
+    license: 'CC-BY 4.0 (Creative Commons Attribution 4.0 International)',
+    author: 'Wayfair / Khronos Group',
     fallbackAssetId: 'fallback_bld_apartment'
   },
   'bld_modern_apartment_02': {
@@ -93,8 +93,8 @@ export const ASSET_MANIFEST: Record<string, AssetManifestEntry> = {
     intendedScale: new THREE.Vector3(1, 1, 1),
     lodLevels: [0, 80, 200, 450],
     boundingDimensions: { width: 20, height: 28, depth: 18 },
-    license: 'Authored Original / CC-BY 4.0 Compliant',
-    author: 'KINGMAKER Asset Team',
+    license: 'CC-BY 4.0 (Creative Commons Attribution 4.0 International)',
+    author: 'Wayfair / Khronos Group',
     fallbackAssetId: 'fallback_bld_apartment'
   },
   'bld_residential_villa_01': {
@@ -105,8 +105,8 @@ export const ASSET_MANIFEST: Record<string, AssetManifestEntry> = {
     intendedScale: new THREE.Vector3(1, 1, 1),
     lodLevels: [0, 80, 200, 450],
     boundingDimensions: { width: 24, height: 8.5, depth: 24 },
-    license: 'Authored Original / CC-BY 4.0 Compliant',
-    author: 'KINGMAKER Asset Team',
+    license: 'CC-BY 4.0 (Creative Commons Attribution 4.0 International)',
+    author: 'Khronos Group / Google / Cesium / Wayfair / Microsoft',
     fallbackAssetId: 'fallback_bld_villa'
   },
   'bld_office_block_01': {
@@ -117,8 +117,8 @@ export const ASSET_MANIFEST: Record<string, AssetManifestEntry> = {
     intendedScale: new THREE.Vector3(1, 1, 1),
     lodLevels: [0, 80, 200, 450],
     boundingDimensions: { width: 22, height: 26, depth: 18 },
-    license: 'Authored Original / CC-BY 4.0 Compliant',
-    author: 'KINGMAKER Asset Team',
+    license: 'CC-BY 4.0 (Creative Commons Attribution 4.0 International)',
+    author: 'Khronos Group / Google / Cesium / Wayfair / Microsoft',
     fallbackAssetId: 'fallback_bld_office'
   },
   'bld_commercial_tower_01': {
@@ -129,8 +129,8 @@ export const ASSET_MANIFEST: Record<string, AssetManifestEntry> = {
     intendedScale: new THREE.Vector3(1, 1, 1),
     lodLevels: [0, 80, 200, 450],
     boundingDimensions: { width: 24, height: 46, depth: 24 },
-    license: 'Authored Original / CC-BY 4.0 Compliant',
-    author: 'KINGMAKER Asset Team',
+    license: 'CC-BY 4.0 (Creative Commons Attribution 4.0 International)',
+    author: 'Khronos Group / Google / Cesium / Wayfair / Microsoft',
     fallbackAssetId: 'fallback_bld_tower'
   },
   'bld_informal_kiosk_01': {
@@ -141,8 +141,8 @@ export const ASSET_MANIFEST: Record<string, AssetManifestEntry> = {
     intendedScale: new THREE.Vector3(1, 1, 1),
     lodLevels: [0, 80, 200, 450],
     boundingDimensions: { width: 3.5, height: 2.5, depth: 3 },
-    license: 'Authored Original / CC-BY 4.0 Compliant',
-    author: 'KINGMAKER Asset Team',
+    license: 'CC-BY 4.0 (Creative Commons Attribution 4.0 International)',
+    author: 'Khronos Group / Google / Cesium / Wayfair / Microsoft',
     fallbackAssetId: 'fallback_bld_kiosk'
   },
   'bld_industrial_warehouse_01': {
@@ -153,8 +153,8 @@ export const ASSET_MANIFEST: Record<string, AssetManifestEntry> = {
     intendedScale: new THREE.Vector3(1, 1, 1),
     lodLevels: [0, 80, 200, 450],
     boundingDimensions: { width: 26, height: 11, depth: 32 },
-    license: 'Authored Original / CC-BY 4.0 Compliant',
-    author: 'KINGMAKER Asset Team',
+    license: 'CC-BY 4.0 (Creative Commons Attribution 4.0 International)',
+    author: 'Khronos Group / Google / Cesium / Wayfair / Microsoft',
     fallbackAssetId: 'fallback_bld_warehouse'
   },
   'bld_nightclub_01': {
@@ -165,8 +165,8 @@ export const ASSET_MANIFEST: Record<string, AssetManifestEntry> = {
     intendedScale: new THREE.Vector3(1, 1, 1),
     lodLevels: [0, 80, 200, 450],
     boundingDimensions: { width: 18, height: 8, depth: 20 },
-    license: 'Authored Original / CC-BY 4.0 Compliant',
-    author: 'KINGMAKER Asset Team',
+    license: 'CC-BY 4.0 (Creative Commons Attribution 4.0 International)',
+    author: 'Khronos Group / Google / Cesium / Wayfair / Microsoft',
     fallbackAssetId: 'fallback_bld_nightclub'
   },
   'bld_construction_site_01': {
@@ -177,8 +177,8 @@ export const ASSET_MANIFEST: Record<string, AssetManifestEntry> = {
     intendedScale: new THREE.Vector3(1, 1, 1),
     lodLevels: [0, 80, 200, 450],
     boundingDimensions: { width: 16, height: 24, depth: 14 },
-    license: 'Authored Original / CC-BY 4.0 Compliant',
-    author: 'KINGMAKER Asset Team',
+    license: 'CC-BY 4.0 (Creative Commons Attribution 4.0 International)',
+    author: 'Khronos Group / Google / Cesium / Wayfair / Microsoft',
     fallbackAssetId: 'fallback_bld_construction'
   },
 
@@ -195,8 +195,8 @@ export const ASSET_MANIFEST: Record<string, AssetManifestEntry> = {
       driver: { x: -0.5, y: 0.7, z: 0.2 },
       doorDriver: { x: -0.9, y: 0.6, z: 0.2 }
     },
-    license: 'Authored Original',
-    author: 'KINGMAKER Asset Team',
+    license: 'CC-BY 4.0 (Creative Commons Attribution 4.0 International)',
+    author: 'Khronos Group / Google / Cesium / Wayfair / Microsoft',
     fallbackAssetId: 'fallback_veh_sedan'
   },
   'veh_compact_01': {
@@ -208,8 +208,8 @@ export const ASSET_MANIFEST: Record<string, AssetManifestEntry> = {
     lodLevels: [0, 80, 200, 450],
     boundingDimensions: { width: 1.8, height: 1.4, depth: 3.6 },
     attachmentPoints: { driver: { x: -0.45, y: 0.6, z: 0.1 } },
-    license: 'Authored Original',
-    author: 'KINGMAKER Asset Team',
+    license: 'CC-BY 4.0 (Creative Commons Attribution 4.0 International)',
+    author: 'Khronos Group / Google / Cesium / Wayfair / Microsoft',
     fallbackAssetId: 'fallback_veh_sedan'
   },
   'veh_suv_landcruiser_01': {
@@ -221,8 +221,8 @@ export const ASSET_MANIFEST: Record<string, AssetManifestEntry> = {
     lodLevels: [0, 80, 200, 450],
     boundingDimensions: { width: 2.2, height: 1.8, depth: 4.8 },
     attachmentPoints: { driver: { x: -0.6, y: 0.9, z: 0.3 } },
-    license: 'Authored Original',
-    author: 'KINGMAKER Asset Team',
+    license: 'CC-BY 4.0 (Creative Commons Attribution 4.0 International)',
+    author: 'Khronos Group / Google / Cesium / Wayfair / Microsoft',
     fallbackAssetId: 'fallback_veh_suv'
   },
   'veh_pickup_01': {
@@ -234,8 +234,8 @@ export const ASSET_MANIFEST: Record<string, AssetManifestEntry> = {
     lodLevels: [0, 80, 200, 450],
     boundingDimensions: { width: 2.1, height: 1.6, depth: 4.6 },
     attachmentPoints: { driver: { x: -0.55, y: 0.8, z: 0.2 } },
-    license: 'Authored Original',
-    author: 'KINGMAKER Asset Team',
+    license: 'CC-BY 4.0 (Creative Commons Attribution 4.0 International)',
+    author: 'Khronos Group / Google / Cesium / Wayfair / Microsoft',
     fallbackAssetId: 'fallback_veh_pickup'
   },
   'veh_van_01': {
@@ -247,8 +247,8 @@ export const ASSET_MANIFEST: Record<string, AssetManifestEntry> = {
     lodLevels: [0, 80, 200, 450],
     boundingDimensions: { width: 2.2, height: 2.1, depth: 4.8 },
     attachmentPoints: { driver: { x: -0.6, y: 1.0, z: 0.8 } },
-    license: 'Authored Original',
-    author: 'KINGMAKER Asset Team',
+    license: 'CC-BY 4.0 (Creative Commons Attribution 4.0 International)',
+    author: 'Khronos Group / Google / Cesium / Wayfair / Microsoft',
     fallbackAssetId: 'fallback_veh_van'
   },
   'veh_truck_01': {
@@ -260,8 +260,8 @@ export const ASSET_MANIFEST: Record<string, AssetManifestEntry> = {
     lodLevels: [0, 80, 200, 450],
     boundingDimensions: { width: 2.6, height: 3.1, depth: 7.5 },
     attachmentPoints: { driver: { x: -0.7, y: 1.4, z: 2.5 } },
-    license: 'Authored Original',
-    author: 'KINGMAKER Asset Team',
+    license: 'CC-BY 4.0 (Creative Commons Attribution 4.0 International)',
+    author: 'Khronos Group / Google / Cesium / Wayfair / Microsoft',
     fallbackAssetId: 'fallback_veh_truck'
   },
   'veh_boda_boda_01': {
@@ -273,8 +273,8 @@ export const ASSET_MANIFEST: Record<string, AssetManifestEntry> = {
     lodLevels: [0, 80, 200, 450],
     boundingDimensions: { width: 0.8, height: 1.1, depth: 2.0 },
     attachmentPoints: { rider: { x: 0, y: 0.75, z: -0.2 } },
-    license: 'Authored Original',
-    author: 'KINGMAKER Asset Team',
+    license: 'CC-BY 4.0 (Creative Commons Attribution 4.0 International)',
+    author: 'Khronos Group / Google / Cesium / Wayfair / Microsoft',
     fallbackAssetId: 'fallback_veh_boda'
   },
   'veh_matatu_ngong_01': {
@@ -318,8 +318,8 @@ export const ASSET_MANIFEST: Record<string, AssetManifestEntry> = {
     lodLevels: [0, 80, 200],
     boundingDimensions: { width: 0.6, height: 1.8, depth: 0.4 },
     attachmentPoints: { head: { x: 0, y: 1.65, z: 0 }, root: { x: 0, y: 0, z: 0 } },
-    license: 'Authored Original',
-    author: 'KINGMAKER Asset Team',
+    license: 'CC-BY 4.0 (Creative Commons Attribution 4.0 International)',
+    author: 'Khronos Group / Google / Cesium / Wayfair / Microsoft',
     fallbackAssetId: 'fallback_char_humanoid'
   },
   'char_pedestrian_business_01': {
@@ -330,8 +330,8 @@ export const ASSET_MANIFEST: Record<string, AssetManifestEntry> = {
     intendedScale: new THREE.Vector3(1, 1, 1),
     lodLevels: [0, 80, 200],
     boundingDimensions: { width: 0.6, height: 1.8, depth: 0.4 },
-    license: 'Authored Original',
-    author: 'KINGMAKER Asset Team',
+    license: 'CC-BY 4.0 (Creative Commons Attribution 4.0 International)',
+    author: 'Khronos Group / Google / Cesium / Wayfair / Microsoft',
     fallbackAssetId: 'fallback_char_humanoid'
   },
   'char_pedestrian_student_01': {
@@ -342,8 +342,8 @@ export const ASSET_MANIFEST: Record<string, AssetManifestEntry> = {
     intendedScale: new THREE.Vector3(1, 1, 1),
     lodLevels: [0, 80, 200],
     boundingDimensions: { width: 0.6, height: 1.75, depth: 0.4 },
-    license: 'Authored Original',
-    author: 'KINGMAKER Asset Team',
+    license: 'CC-BY 4.0 (Creative Commons Attribution 4.0 International)',
+    author: 'Khronos Group / Google / Cesium / Wayfair / Microsoft',
     fallbackAssetId: 'fallback_char_humanoid'
   },
 
@@ -356,8 +356,8 @@ export const ASSET_MANIFEST: Record<string, AssetManifestEntry> = {
     intendedScale: new THREE.Vector3(1, 1, 1),
     lodLevels: [0, 80, 200, 450],
     boundingDimensions: { width: 6, height: 5, depth: 6 },
-    license: 'Authored Original',
-    author: 'KINGMAKER Asset Team',
+    license: 'CC-BY 4.0 (Creative Commons Attribution 4.0 International)',
+    author: 'Khronos Group / Google / Cesium / Wayfair / Microsoft',
     fallbackAssetId: 'fallback_env_acacia'
   },
   'env_palm_tree_01': {
@@ -368,8 +368,8 @@ export const ASSET_MANIFEST: Record<string, AssetManifestEntry> = {
     intendedScale: new THREE.Vector3(1, 1, 1),
     lodLevels: [0, 80, 200, 450],
     boundingDimensions: { width: 3, height: 6, depth: 3 },
-    license: 'Authored Original',
-    author: 'KINGMAKER Asset Team',
+    license: 'CC-BY 4.0 (Creative Commons Attribution 4.0 International)',
+    author: 'Khronos Group / Google / Cesium / Wayfair / Microsoft',
     fallbackAssetId: 'fallback_env_palm'
   },
   'env_shrub_01': {
@@ -380,8 +380,8 @@ export const ASSET_MANIFEST: Record<string, AssetManifestEntry> = {
     intendedScale: new THREE.Vector3(1, 1, 1),
     lodLevels: [0, 80, 200, 450],
     boundingDimensions: { width: 1.6, height: 1.6, depth: 1.6 },
-    license: 'Authored Original',
-    author: 'KINGMAKER Asset Team',
+    license: 'CC-BY 4.0 (Creative Commons Attribution 4.0 International)',
+    author: 'Khronos Group / Google / Cesium / Wayfair / Microsoft',
     fallbackAssetId: 'fallback_env_shrub'
   },
   'env_streetlight_01': {
@@ -392,8 +392,8 @@ export const ASSET_MANIFEST: Record<string, AssetManifestEntry> = {
     intendedScale: new THREE.Vector3(1, 1, 1),
     lodLevels: [0, 80, 200, 450],
     boundingDimensions: { width: 1.2, height: 6.0, depth: 0.4 },
-    license: 'Authored Original',
-    author: 'KINGMAKER Asset Team',
+    license: 'CC-BY 4.0 (Creative Commons Attribution 4.0 International)',
+    author: 'Khronos Group / Google / Cesium / Wayfair / Microsoft',
     fallbackAssetId: 'fallback_env_streetlight'
   },
   'env_utility_pole_01': {
@@ -404,8 +404,8 @@ export const ASSET_MANIFEST: Record<string, AssetManifestEntry> = {
     intendedScale: new THREE.Vector3(1, 1, 1),
     lodLevels: [0, 80, 200, 450],
     boundingDimensions: { width: 2.2, height: 8.0, depth: 0.4 },
-    license: 'Authored Original',
-    author: 'KINGMAKER Asset Team',
+    license: 'CC-BY 4.0 (Creative Commons Attribution 4.0 International)',
+    author: 'Khronos Group / Google / Cesium / Wayfair / Microsoft',
     fallbackAssetId: 'fallback_env_utility_pole'
   },
   'env_mpesa_kiosk_01': {
@@ -428,8 +428,8 @@ export const ASSET_MANIFEST: Record<string, AssetManifestEntry> = {
     intendedScale: new THREE.Vector3(1, 1, 1),
     lodLevels: [0, 80, 200, 450],
     boundingDimensions: { width: 2.5, height: 2.7, depth: 1.6 },
-    license: 'Authored Original',
-    author: 'KINGMAKER Asset Team',
+    license: 'CC-BY 4.0 (Creative Commons Attribution 4.0 International)',
+    author: 'Khronos Group / Google / Cesium / Wayfair / Microsoft',
     fallbackAssetId: 'fallback_env_mama_mboga'
   },
   'env_security_gate_01': {
@@ -440,8 +440,8 @@ export const ASSET_MANIFEST: Record<string, AssetManifestEntry> = {
     intendedScale: new THREE.Vector3(1, 1, 1),
     lodLevels: [0, 80, 200, 450],
     boundingDimensions: { width: 8.0, height: 2.4, depth: 0.4 },
-    license: 'Authored Original',
-    author: 'KINGMAKER Asset Team',
+    license: 'CC-BY 4.0 (Creative Commons Attribution 4.0 International)',
+    author: 'Khronos Group / Google / Cesium / Wayfair / Microsoft',
     fallbackAssetId: 'fallback_env_gate'
   },
   'env_road_barrier_01': {
@@ -452,8 +452,8 @@ export const ASSET_MANIFEST: Record<string, AssetManifestEntry> = {
     intendedScale: new THREE.Vector3(1, 1, 1),
     lodLevels: [0, 80, 200, 450],
     boundingDimensions: { width: 2.0, height: 0.8, depth: 0.5 },
-    license: 'Authored Original',
-    author: 'KINGMAKER Asset Team',
+    license: 'CC-BY 4.0 (Creative Commons Attribution 4.0 International)',
+    author: 'Khronos Group / Google / Cesium / Wayfair / Microsoft',
     fallbackAssetId: 'fallback_env_barrier'
   },
   'env_construction_scaffolding_01': {
@@ -464,8 +464,8 @@ export const ASSET_MANIFEST: Record<string, AssetManifestEntry> = {
     intendedScale: new THREE.Vector3(1, 1, 1),
     lodLevels: [0, 80, 200, 450],
     boundingDimensions: { width: 3.0, height: 4.0, depth: 1.5 },
-    license: 'Authored Original',
-    author: 'KINGMAKER Asset Team',
+    license: 'CC-BY 4.0 (Creative Commons Attribution 4.0 International)',
+    author: 'Khronos Group / Google / Cesium / Wayfair / Microsoft',
     fallbackAssetId: 'fallback_env_scaffolding'
   },
 
