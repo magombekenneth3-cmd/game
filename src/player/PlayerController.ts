@@ -44,6 +44,7 @@ export class PlayerController {
 
     // Initial Spawn Position on Ngong Road Corridor (X = 0, Z = 15)
     this.motor.position.set(0, 0.5, 15);
+    this.cameraManager.snapToTarget(this.motor.position);
   }
 
   private createPlaceholderHumanoid(): void {

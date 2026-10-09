@@ -71,10 +71,31 @@ export class ThirdPersonCamera {
     );
 
     // 4. Smooth Damping (Lerp)
-    const lerpFactor = Math.min(1.0, deltaSeconds * 12.0);
-    this.currentPosition.lerp(finalCameraPos, lerpFactor);
-    this.currentLookAt.lerp(targetFocus, lerpFactor);
+    if (this.currentPosition.lengthSq() === 0) {
+      this.currentPosition.copy(finalCameraPos);
+      this.currentLookAt.copy(targetFocus);
+    } else {
+      const lerpFactor = Math.min(1.0, deltaSeconds * 12.0);
+      this.currentPosition.lerp(finalCameraPos, lerpFactor);
+      this.currentLookAt.lerp(targetFocus, lerpFactor);
+    }
 
+    this.camera.position.copy(this.currentPosition);
+    this.camera.lookAt(this.currentLookAt);
+  }
+
+  public snapToTarget(playerPos: THREE.Vector3): void {
+    const targetFocus = playerPos.clone().add(new THREE.Vector3(0, this.heightOffset, 0));
+    const cosPitch = Math.cos(this.pitch);
+    const finalCameraPos = targetFocus.clone().add(
+      new THREE.Vector3(
+        Math.sin(this.yaw) * cosPitch * this.distance,
+        Math.sin(this.pitch) * this.distance,
+        Math.cos(this.yaw) * cosPitch * this.distance
+      )
+    );
+    this.currentPosition.copy(finalCameraPos);
+    this.currentLookAt.copy(targetFocus);
     this.camera.position.copy(this.currentPosition);
     this.camera.lookAt(this.currentLookAt);
   }

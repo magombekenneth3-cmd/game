@@ -70,18 +70,19 @@ export class DebugOverlay {
       this.timeSlider.value = stats.timeOfDayHours.toString();
     }
 
+    const isWorldEmpty = (stats.activeChunks === 0) || (stats.sceneMeshCount === 0);
+
     this.statsContent.innerHTML = `
-      <div class="stat-row"><span class="label">FPS:</span> <span class="val ${stats.fps >= 55 ? 'good' : 'warn'}">${stats.fps}</span></div>
-      <div class="stat-row"><span class="label">Frame Time:</span> <span class="val">${stats.frameTimeMs} ms</span></div>
+      <div class="stat-row"><span class="label">FPS / Frame Time:</span> <span class="val ${stats.fps >= 55 ? 'good' : 'warn'}">${stats.fps} FPS (${stats.frameTimeMs} ms)</span></div>
       <div class="stat-row"><span class="label">Renderer:</span> <span class="val highlight">${stats.rendererMode}</span></div>
-      <div class="stat-row"><span class="label">Active Chunks:</span> <span class="val highlight">${stats.activeChunks}</span></div>
+      <div class="stat-row"><span class="label">Active Chunks:</span> <span class="val ${stats.activeChunks > 0 ? 'good' : 'warn'}">${stats.activeChunks}</span></div>
+      <div class="stat-row"><span class="label">Scene Meshes:</span> <span class="val highlight">${stats.sceneMeshCount || 0}</span></div>
+      <div class="stat-row"><span class="label">Buildings / Terrain / Roads:</span> <span class="val">${stats.buildingMeshCount || 0} blds / ${stats.terrainTileCount || 0} tiles / ${stats.roadMeshCount || 0} roads</span></div>
       <div class="stat-row"><span class="label">Collision Proxies:</span> <span class="val">${stats.collisionProxies}</span></div>
-      <div class="stat-row"><span class="label">Total Population:</span> <span class="val highlight">${stats.totalNPCs} NPCs</span></div>
-      <div class="stat-row"><span class="label">NPCs (Detailed / Abstract):</span> <span class="val">${stats.detailedNPCs} / ${stats.abstractNPCs}</span></div>
-      <div class="stat-row"><span class="label">Autonomous Traffic:</span> <span class="val highlight">${stats.trafficVehiclesCount || 0} Vehicles</span></div>
-      <div class="stat-row"><span class="label">Traffic Speed / Congestion:</span> <span class="val">${stats.avgTrafficSpeedKph || 0} KPH | ${stats.congestedRoadsCount || 0} roads</span></div>
-      <div class="stat-row"><span class="label">Draw Calls:</span> <span class="val">${stats.drawCalls}</span></div>
-      <div class="stat-row"><span class="label">Triangles:</span> <span class="val">${stats.triangles.toLocaleString()}</span></div>
+      <div class="stat-row"><span class="label">NPC Population (Detailed/Total):</span> <span class="val highlight">${stats.detailedNPCs} / ${stats.totalNPCs}</span></div>
+      <div class="stat-row"><span class="label">Autonomous Traffic:</span> <span class="val highlight">${stats.trafficVehiclesCount || 0} Vehicles (${stats.avgTrafficSpeedKph || 0} KPH)</span></div>
+      <div class="stat-row"><span class="label">Draw Calls / Triangles:</span> <span class="val">${stats.drawCalls} / ${stats.triangles.toLocaleString()}</span></div>
+      ${isWorldEmpty ? '<div class="stat-row warn" style="color:#ff5555;font-weight:bold;">⚠️ DIAGNOSTIC: WORLD GEOMETRY INACTIVE!</div>' : ''}
     `;
   }
 

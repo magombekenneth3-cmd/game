@@ -52,8 +52,25 @@ export class PerformanceMonitor {
     }
 
     let activeObjects = 0;
+    let sceneMeshCount = 0;
+    let terrainTileCount = 0;
+    let roadMeshCount = 0;
+    let buildingMeshCount = 0;
+    let visibleNPCCount = 0;
+    let visibleVehicleCount = 0;
+
     scene.traverse((obj) => {
-      if (obj.visible) activeObjects++;
+      if (obj.visible) {
+        activeObjects++;
+        if ((obj as THREE.Mesh).isMesh) {
+          sceneMeshCount++;
+        }
+        if (obj.name.startsWith('TerrainChunk_')) terrainTileCount++;
+        if (obj.name.startsWith('Road_') || obj.name.includes('RoadSegment')) roadMeshCount++;
+        if (obj.name.startsWith('BuildingGroup_')) buildingMeshCount++;
+        if (obj.name.startsWith('NPCMesh_')) visibleNPCCount++;
+        if (obj.name.startsWith('VehicleMesh_')) visibleVehicleCount++;
+      }
     });
 
     return {
@@ -76,7 +93,13 @@ export class PerformanceMonitor {
       avgTrafficSpeedKph,
       congestedRoadsCount,
       webGpuSupported,
-      timeOfDayHours: parseFloat(timeOfDayHours.toFixed(1))
+      timeOfDayHours: parseFloat(timeOfDayHours.toFixed(1)),
+      sceneMeshCount,
+      terrainTileCount,
+      roadMeshCount,
+      buildingMeshCount,
+      visibleNPCCount,
+      visibleVehicleCount
     };
   }
 }

@@ -23,6 +23,8 @@ export class InputManager {
   }
 
   private attachEventListeners(): void {
+    if (typeof window === 'undefined') return;
+
     window.addEventListener('keydown', this.onKeyDown.bind(this));
     window.addEventListener('keyup', this.onKeyUp.bind(this));
 

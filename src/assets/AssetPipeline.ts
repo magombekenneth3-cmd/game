@@ -219,6 +219,7 @@ export class AssetPipeline {
     if (glbMesh) {
       const wrapper = new THREE.Group();
       wrapper.name = `BuildingGroup_${bld.id}`;
+      wrapper.position.copy(bld.center);
       wrapper.add(glbMesh);
       this.activeInstances.add(wrapper);
       return wrapper;

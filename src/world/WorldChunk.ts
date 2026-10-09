@@ -64,11 +64,11 @@ export class WorldChunk {
       if (lod === 'LOD0') {
         child.visible = true;
       } else if (lod === 'LOD1') {
-        // Hide fine detail children (e.g. antennae, water tanks)
+        // Hide fine detail children (e.g. antennae, rooftop clutter)
         child.visible = !child.name.startsWith('Detail_');
       } else if (lod === 'LOD2') {
-        // Only show main structural body mesh
-        child.visible = child.name.startsWith('BuildingBody_') || child.name.startsWith('Road_');
+        // Show all building structures and roads, hide fine details
+        child.visible = !child.name.startsWith('Detail_');
       }
     });
   }

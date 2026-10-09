@@ -36,6 +36,13 @@ export class NairobiDistrictScene {
     console.log(`🌐 GIS Ingestion Report: ${report.validBuildingCount} Real GIS Buildings, ${report.validRoadCount} Roads imported (Valid: ${report.isValid})`);
     console.log(`🗺️ RoadGraph: ${roadGraph.nodes.size} Nodes, ${roadGraph.edges.size} Edges created.`);
 
+    // Pre-initialize grid chunks across city bounds (-3 to +3)
+    for (let cx = -3; cx <= 3; cx++) {
+      for (let cz = -3; cz <= 3; cz++) {
+        this.chunkManager.getOrCreateChunk(cx, cz);
+      }
+    }
+
     // 2. Generate Chunked Terrain Tiles (-2 to +2 grid chunks)
     for (let cx = -2; cx <= 2; cx++) {
       for (let cz = -2; cz <= 2; cz++) {
@@ -67,6 +74,9 @@ export class NairobiDistrictScene {
     // 6. Add Streetlights & Dense Vegetation / Street Clutter
     this.createCorridorStreetlights();
     this.createVegetation();
+
+    // 7. Initial Chunk Activation around Player Spawn Position (0, 0.5, 15)
+    this.chunkManager.updatePlayerPosition(new THREE.Vector3(0, 0.5, 15));
   }
 
   private generateProceduralInfillBuildings(): void {

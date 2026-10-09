@@ -23,6 +23,16 @@ export interface RenderStats {
   congestedRoadsCount?: number;
   webGpuSupported: boolean;
   timeOfDayHours: number;
+  sceneMeshCount?: number;
+  terrainTileCount?: number;
+  roadMeshCount?: number;
+  buildingMeshCount?: number;
+  visibleNPCCount?: number;
+  visibleVehicleCount?: number;
+  generatedChunkCount?: number;
+  glbFailuresCount?: number;
+  playerPosStr?: string;
+  cameraPosStr?: string;
 }
 
 export interface TimeOfDayConfig {
