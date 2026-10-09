@@ -11,42 +11,54 @@ export class AssetManager {
 
   private initProceduralAssets(): void {
     // 1. Red Soil / Savanna Earth Texture
-    const earthCanvas = this.createCanvasTexture(256, (ctx) => {
-      ctx.fillStyle = '#8B4513';
-      ctx.fillRect(0, 0, 256, 256);
-      // Speckle noise
-      for (let i = 0; i < 5000; i++) {
-        const x = Math.random() * 256;
-        const y = Math.random() * 256;
-        const r = Math.random() * 2;
-        ctx.fillStyle = Math.random() > 0.5 ? '#A0522D' : '#6B3E08';
+    const earthCanvas = this.createCanvasTexture(512, (ctx) => {
+      ctx.fillStyle = '#964B00';
+      ctx.fillRect(0, 0, 512, 512);
+      // Grass patches & reddish earth noise
+      for (let i = 0; i < 15000; i++) {
+        const x = Math.random() * 512;
+        const y = Math.random() * 512;
+        const r = Math.random() * 2.5;
+        const rand = Math.random();
+        ctx.fillStyle = rand > 0.6 ? '#6B3E08' : (rand > 0.3 ? '#A0522D' : '#3E5C26');
         ctx.beginPath();
         ctx.arc(x, y, r, 0, Math.PI * 2);
         ctx.fill();
       }
     });
+    earthCanvas.wrapS = THREE.RepeatWrapping;
+    earthCanvas.wrapT = THREE.RepeatWrapping;
+    earthCanvas.repeat.set(16, 16);
 
     const earthMat = new THREE.MeshStandardMaterial({
       map: earthCanvas,
-      roughness: 0.9,
-      metalness: 0.05
+      roughness: 0.95,
+      metalness: 0.02
     });
     this.materials.set('ground_earth', earthMat);
 
     const asphaltTexture = TextureGenerator.createAsphaltTexture();
+    asphaltTexture.wrapS = THREE.RepeatWrapping;
+    asphaltTexture.wrapT = THREE.RepeatWrapping;
+    asphaltTexture.repeat.set(1, 10);
+
     const roadMat = new THREE.MeshStandardMaterial({
       map: asphaltTexture,
-      roughness: 0.7,
+      roughness: 0.75,
       metalness: 0.1
     });
     this.materials.set('road_asphalt', roadMat);
 
     // 3. Sidewalk Concrete Paver Texture
     const sidewalkTexture = TextureGenerator.createSidewalkPaverTexture();
+    sidewalkTexture.wrapS = THREE.RepeatWrapping;
+    sidewalkTexture.wrapT = THREE.RepeatWrapping;
+    sidewalkTexture.repeat.set(4, 20);
+
     const sidewalkMat = new THREE.MeshStandardMaterial({
       map: sidewalkTexture,
-      roughness: 0.6,
-      metalness: 0.1
+      roughness: 0.65,
+      metalness: 0.05
     });
     this.materials.set('sidewalk_concrete', sidewalkMat);
 

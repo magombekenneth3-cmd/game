@@ -11,26 +11,28 @@ export class SkyAtmosphere implements ISkyAtmosphere {
   constructor(scene: THREE.Scene) {
     this.scene = scene;
 
-    // Directional Sunlight with Shadows
-    this.sunLight = new THREE.DirectionalLight(0xffffff, 2.0);
+    // Directional Sunlight with High-Resolution Shadows
+    this.sunLight = new THREE.DirectionalLight(0xffffff, 2.5);
     this.sunLight.castShadow = true;
-    this.sunLight.shadow.mapSize.width = 2048;
-    this.sunLight.shadow.mapSize.height = 2048;
-    this.sunLight.shadow.camera.near = 10;
-    this.sunLight.shadow.camera.far = 600;
+    this.sunLight.shadow.mapSize.width = 4096;
+    this.sunLight.shadow.mapSize.height = 4096;
+    this.sunLight.shadow.camera.near = 1;
+    this.sunLight.shadow.camera.far = 300;
     
-    // Shadow camera frustum for urban district slice
-    const d = 120;
+    // Tight frustum for high texel-density shadows around camera
+    const d = 80;
     this.sunLight.shadow.camera.left = -d;
     this.sunLight.shadow.camera.right = d;
     this.sunLight.shadow.camera.top = d;
     this.sunLight.shadow.camera.bottom = -d;
-    this.sunLight.shadow.bias = -0.0005;
+    this.sunLight.shadow.bias = -0.0002;
+    this.sunLight.shadow.radius = 2.0;
 
     this.scene.add(this.sunLight);
+    this.scene.add(this.sunLight.target);
 
     // Ambient Hemisphere Light (Sky + Earth)
-    this.ambientLight = new THREE.HemisphereLight(0x87ceeb, 0x3d2817, 0.8);
+    this.ambientLight = new THREE.HemisphereLight(0x87ceeb, 0x3d2817, 0.9);
     this.scene.add(this.ambientLight);
 
     // Sky Dome Geometry
@@ -42,13 +44,24 @@ export class SkyAtmosphere implements ISkyAtmosphere {
     this.skyMesh = new THREE.Mesh(skyGeo, this.skyMaterial);
     this.scene.add(this.skyMesh);
 
-    // Distance Fog for African Atmospheric Haze
-    this.scene.fog = new THREE.FogExp2(0x87ceeb, 0.001);
+    // Distance Fog for Atmospheric Haze
+    this.scene.fog = new THREE.FogExp2(0x87ceeb, 0.0012);
   }
 
   public update(config: TimeOfDayConfig, camera?: THREE.Camera): void {
-    // Update Sunlight position & color
-    this.sunLight.position.copy(config.sunPosition);
+    // Dynamically center shadow camera target on active player camera
+    if (camera) {
+      this.sunLight.target.position.copy(camera.position);
+      this.sunLight.target.updateMatrixWorld();
+
+      const sunDir = config.sunPosition.clone().normalize();
+      this.sunLight.position.copy(camera.position).add(sunDir.multiplyScalar(120));
+
+      this.skyMesh.position.copy(camera.position);
+    } else {
+      this.sunLight.position.copy(config.sunPosition);
+    }
+
     this.sunLight.color.copy(config.sunLightColor);
     this.sunLight.intensity = config.sunIntensity;
 
@@ -56,11 +69,6 @@ export class SkyAtmosphere implements ISkyAtmosphere {
     this.ambientLight.color.copy(config.ambientLightColor);
     this.ambientLight.groundColor.copy(config.groundColor);
     this.ambientLight.intensity = config.ambientIntensity;
-
-    // Center Sky Mesh on Camera
-    if (camera) {
-      this.skyMesh.position.copy(camera.position);
-    }
 
     // Update Sky & Fog
     this.skyMaterial.color.copy(config.skyColor);

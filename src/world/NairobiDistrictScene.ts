@@ -92,6 +92,11 @@ export class NairobiDistrictScene {
       height: number;
       category: 'commercial_tower' | 'office_block' | 'apartment_block' | 'residential_house' | 'shop';
     }> = [
+      // Block A: Ngong Corridor Primary Spawn Infill
+      { id: 'bld_infill_start_left', name: 'Ngong Road Plaza & M-Pesa Arcade', x: -28, z: 15, width: 22, depth: 18, floors: 4, height: 15, category: 'shop' },
+      { id: 'bld_infill_start_right', name: 'Kilimani Heights Executive Towers', x: 28, z: 20, width: 26, depth: 22, floors: 9, height: 32, category: 'apartment_block' },
+      { id: 'bld_infill_start_north', name: 'Upper Hill Horizon Skyscraper', x: 0, z: -45, width: 28, depth: 24, floors: 16, height: 58, category: 'commercial_tower' },
+
       // Block A: Ngong Corridor North Infill
       { id: 'bld_infill_1', name: 'Valley Arcade Shopping Suites', x: -110, z: -80, width: 22, depth: 18, floors: 5, height: 18, category: 'shop' },
       { id: 'bld_infill_2', name: 'Woodley Estate Apartments', x: -85, z: -105, width: 26, depth: 22, floors: 7, height: 24, category: 'apartment_block' },
