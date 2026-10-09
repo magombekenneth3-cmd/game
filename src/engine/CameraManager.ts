@@ -7,12 +7,16 @@ export class CameraManager implements ICameraManager {
   private orbitAngle: number = 0;
   private autoRotate: boolean = false;
 
-  constructor(fov: number = 55, aspect: number = window.innerWidth / window.innerHeight) {
+  constructor(
+    fov: number = 55,
+    aspect: number = typeof window !== 'undefined' ? window.innerWidth / window.innerHeight : 16 / 9
+  ) {
     this.camera = new THREE.PerspectiveCamera(fov, aspect, 0.5, 1000);
     // Initial isometric overview position looking at the district
     this.camera.position.set(45, 30, 45);
     this.camera.lookAt(this.target);
   }
+
 
   public update(aspect: number): void {
     this.camera.aspect = aspect;

@@ -13,11 +13,13 @@ export class WorldChunk {
   public lodLevel: ChunkLODLevel = 'UNLOADED';
 
   public buildings: BuildingData[] = [];
+  public buildingMeshes: THREE.Object3D[] = [];
   public roads: RoadGraphEdge[] = [];
   public collisionProxies: THREE.Box3[] = [];
 
   public visualGroup: THREE.Group;
   private isLoaded: boolean = false;
+
 
   constructor(chunkX: number, chunkZ: number, chunkSize: number = 100.0) {
     this.chunkX = chunkX;

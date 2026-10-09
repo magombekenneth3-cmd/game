@@ -346,6 +346,30 @@ export const ASSET_MANIFEST: Record<string, AssetManifestEntry> = {
     author: 'Khronos Group / Google / Cesium / Wayfair / Microsoft',
     fallbackAssetId: 'fallback_char_humanoid'
   },
+  'char_driver_01': {
+    id: 'char_driver_01',
+    category: 'character',
+    sourceFile: '/assets/models/characters/char_driver_01.glb',
+    variantFamily: 'humanoid_npc',
+    intendedScale: new THREE.Vector3(1, 1, 1),
+    lodLevels: [0, 80, 200],
+    boundingDimensions: { width: 0.6, height: 1.8, depth: 0.4 },
+    license: 'CC-BY 4.0 (Creative Commons Attribution 4.0 International)',
+    author: 'Khronos Group / Google / Cesium / Wayfair / Microsoft',
+    fallbackAssetId: 'fallback_char_humanoid'
+  },
+  'char_guard_security_01': {
+    id: 'char_guard_security_01',
+    category: 'character',
+    sourceFile: '/assets/models/characters/char_guard_security_01.glb',
+    variantFamily: 'humanoid_npc',
+    intendedScale: new THREE.Vector3(1, 1, 1),
+    lodLevels: [0, 80, 200],
+    boundingDimensions: { width: 0.6, height: 1.85, depth: 0.4 },
+    license: 'CC-BY 4.0 (Creative Commons Attribution 4.0 International)',
+    author: 'Khronos Group / Google / Cesium / Wayfair / Microsoft',
+    fallbackAssetId: 'fallback_char_humanoid'
+  },
 
   // --- 4. ENVIRONMENT PROPS (10 Props) ---
   'env_acacia_tree_01': {

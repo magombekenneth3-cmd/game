@@ -92,6 +92,7 @@ export class WorldChunkManager {
     const chunk = this.getOrCreateChunk(chunkX, chunkZ);
 
     chunk.buildings.push(bldData);
+    chunk.buildingMeshes.push(meshGroup);
     chunk.visualGroup.add(meshGroup);
 
     // Create Collision Proxy Box
@@ -119,6 +120,16 @@ export class WorldChunkManager {
   public getNearbyCollisionProxies(playerPos: THREE.Vector3, radius: number = 80.0): THREE.Box3[] {
     const items = this.spatialIndex.queryRadius<THREE.Box3>(playerPos, radius, 'collision_proxy');
     return items.map((item) => item.data);
+  }
+
+  public getActiveCameraOccluders(): THREE.Object3D[] {
+    const occluders: THREE.Object3D[] = [];
+    this.chunks.forEach((chunk) => {
+      if (chunk.isChunkLoaded()) {
+        occluders.push(...chunk.buildingMeshes);
+      }
+    });
+    return occluders;
   }
 
   public getActiveChunkCount(): number {

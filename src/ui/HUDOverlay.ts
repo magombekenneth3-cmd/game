@@ -58,46 +58,54 @@ export class HUDOverlay {
 
     parent.appendChild(this.container);
 
-    this.promptCard = this.container.querySelector('#hud-interaction-prompt')!;
-    this.cashDisplay = this.container.querySelector('#hud-cash')!;
-    this.repDisplay = this.container.querySelector('#hud-rep')!;
-    this.stateBadge = this.container.querySelector('#hud-state-badge')!;
-    this.staminaBar = this.container.querySelector('#hud-stamina-bar')!;
+    this.promptCard = (this.container.querySelector('#hud-interaction-prompt') || document.createElement('div')) as HTMLDivElement;
+    this.cashDisplay = (this.container.querySelector('#hud-cash') || document.createElement('span')) as HTMLSpanElement;
+    this.repDisplay = (this.container.querySelector('#hud-rep') || document.createElement('span')) as HTMLSpanElement;
+    this.stateBadge = (this.container.querySelector('#hud-state-badge') || document.createElement('span')) as HTMLSpanElement;
+    this.staminaBar = (this.container.querySelector('#hud-stamina-bar') || document.createElement('div')) as HTMLDivElement;
 
-    this.drivingWidget = this.container.querySelector('#hud-driving-widget')!;
-    this.kphDisplay = this.container.querySelector('#hud-kph')!;
-    this.drivingStateBadge = this.container.querySelector('#hud-driving-state')!;
+    this.drivingWidget = (this.container.querySelector('#hud-driving-widget') || document.createElement('div')) as HTMLDivElement;
+    this.kphDisplay = (this.container.querySelector('#hud-kph') || document.createElement('span')) as HTMLSpanElement;
+    this.drivingStateBadge = (this.container.querySelector('#hud-driving-state') || document.createElement('span')) as HTMLSpanElement;
   }
 
   public updatePlayerStats(cash: number, rep: number, mode: PlayerStateMode, stamina: number): void {
-    this.cashDisplay.textContent = `KSh ${cash.toLocaleString()}`;
-    this.repDisplay.textContent = `⭐ ${rep}`;
+    if (this.cashDisplay) this.cashDisplay.textContent = `KSh ${cash.toLocaleString()}`;
+    if (this.repDisplay) this.repDisplay.textContent = `⭐ ${rep}`;
 
-    this.stateBadge.textContent = mode;
-    this.stateBadge.className = `badge state-${mode.toLowerCase()}`;
+    if (this.stateBadge) {
+      this.stateBadge.textContent = mode;
+      this.stateBadge.className = `badge state-${mode.toLowerCase()}`;
+    }
 
-    this.staminaBar.style.width = `${Math.max(0, Math.min(100, stamina))}%`;
+    if (this.staminaBar && this.staminaBar.style) {
+      this.staminaBar.style.width = `${Math.max(0, Math.min(100, stamina))}%`;
+    }
   }
 
   public updateDrivingHUD(speedKph: number, modeState: string, isDriving: boolean): void {
-    if (isDriving) {
-      this.drivingWidget.classList.remove('hidden');
-      this.kphDisplay.textContent = `${Math.round(speedKph)} KPH`;
-      this.drivingStateBadge.textContent = modeState;
-    } else {
-      this.drivingWidget.classList.add('hidden');
+    if (this.drivingWidget && this.drivingWidget.classList) {
+      if (isDriving) {
+        this.drivingWidget.classList.remove('hidden');
+        if (this.kphDisplay) this.kphDisplay.textContent = `${Math.round(speedKph)} KPH`;
+        if (this.drivingStateBadge) this.drivingStateBadge.textContent = modeState;
+      } else {
+        this.drivingWidget.classList.add('hidden');
+      }
     }
   }
 
   public updateInteractionPrompt(promptState: InteractionPromptState): void {
-    if (promptState.hasTarget && promptState.target) {
-      this.promptCard.classList.remove('hidden');
-      const textSpan = this.promptCard.querySelector('#prompt-text');
-      if (textSpan) {
-        textSpan.textContent = `Interact with ${promptState.displayName} (${promptState.distanceMeters}m)`;
+    if (this.promptCard && this.promptCard.classList) {
+      if (promptState.hasTarget && promptState.target) {
+        this.promptCard.classList.remove('hidden');
+        const textSpan = this.promptCard.querySelector('#prompt-text');
+        if (textSpan) {
+          textSpan.textContent = `Interact with ${promptState.displayName} (${promptState.distanceMeters}m)`;
+        }
+      } else {
+        this.promptCard.classList.add('hidden');
       }
-    } else {
-      this.promptCard.classList.add('hidden');
     }
   }
 }

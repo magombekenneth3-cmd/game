@@ -30,12 +30,12 @@ export class ThirdPersonCamera {
   }
 
   public handleMouseInput(deltaX: number, deltaY: number, sensitivity: number = 0.0025): void {
-    this.yaw -= deltaX * sensitivity;
+    this.yaw += deltaX * sensitivity;
     this.pitch += deltaY * sensitivity;
     this.pitch = Math.max(this.minPitch, Math.min(this.maxPitch, this.pitch));
   }
 
-  public update(playerPos: THREE.Vector3, deltaSeconds: number, obstacles: THREE.Object3D[] = []): void {
+  public update(playerPos: THREE.Vector3, deltaSeconds: number, cameraOccluders: THREE.Object3D[] = []): void {
     // 1. Calculate ideal target focus point (shoulder/head height)
     const targetFocus = this.targetPosition.copy(playerPos).add(new THREE.Vector3(0, this.heightOffset, 0));
 
@@ -46,15 +46,19 @@ export class ThirdPersonCamera {
     const offsetZ = Math.cos(this.yaw) * cosPitch * this.distance;
 
     const idealCameraPos = targetFocus.clone().add(new THREE.Vector3(offsetX, offsetY, offsetZ));
+    // Enforce ground height floor to prevent subterranean camera clipping
+    if (idealCameraPos.y < 0.5) {
+      idealCameraPos.y = 0.5;
+    }
 
     // 3. Camera Collision Avoidance (prevent clipping through buildings)
     let actualDistance = this.distance;
-    if (obstacles.length > 0) {
+    if (cameraOccluders.length > 0) {
       this.tempDir.subVectors(idealCameraPos, targetFocus).normalize();
       this.raycaster.set(targetFocus, this.tempDir);
       this.raycaster.far = this.distance;
 
-      const hits = this.raycaster.intersectObjects(obstacles, true);
+      const hits = this.raycaster.intersectObjects(cameraOccluders, true);
       if (hits.length > 0) {
         // Clamp camera distance to hit distance minus buffer margin
         actualDistance = Math.max(this.minDistance, hits[0].distance - 0.4);

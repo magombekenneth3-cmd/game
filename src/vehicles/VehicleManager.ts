@@ -140,20 +140,21 @@ export class VehicleManager {
   public update(
     fixedDt: number,
     playerPos: THREE.Vector3,
-    environmentMeshes: THREE.Object3D[] = []
+    groundMeshes: THREE.Object3D[] = [],
+    cameraOccluders?: THREE.Object3D[]
   ): void {
     // 1. Evaluate LODs
     this.updateVehicleLOD(playerPos);
 
-    // 2. Physics & State simulation per vehicle
+    // 2. Physics & State simulation per vehicle (ground checks strictly query groundMeshes)
     this.vehicles.forEach((veh, id) => {
       const tier = this.lodTiers.get(id) || 'TIER0_PLAYER_VICINITY';
       if (tier === 'TIER0_PLAYER_VICINITY' || tier === 'TIER1_NEARBY' || id === this.activeVehicleId) {
-        veh.update(fixedDt, environmentMeshes);
+        veh.update(fixedDt, groundMeshes);
       }
     });
 
-    // 3. Update active vehicle camera if player is driving
+    // 3. Update active vehicle camera if player is driving (collision checks query cameraOccluders)
     const activeVeh = this.vehicleController.getActiveVehicle();
     if (this.isPlayerDriving && activeVeh) {
       this.vehicleCamera.update(
@@ -161,7 +162,7 @@ export class VehicleManager {
         activeVeh.state.rotationY,
         activeVeh.state.currentSpeedKph,
         fixedDt,
-        environmentMeshes
+        cameraOccluders || groundMeshes
       );
     }
   }

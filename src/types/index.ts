@@ -24,6 +24,8 @@ export interface RenderStats {
   webGpuSupported: boolean;
   timeOfDayHours: number;
   sceneMeshCount?: number;
+  registeredMeshCount?: number;
+  activeMeshCount?: number;
   terrainTileCount?: number;
   roadMeshCount?: number;
   buildingMeshCount?: number;
@@ -31,8 +33,13 @@ export interface RenderStats {
   visibleVehicleCount?: number;
   generatedChunkCount?: number;
   glbFailuresCount?: number;
+  assetFailuresCount?: number;
+  assetFallbacksCount?: number;
+  assetLoadedCount?: number;
   playerPosStr?: string;
   cameraPosStr?: string;
+  buildRevision?: string;
+  bootStage?: string;
 }
 
 export interface TimeOfDayConfig {

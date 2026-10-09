@@ -11,6 +11,27 @@ import { BuildingData } from '../world/BuildingData';
 import { VehicleCategory } from '../vehicles/VehicleTypes';
 import { NPCArchetype } from '../npc/NPCTypes';
 
+export type AssetState =
+  | 'not-requested'
+  | 'loading'
+  | 'loaded'
+  | 'fallback'
+  | 'failed';
+
+export type AssetLoadStatus =
+  | { state: 'not-requested'; url?: string }
+  | { state: 'loading'; url: string }
+  | { state: 'loaded'; url: string; meshCount: number }
+  | { state: 'fallback'; url: string; reason: string }
+  | { state: 'failed'; url: string; reason: string };
+
+export interface BuildingFitResult {
+  assetId: string;
+  scale: THREE.Vector3;
+  rotationY: number;
+  fitsFootprint: boolean;
+}
+
 export interface AssetPipelineStats {
   cachedTexturesCount: number;
   cachedGLBCount: number;
@@ -21,16 +42,23 @@ export interface AssetPipelineStats {
   characterKitsGenerated: number;
   cacheHitCount: number;
   cacheMissCount: number;
+  assetLoadedCount: number;
+  assetFallbacksCount: number;
+  assetFailuresCount: number;
+  assetLoadingCount: number;
 }
 
 export class AssetPipeline {
   private static instance: AssetPipeline;
   private gltfLoader: GLTFLoader;
-  
+
   // Deduplication & Caching
   private loadingPromises: Map<string, Promise<THREE.Group>> = new Map();
   private glbCache: Map<string, THREE.Group> = new Map();
   private instanceMeshCache: Map<string, THREE.Group> = new Map();
+
+  // Diagnostics & Status Tracking
+  private assetStatuses: Map<string, AssetLoadStatus> = new Map();
 
   // Telemetry & Tracking
   private activeInstances: Set<THREE.Object3D> = new Set();
@@ -57,7 +85,8 @@ export class AssetPipeline {
       'bld_mixed_use_01', 'bld_office_block_01', 'bld_residential_villa_01', 'bld_nightclub_01', 'bld_industrial_warehouse_01', 'bld_informal_kiosk_01',
       'veh_boda_boda_01', 'veh_truck_01', 'char_pedestrian_student_01', 'env_palm_tree_01', 'interior_vip_lounge_sofa_01'
     ];
-    await Promise.all(coreAssetIds.map((id) => this.loadGLBAsset(id).catch(() => {})));
+    // Preload warms the template cache and does not allocate gameplay instances
+    await Promise.all(coreAssetIds.map((id) => this.ensureAssetLoaded(id).catch(() => {})));
   }
 
   public static getInstance(): AssetPipeline {
@@ -68,27 +97,45 @@ export class AssetPipeline {
   }
 
   /**
-   * Asynchronously loads a GLB asset by asset ID with promise deduplication and caching.
-   * Falls back gracefully to the procedural asset generator if GLB file fails or is missing.
+   * Resolves an asset URL respecting Vite's configured BASE_URL.
    */
-  public async loadGLBAsset(assetId: string): Promise<THREE.Group> {
+  public resolveAssetUrl(sourceFile: string): string {
+    const baseUrl = (typeof import.meta !== 'undefined' && import.meta.env?.BASE_URL) || '/';
+    if (sourceFile.startsWith('/')) {
+      const sanitizedBase = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
+      return `${sanitizedBase}${sourceFile}`;
+    }
+    return sourceFile;
+  }
+
+  /**
+   * Loads and caches the shared asset template.
+   * Does NOT allocate an active scene instance.
+   */
+  public async ensureAssetLoaded(assetId: string): Promise<THREE.Group> {
     if (this.glbCache.has(assetId)) {
       this.cacheHitCount++;
-      return this.glbCache.get(assetId)!.clone(true);
+      return this.glbCache.get(assetId)!;
     }
 
     if (this.loadingPromises.has(assetId)) {
       this.cacheHitCount++;
-      const group = await this.loadingPromises.get(assetId)!;
-      return group.clone(true);
+      return await this.loadingPromises.get(assetId)!;
     }
 
     this.cacheMissCount++;
     const entry = ASSET_MANIFEST[assetId];
     if (!entry) {
-      console.warn(`Asset ID '${assetId}' not found in AssetManifest. Using fallback.`);
-      return this.createFallbackMesh(assetId);
+      const reason = `Asset ID '${assetId}' not found in AssetManifest`;
+      console.warn(`[AssetPipeline] ${reason}. Using procedural fallback.`);
+      this.assetStatuses.set(assetId, { state: 'failed', url: '', reason });
+      const fallback = this.createFallbackMesh(assetId);
+      this.glbCache.set(assetId, fallback);
+      return fallback;
     }
+
+    const resolvedUrl = this.resolveAssetUrl(entry.sourceFile);
+    this.assetStatuses.set(assetId, { state: 'loading', url: resolvedUrl });
 
     const isNodeTest = typeof process !== 'undefined' && process.env?.NODE_ENV === 'test';
     const timeoutDuration = isNodeTest ? 50 : 15000;
@@ -98,17 +145,19 @@ export class AssetPipeline {
       const timeoutId = setTimeout(() => {
         if (!resolved) {
           resolved = true;
-          console.warn(`GLB load for '${assetId}' timed out after ${timeoutDuration}ms. Using procedural fallback.`);
+          const reason = `GLB load for '${assetId}' timed out after ${timeoutDuration}ms`;
+          console.warn(`[AssetPipeline] ${reason}. Using procedural fallback.`);
+          this.assetStatuses.set(assetId, { state: 'fallback', url: resolvedUrl, reason });
           const fallback = this.createFallbackMesh(assetId);
           this.glbCache.set(assetId, fallback);
           this.loadingPromises.delete(assetId);
-          resolve(fallback.clone(true));
+          resolve(fallback);
         }
       }, timeoutDuration);
 
       try {
         this.gltfLoader.load(
-          entry.sourceFile,
+          resolvedUrl,
           (gltf) => {
             if (resolved) return;
             resolved = true;
@@ -116,36 +165,85 @@ export class AssetPipeline {
             const loadedGroup = gltf.scene || new THREE.Group();
             loadedGroup.name = `GLB_${assetId}`;
             loadedGroup.scale.copy(entry.intendedScale);
+
+            let meshCount = 0;
+            loadedGroup.traverse((child) => {
+              if ((child as THREE.Mesh).isMesh) meshCount++;
+            });
+
+            this.assetStatuses.set(assetId, { state: 'loaded', url: resolvedUrl, meshCount });
             this.glbCache.set(assetId, loadedGroup);
             this.loadingPromises.delete(assetId);
-            resolve(loadedGroup.clone(true));
+            resolve(loadedGroup);
           },
           undefined,
-          (_err) => {
+          (err) => {
             if (resolved) return;
             resolved = true;
             clearTimeout(timeoutId);
+            const reason = err instanceof Error ? err.message : String(err || 'Network error');
+            console.warn(`[AssetPipeline] GLB load error for '${assetId}' (${resolvedUrl}): ${reason}. Using procedural fallback.`);
+            this.assetStatuses.set(assetId, { state: 'fallback', url: resolvedUrl, reason });
             const fallback = this.createFallbackMesh(assetId);
             this.glbCache.set(assetId, fallback);
             this.loadingPromises.delete(assetId);
-            resolve(fallback.clone(true));
+            resolve(fallback);
           }
         );
-      } catch (_e) {
+      } catch (e) {
         if (resolved) return;
         resolved = true;
         clearTimeout(timeoutId);
+        const reason = e instanceof Error ? e.message : String(e || 'Exception');
+        console.warn(`[AssetPipeline] Exception loading '${assetId}' (${resolvedUrl}): ${reason}. Using procedural fallback.`);
+        this.assetStatuses.set(assetId, { state: 'fallback', url: resolvedUrl, reason });
         const fallback = this.createFallbackMesh(assetId);
         this.glbCache.set(assetId, fallback);
         this.loadingPromises.delete(assetId);
-        resolve(fallback.clone(true));
+        resolve(fallback);
       }
     });
 
     this.loadingPromises.set(assetId, loadPromise);
-    const instance = await loadPromise;
-    this.activeInstances.add(instance);
-    return instance;
+    return await loadPromise;
+  }
+
+  /**
+   * Creates an active scene instance for an asset. Tracks the allocated instance.
+   */
+  public createInstance(assetId: string): THREE.Group {
+    if (this.glbCache.has(assetId)) {
+      this.cacheHitCount++;
+      const template = this.glbCache.get(assetId)!;
+      const instance = template.clone(true);
+      this.activeInstances.add(instance);
+      return instance;
+    }
+
+    // Create a proxy group that will be populated once ensureAssetLoaded finishes
+    const proxyGroup = new THREE.Group();
+    proxyGroup.name = `ProxyGroup_${assetId}`;
+    this.activeInstances.add(proxyGroup);
+
+    this.ensureAssetLoaded(assetId).then((template) => {
+      proxyGroup.clear();
+      const instance = template.clone(true);
+      proxyGroup.add(instance);
+    }).catch((_err) => {
+      const fallback = this.createFallbackMesh(assetId);
+      proxyGroup.clear();
+      proxyGroup.add(fallback);
+    });
+
+    return proxyGroup;
+  }
+
+  /**
+   * Asynchronously loads a GLB asset and returns a tracked active instance.
+   */
+  public async loadGLBAsset(assetId: string): Promise<THREE.Group> {
+    await this.ensureAssetLoaded(assetId);
+    return this.createInstance(assetId);
   }
 
   /**
@@ -156,11 +254,26 @@ export class AssetPipeline {
     if (assetId.includes('veh_sedan')) return VehicleAssetKit.createVehicleMesh('sedan');
     if (assetId.includes('veh_suv')) return VehicleAssetKit.createVehicleMesh('suv');
     if (assetId.includes('veh_boda')) return VehicleAssetKit.createVehicleMesh('motorcycle');
+    if (assetId.includes('veh_truck')) return VehicleAssetKit.createVehicleMesh('truck');
+    if (assetId.includes('veh_van')) return VehicleAssetKit.createVehicleMesh('van');
+    if (assetId.includes('veh_compact')) return VehicleAssetKit.createVehicleMesh('compact_car');
+    if (assetId.includes('veh_pickup')) return VehicleAssetKit.createVehicleMesh('pickup');
+
     if (assetId.includes('char')) return CharacterAssetKit.createHumanoidMesh('young_professional');
+
     if (assetId.includes('acacia')) return EnvironmentAssetKit.createAcaciaTreeMesh();
     if (assetId.includes('palm')) return EnvironmentAssetKit.createPalmTreeMesh();
     if (assetId.includes('mpesa')) return EnvironmentAssetKit.createMPesaKioskMesh();
     if (assetId.includes('mama_mboga')) return EnvironmentAssetKit.createMamaMbogaStallMesh();
+    if (assetId.includes('streetlight')) return EnvironmentAssetKit.createStreetlightMesh();
+    if (assetId.includes('barrier')) return EnvironmentAssetKit.createRoadBarrierMesh();
+    if (assetId.includes('pole')) return EnvironmentAssetKit.createUtilityPoleMesh();
+
+    if (assetId.includes('interior_dj_booth')) return InteriorAssetKit.createDJBoothRig();
+    if (assetId.includes('interior_vip_lounge')) return InteriorAssetKit.createVIPLoungeMesh();
+    if (assetId.includes('interior_sofa')) return InteriorAssetKit.createVIPLoungeMesh();
+    if (assetId.includes('interior_table')) return InteriorAssetKit.createDJBoothRig();
+    if (assetId.includes('interior_chair')) return InteriorAssetKit.createVIPLoungeMesh();
 
     const fallbackGroup = new THREE.Group();
     fallbackGroup.name = `FallbackGroup_${assetId}`;
@@ -174,65 +287,158 @@ export class AssetPipeline {
 
   // --- HELPER TO RETRIEVE CACHED GLB OR ASYNC PROXY ---
   public getCachedGLB(assetId: string): THREE.Group {
-    if (this.glbCache.has(assetId)) {
-      this.cacheHitCount++;
-      const template = this.glbCache.get(assetId)!;
-      const instance = template.clone(true);
-      this.activeInstances.add(instance);
-      return instance;
+    return this.createInstance(assetId);
+  }
+
+  // --- GIS FOOTPRINT FITTING RESOLVER (Phase E) ---
+  public fitBuildingToFootprint(bld: BuildingData): BuildingFitResult {
+    // 1. Select candidate architectural families compatible with category
+    let candidateIds: string[] = ['bld_nairobi_shop_01'];
+    switch (bld.buildingCategory) {
+      case 'shop':
+        candidateIds = ['bld_nairobi_shop_01', 'bld_nairobi_shop_02'];
+        break;
+      case 'mixed_use':
+        candidateIds = ['bld_mixed_use_01', 'bld_mixed_use_02'];
+        break;
+      case 'apartment_block':
+        candidateIds = ['bld_modern_apartment_01', 'bld_modern_apartment_02'];
+        break;
+      case 'office_block':
+        candidateIds = ['bld_office_block_01'];
+        break;
+      case 'commercial_tower':
+        candidateIds = ['bld_commercial_tower_01'];
+        break;
+      case 'residential_house':
+        candidateIds = ['bld_residential_villa_01'];
+        break;
+      case 'warehouse':
+        candidateIds = ['bld_industrial_warehouse_01'];
+        break;
+      case 'market_structure':
+        candidateIds = ['bld_informal_kiosk_01'];
+        break;
+      default:
+        candidateIds = ['bld_nairobi_shop_01'];
+        break;
     }
 
-    // Create a proxy group that will automatically populate when GLB load finishes
-    const proxyGroup = new THREE.Group();
-    proxyGroup.name = `ProxyGroup_${assetId}`;
-    this.activeInstances.add(proxyGroup);
+    // 2. Compute GIS footprint dimensions
+    let fpWidth = 12;
+    let fpDepth = 12;
+    if (bld.footprintPolygon && bld.footprintPolygon.length >= 3) {
+      let minX = Infinity, maxX = -Infinity, minZ = Infinity, maxZ = -Infinity;
+      for (const pt of bld.footprintPolygon) {
+        if (pt.x < minX) minX = pt.x;
+        if (pt.x > maxX) maxX = pt.x;
+        if (pt.z < minZ) minZ = pt.z;
+        if (pt.z > maxZ) maxZ = pt.z;
+      }
+      fpWidth = Math.max(2, maxX - minX);
+      fpDepth = Math.max(2, maxZ - minZ);
+    }
 
-    this.loadGLBAsset(assetId).then((loadedGroup) => {
-      proxyGroup.clear();
-      proxyGroup.add(loadedGroup.clone(true));
-    }).catch((_err) => {
-      const fallback = this.createFallbackMesh(assetId);
-      proxyGroup.clear();
-      proxyGroup.add(fallback);
-    });
+    const targetHeight = bld.height && bld.height > 0 ? bld.height : Math.max(4, (bld.floors || 1) * 3.5);
 
-    return proxyGroup;
+    // Orientation alignment from GIS entrance where available
+    let baseRotation = 0;
+    if (bld.entrances && bld.entrances.length > 0) {
+      const ent = bld.entrances[0].position;
+      const dx = ent.x - bld.center.x;
+      const dz = ent.z - bld.center.z;
+      if (Math.abs(dx) > 0.1 || Math.abs(dz) > 0.1) {
+        baseRotation = Math.atan2(dx, dz);
+      }
+    }
+
+    // 3. Find best variant comparing native dimensions with footprint
+    let bestCandidate = candidateIds[0];
+    let bestScale = new THREE.Vector3(1, 1, 1);
+    let bestRotation = baseRotation;
+    let bestDistortion = Infinity;
+    let fitsFootprint = false;
+
+    for (const candId of candidateIds) {
+      const manifestEntry = ASSET_MANIFEST[candId];
+      if (!manifestEntry) continue;
+      const nativeDim = manifestEntry.boundingDimensions;
+      const nativeW = nativeDim.width || 10;
+      const nativeH = nativeDim.height || 8;
+      const nativeD = nativeDim.depth || 10;
+
+      // Evaluate 0-degree and 90-degree orientations to see which aligns better with the footprint
+      const orientations = [
+        { rot: baseRotation, targetW: fpWidth, targetD: fpDepth },
+        { rot: baseRotation + Math.PI / 2, targetW: fpDepth, targetD: fpWidth }
+      ];
+
+      for (const orient of orientations) {
+        const sx = orient.targetW / nativeW;
+        const sz = orient.targetD / nativeD;
+        const sy = targetHeight / nativeH;
+
+        // Scaling policy: permit modest scaling between 0.5x and 2.2x
+        const isWithinScaleRange = sx >= 0.5 && sx <= 2.2 && sz >= 0.5 && sz <= 2.2 && sy >= 0.4 && sy <= 3.0;
+        // Aspect ratio distortion factor (must not distort more than 60%)
+        const aspectDistortion = Math.max(sx / sz, sz / sx);
+
+        if (isWithinScaleRange && aspectDistortion < 1.6) {
+          const totalScore = aspectDistortion + Math.abs(sx - 1.0) * 0.2 + Math.abs(sz - 1.0) * 0.2;
+          if (totalScore < bestDistortion) {
+            bestDistortion = totalScore;
+            bestCandidate = candId;
+            bestScale = new THREE.Vector3(
+              Math.min(2.2, Math.max(0.5, sx)),
+              Math.min(3.0, Math.max(0.4, sy)),
+              Math.min(2.2, Math.max(0.5, sz))
+            );
+            bestRotation = orient.rot;
+            fitsFootprint = true;
+          }
+        }
+      }
+    }
+
+    if (!fitsFootprint) {
+      bestScale = new THREE.Vector3(1, targetHeight / 10, 1);
+    }
+
+    return {
+      assetId: bestCandidate,
+      scale: bestScale,
+      rotationY: bestRotation,
+      fitsFootprint
+    };
   }
 
   // --- BUILDINGS ---
   public getBuildingMesh(bld: BuildingData): THREE.Group {
     this.buildingCount++;
-    let assetId = 'bld_nairobi_shop_01';
-    switch (bld.buildingCategory) {
-      case 'shop': assetId = 'bld_nairobi_shop_01'; break;
-      case 'mixed_use': assetId = 'bld_mixed_use_01'; break;
-      case 'apartment_block': assetId = 'bld_modern_apartment_01'; break;
-      case 'office_block': assetId = 'bld_office_block_01'; break;
-      case 'commercial_tower': assetId = 'bld_commercial_tower_01'; break;
-      case 'residential_house': assetId = 'bld_residential_villa_01'; break;
-      case 'warehouse': assetId = 'bld_industrial_warehouse_01'; break;
-      case 'market_structure': assetId = 'bld_informal_kiosk_01'; break;
-      default: assetId = 'bld_nairobi_shop_01'; break;
+    const fit = this.fitBuildingToFootprint(bld);
+
+    // If authored model does not fit the footprint proportions cleanly,
+    // generate procedural building matching the exact GIS footprint polygon!
+    if (!fit.fitsFootprint) {
+      const proceduralBld = BuildingAssetKit.createBuildingGroup(bld);
+      this.activeInstances.add(proceduralBld);
+      return proceduralBld;
     }
 
-    const glbMesh = this.getCachedGLB(assetId);
-    if (glbMesh) {
-      const wrapper = new THREE.Group();
-      wrapper.name = `BuildingGroup_${bld.id}`;
-      wrapper.position.copy(bld.center);
-      wrapper.add(glbMesh);
-      this.activeInstances.add(wrapper);
-      return wrapper;
-    }
+    const glbMesh = this.createInstance(fit.assetId);
+    const wrapper = new THREE.Group();
+    wrapper.name = `BuildingGroup_${bld.id}`;
+    wrapper.position.copy(bld.center);
+    wrapper.rotation.y = fit.rotationY;
 
-    // Procedural Fallback if GLB not preloaded yet
-    const group = BuildingAssetKit.createBuildingGroup(bld);
-    this.activeInstances.add(group);
-    return group;
+    // Apply footprint-fitted scale
+    glbMesh.scale.copy(fit.scale);
+    wrapper.add(glbMesh);
+    return wrapper;
   }
 
   // --- VEHICLES ---
-  public getVehicleMesh(category: VehicleCategory, paintColor: number = 0x1e3a8a): THREE.Group {
+  public getVehicleMesh(category: VehicleCategory, _paintColor: number = 0x1e3a8a): THREE.Group {
     this.vehicleCount++;
     let assetId = 'veh_sedan_01';
     switch (category) {
@@ -247,24 +453,12 @@ export class AssetPipeline {
       default: assetId = 'veh_sedan_01'; break;
     }
 
-    const glbMesh = this.getCachedGLB(assetId);
-    if (glbMesh) {
-      return glbMesh;
-    }
-
-    // Procedural Fallback
-    const cacheKey = `veh_${category}_${paintColor}`;
-    if (!this.instanceMeshCache.has(cacheKey)) {
-      const mesh = VehicleAssetKit.createVehicleMesh(category, paintColor);
-      this.instanceMeshCache.set(cacheKey, mesh);
-    }
-    const cloned = this.instanceMeshCache.get(cacheKey)!.clone(true);
-    this.activeInstances.add(cloned);
-    return cloned;
+    return this.getCachedGLB(assetId);
   }
 
   // --- CHARACTERS ---
-  public getCharacterMesh(archetype: NPCArchetype | 'player', skinTone?: number, outfitColor?: number): THREE.Group {
+  public getCharacterMesh(archetype: NPCArchetype | 'player', _skinTone?: number, _outfitColor?: number): THREE.Group {
+
     this.characterCount++;
     let assetId = 'char_player_01';
     switch (archetype) {
@@ -278,152 +472,49 @@ export class AssetPipeline {
       default: assetId = 'char_player_01'; break;
     }
 
-    const glbMesh = this.getCachedGLB(assetId);
-    if (glbMesh) {
-      return glbMesh;
-    }
-
-    // Procedural Fallback
-    const cacheKey = `char_${archetype}_${skinTone || 0}_${outfitColor || 0}`;
-    if (!this.instanceMeshCache.has(cacheKey)) {
-      const mesh = CharacterAssetKit.createHumanoidMesh(archetype, skinTone, outfitColor);
-      this.instanceMeshCache.set(cacheKey, mesh);
-    }
-    const cloned = this.instanceMeshCache.get(cacheKey)!.clone(true);
-    this.activeInstances.add(cloned);
-    return cloned;
+    return this.getCachedGLB(assetId);
   }
 
   // --- ENVIRONMENT FOLIAGE & PROPS ---
   public getAcaciaTreeMesh(): THREE.Group {
-    const glb = this.getCachedGLB('env_acacia_tree_01');
-    if (glb) return glb;
-
-    const key = 'env_acacia_tree';
-    if (!this.instanceMeshCache.has(key)) {
-      this.instanceMeshCache.set(key, EnvironmentAssetKit.createAcaciaTreeMesh());
-    }
-    const cloned = this.instanceMeshCache.get(key)!.clone(true);
-    this.activeInstances.add(cloned);
-    return cloned;
+    return this.getCachedGLB('env_acacia_tree_01');
   }
 
   public getPalmTreeMesh(): THREE.Group {
-    const glb = this.getCachedGLB('env_palm_tree_01');
-    if (glb) return glb;
-
-    const key = 'env_palm_tree';
-    if (!this.instanceMeshCache.has(key)) {
-      this.instanceMeshCache.set(key, EnvironmentAssetKit.createPalmTreeMesh());
-    }
-    const cloned = this.instanceMeshCache.get(key)!.clone(true);
-    this.activeInstances.add(cloned);
-    return cloned;
+    return this.getCachedGLB('env_palm_tree_01');
   }
 
   public getStreetlightMesh(): THREE.Group {
-    const glb = this.getCachedGLB('env_streetlight_01');
-    if (glb) return glb;
-
-    const key = 'env_streetlight';
-    if (!this.instanceMeshCache.has(key)) {
-      this.instanceMeshCache.set(key, EnvironmentAssetKit.createStreetlightMesh());
-    }
-    const cloned = this.instanceMeshCache.get(key)!.clone(true);
-    this.activeInstances.add(cloned);
-    return cloned;
+    return this.getCachedGLB('env_streetlight_01');
   }
 
   public getMamaMbogaStallMesh(): THREE.Group {
-    const glb = this.getCachedGLB('env_mama_mboga_stall_01');
-    if (glb) return glb;
-
-    const key = 'env_mama_mboga';
-    if (!this.instanceMeshCache.has(key)) {
-      this.instanceMeshCache.set(key, EnvironmentAssetKit.createMamaMbogaStallMesh());
-    }
-    const cloned = this.instanceMeshCache.get(key)!.clone(true);
-    this.activeInstances.add(cloned);
-    return cloned;
+    return this.getCachedGLB('env_mama_mboga_stall_01');
   }
 
   public getMPesaKioskMesh(): THREE.Group {
-    const glb = this.getCachedGLB('env_mpesa_kiosk_01');
-    if (glb) return glb;
-
-    const key = 'env_mpesa';
-    if (!this.instanceMeshCache.has(key)) {
-      this.instanceMeshCache.set(key, EnvironmentAssetKit.createMPesaKioskMesh());
-    }
-    const cloned = this.instanceMeshCache.get(key)!.clone(true);
-    this.activeInstances.add(cloned);
-    return cloned;
+    return this.getCachedGLB('env_mpesa_kiosk_01');
   }
 
   // --- INTERIORS ---
   public getDJBoothRigMesh(): THREE.Group {
-    const glb = this.getCachedGLB('interior_dj_booth_rig_01');
-    if (glb) return glb;
-
-    const key = 'interior_dj_booth';
-    if (!this.instanceMeshCache.has(key)) {
-      this.instanceMeshCache.set(key, InteriorAssetKit.createDJBoothRig());
-    }
-    const cloned = this.instanceMeshCache.get(key)!.clone(true);
-    this.activeInstances.add(cloned);
-    return cloned;
+    return this.getCachedGLB('interior_dj_booth_rig_01');
   }
 
   public getVIPLoungeMesh(): THREE.Group {
-    const glb = this.getCachedGLB('interior_vip_lounge_sofa_01');
-    if (glb) return glb;
-
-    const key = 'interior_vip_lounge';
-    if (!this.instanceMeshCache.has(key)) {
-      this.instanceMeshCache.set(key, InteriorAssetKit.createVIPLoungeMesh());
-    }
-    const cloned = this.instanceMeshCache.get(key)!.clone(true);
-    this.activeInstances.add(cloned);
-    return cloned;
+    return this.getCachedGLB('interior_vip_lounge_sofa_01');
   }
 
   public getSofaMesh(): THREE.Group {
-    const glb = this.getCachedGLB('interior_sofa_01');
-    if (glb) return glb;
-
-    const key = 'interior_sofa';
-    if (!this.instanceMeshCache.has(key)) {
-      this.instanceMeshCache.set(key, InteriorAssetKit.createVIPLoungeMesh());
-    }
-    const cloned = this.instanceMeshCache.get(key)!.clone(true);
-    this.activeInstances.add(cloned);
-    return cloned;
+    return this.getCachedGLB('interior_sofa_01');
   }
 
   public getTableMesh(): THREE.Group {
-    const glb = this.getCachedGLB('interior_table_01');
-    if (glb) return glb;
-
-    const key = 'interior_table';
-    if (!this.instanceMeshCache.has(key)) {
-      this.instanceMeshCache.set(key, InteriorAssetKit.createDJBoothRig());
-    }
-    const cloned = this.instanceMeshCache.get(key)!.clone(true);
-    this.activeInstances.add(cloned);
-    return cloned;
+    return this.getCachedGLB('interior_table_01');
   }
 
   public getChairMesh(): THREE.Group {
-    const glb = this.getCachedGLB('interior_chair_01');
-    if (glb) return glb;
-
-    const key = 'interior_chair';
-    if (!this.instanceMeshCache.has(key)) {
-      this.instanceMeshCache.set(key, InteriorAssetKit.createVIPLoungeMesh());
-    }
-    const cloned = this.instanceMeshCache.get(key)!.clone(true);
-    this.activeInstances.add(cloned);
-    return cloned;
+    return this.getCachedGLB('interior_chair_01');
   }
 
   // --- TEXTURES ---
@@ -448,7 +539,6 @@ export class AssetPipeline {
     object.traverse((child) => {
       if ((child as THREE.Mesh).isMesh) {
         const mesh = child as THREE.Mesh;
-        // Only dispose geometries/materials if explicitly marked as unshared standalone instances
         if (mesh.userData?.isStandaloneInstance) {
           if (mesh.geometry) mesh.geometry.dispose();
           if (mesh.material) {
@@ -464,13 +554,37 @@ export class AssetPipeline {
   }
 
   public async preloadChunkAssets(chunkX: number, chunkZ: number): Promise<void> {
-    // Preload manifest assets for approaching grid chunk
     const buildingAssets = ['bld_nairobi_shop_01', 'bld_mixed_use_01', 'bld_modern_apartment_01'];
     const assetId = buildingAssets[Math.abs(chunkX + chunkZ) % buildingAssets.length];
-    await this.loadGLBAsset(assetId);
+    await this.ensureAssetLoaded(assetId);
+  }
+
+  public getAssetState(assetId: string): AssetState {
+    const status = this.assetStatuses.get(assetId);
+    return status ? status.state : 'not-requested';
+  }
+
+  public getAssetStatus(assetId: string): AssetLoadStatus | undefined {
+    return this.assetStatuses.get(assetId);
+  }
+
+  public getAllAssetStatuses(): Map<string, AssetLoadStatus> {
+    return new Map(this.assetStatuses);
   }
 
   public getStats(): AssetPipelineStats {
+    let loaded = 0;
+    let fallback = 0;
+    let failed = 0;
+    let loading = 0;
+
+    this.assetStatuses.forEach((status) => {
+      if (status.state === 'loaded') loaded++;
+      else if (status.state === 'fallback') fallback++;
+      else if (status.state === 'failed') failed++;
+      else if (status.state === 'loading') loading++;
+    });
+
     return {
       cachedTexturesCount: 6,
       cachedGLBCount: this.glbCache.size,
@@ -480,7 +594,11 @@ export class AssetPipeline {
       vehicleKitsGenerated: this.vehicleCount,
       characterKitsGenerated: this.characterCount,
       cacheHitCount: this.cacheHitCount,
-      cacheMissCount: this.cacheMissCount
+      cacheMissCount: this.cacheMissCount,
+      assetLoadedCount: loaded,
+      assetFallbacksCount: fallback,
+      assetFailuresCount: failed,
+      assetLoadingCount: loading
     };
   }
 
@@ -488,6 +606,7 @@ export class AssetPipeline {
     this.glbCache.clear();
     this.instanceMeshCache.clear();
     this.loadingPromises.clear();
+    this.assetStatuses.clear();
     this.activeInstances.clear();
     this.disposedCount = 0;
     this.buildingCount = 0;

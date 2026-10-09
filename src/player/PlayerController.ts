@@ -57,8 +57,9 @@ export class PlayerController {
 
   public update(
     deltaSeconds: number,
-    environmentMeshes: THREE.Object3D[] = [],
-    collisionProxies?: THREE.Box3[]
+    groundMeshes: THREE.Object3D[] = [],
+    collisionProxies?: THREE.Box3[],
+    cameraOccluders?: THREE.Object3D[]
   ): void {
     const inputState = this.input.getInput();
 
@@ -88,7 +89,7 @@ export class PlayerController {
 
       // Check if player wants to exit vehicle (KeyE)
       if (inputState.interact) {
-        const exitPos = this.vehicleManager.exitVehicle(environmentMeshes);
+        const exitPos = this.vehicleManager.exitVehicle(groundMeshes);
         if (exitPos) {
           this.motor.position.copy(exitPos);
           this.state.setMode('IDLE');
@@ -106,9 +107,9 @@ export class PlayerController {
       this.cameraManager.handleMouseInput(inputState.mouseX, inputState.mouseY);
     }
 
-    // 2. Character Motor Movement
+    // 2. Character Motor Movement (terrain ground raycasts strictly against groundMeshes)
     const cameraYaw = this.cameraManager.getYaw();
-    const determinedMode = this.motor.update(inputState, cameraYaw, deltaSeconds, environmentMeshes);
+    const determinedMode = this.motor.update(inputState, cameraYaw, deltaSeconds, groundMeshes);
 
     if (collisionProxies && collisionProxies.length > 0) {
       this.motor.resolveObstacleCollisionsFromProxies(collisionProxies);
@@ -125,8 +126,9 @@ export class PlayerController {
     // 5. Update Leg Swing Animation
     this.updateWalkAnimation(deltaSeconds);
 
-    // 6. Update Third-Person Orbit Camera
-    this.cameraManager.update(this.motor.position, deltaSeconds, environmentMeshes);
+    // 6. Update Third-Person Orbit Camera (collision checks strictly against cameraOccluders)
+    this.cameraManager.update(this.motor.position, deltaSeconds, cameraOccluders || []);
+
 
     // 7. Check Vehicle Entry Interaction if VehicleManager is attached
     if (inputState.interact && this.vehicleManager) {

@@ -53,20 +53,24 @@ export class SpeedometerUI {
     parent.appendChild(this.container);
     this.hide();
 
-    this.speedText = this.container.querySelector('#speedo-value')!;
-    this.rpmFill = this.container.querySelector('#speedo-rpm')!;
-    this.gearText = this.container.querySelector('#speedo-gear')!;
-    this.hornBtn = this.container.querySelector('#speedo-horn')!;
-    this.lightBtn = this.container.querySelector('#speedo-light')!;
+    this.speedText = (this.container.querySelector('#speedo-value') || document.createElement('span')) as HTMLSpanElement;
+    this.rpmFill = (this.container.querySelector('#speedo-rpm') || document.createElement('div')) as HTMLDivElement;
+    this.gearText = (this.container.querySelector('#speedo-gear') || document.createElement('span')) as HTMLSpanElement;
+    this.hornBtn = (this.container.querySelector('#speedo-horn') || document.createElement('button')) as HTMLButtonElement;
+    this.lightBtn = (this.container.querySelector('#speedo-light') || document.createElement('button')) as HTMLButtonElement;
 
-    this.hornBtn.addEventListener('click', () => {
-      window.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyH' }));
-      setTimeout(() => window.dispatchEvent(new KeyboardEvent('keyup', { code: 'KeyH' })), 300);
-    });
+    if (this.hornBtn && this.hornBtn.addEventListener) {
+      this.hornBtn.addEventListener('click', () => {
+        window.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyH' }));
+        setTimeout(() => window.dispatchEvent(new KeyboardEvent('keyup', { code: 'KeyH' })), 300);
+      });
+    }
 
-    this.lightBtn.addEventListener('click', () => {
-      window.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyL' }));
-    });
+    if (this.lightBtn && this.lightBtn.addEventListener) {
+      this.lightBtn.addEventListener('click', () => {
+        window.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyL' }));
+      });
+    }
   }
 
   public show(): void {

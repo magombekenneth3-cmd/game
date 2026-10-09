@@ -27,6 +27,27 @@ import { SpeedometerUI } from '../ui/SpeedometerUI';
 import { MainMenuUI } from '../ui/MainMenuUI';
 import { ParticleSystem } from './ParticleSystem';
 
+export type BootStage =
+  | 'INITIALIZING_RENDERER'
+  | 'PRELOADING_ASSETS'
+  | 'GENERATING_WORLD'
+  | 'INITIALIZING_GAMEPLAY'
+  | 'READY'
+  | 'FAILED';
+
+function inspectScene(scene: THREE.Scene) {
+  let meshes = 0;
+  scene.traverse((object) => {
+    if ((object as THREE.Mesh).isMesh) {
+      meshes++;
+    }
+  });
+  return {
+    topLevelObjects: scene.children.length,
+    meshObjects: meshes,
+  };
+}
+
 export class GameLoop {
   private rendererManager: RendererManager;
   private cameraManager: CameraManager;
@@ -56,6 +77,9 @@ export class GameLoop {
   private isRunning: boolean = false;
   private lastFrameTime: number = 0;
   private animationFrameId: number | null = null;
+  public bootStage: BootStage = 'INITIALIZING_RENDERER';
+  private bootStageStartTime: number = performance.now();
+  private bootStageDurations: Map<BootStage, number> = new Map();
 
   constructor(container: HTMLElement) {
     this.scene = new THREE.Scene();
@@ -69,26 +93,67 @@ export class GameLoop {
     this.sceneGenerator = new NairobiDistrictScene(this.scene, this.assetManager);
   }
 
+  private setBootStage(stage: BootStage): void {
+    const now = performance.now();
+    const duration = now - this.bootStageStartTime;
+    this.bootStageDurations.set(this.bootStage, duration);
+    console.info(`[KINGMAKER Boot] ${this.bootStage} completed in ${duration.toFixed(1)}ms -> Entering ${stage}`);
+    this.bootStage = stage;
+    this.bootStageStartTime = now;
+  }
+
   public async start(): Promise<void> {
     try {
-      // 1. Initialize Renderer & Preload Core Authored 3D Assets
+      console.info('[KINGMAKER] Build:', typeof __BUILD_REVISION__ !== 'undefined' ? __BUILD_REVISION__ : 'dev');
+
+      // 1. Initialize Renderer
+      this.setBootStage('INITIALIZING_RENDERER');
       await this.rendererManager.init();
+
+      // 1b. Preload Core Authored 3D Assets
+      this.setBootStage('PRELOADING_ASSETS');
       await AssetPipeline.getInstance().preloadCoreAssets();
 
       // 2. Generate Real GIS Nairobi District World
+      this.setBootStage('GENERATING_WORLD');
       this.sceneGenerator.generate();
 
-      // 3. Initialize Particle System
+      // Collect actual scene data and assert world invariants in DEV
+      const sceneStats = inspectScene(this.scene);
+      const chunks = this.sceneGenerator.chunkManager;
+      console.info('[World initialized]', {
+        ...sceneStats,
+        generatedChunks: chunks.chunks.size,
+        activeChunks: chunks.getActiveChunkCount(),
+        playerPosition: [0, 0.5, 15],
+        cameraPosition: this.cameraManager.camera.position.toArray(),
+      });
+
+      if (import.meta.env.DEV) {
+        console.assert(
+          chunks.chunks.size > 0,
+          'World initialization failed: no chunks were created',
+        );
+        console.assert(
+          chunks.getActiveChunkCount() > 0,
+          'World initialization failed: no chunks are active',
+        );
+      }
+
+      // 3. Initialize Gameplay & Subsystems
+      this.setBootStage('INITIALIZING_GAMEPLAY');
+
+      // Particle System
       this.particleSystem = new ParticleSystem(this.scene);
 
-      // 4. Initialize Player Controller & Camera
+      // Player Controller & Camera
       this.playerController = new PlayerController(
         this.scene,
         this.cameraManager.camera,
         this.rendererManager.domElement
       );
 
-      // 5. Initialize Vehicle Manager & Spawn Fleet
+      // Vehicle Manager & Spawn Fleet
       this.vehicleManager = new VehicleManager(
         this.scene,
         this.cameraManager.camera,
@@ -97,21 +162,21 @@ export class GameLoop {
       this.vehicleManager.spawnDeterministicFleet(1337);
       this.playerController.vehicleManager = this.vehicleManager;
 
-      // 6. Initialize Autonomous Traffic Manager
+      // Autonomous Traffic Manager
       this.trafficManager = new TrafficManager(
         this.vehicleManager,
         this.sceneGenerator.chunkManager.roadGraph
       );
       this.trafficManager.init(1337);
 
-      // 7. Initialize Environment Manager
+      // Environment Manager
       this.environmentManager = new EnvironmentManager(
         this.scene,
         this.assetManager,
         this.sceneGenerator.chunkManager
       );
 
-      // 7b. Initialize Interior Manager & Building Streaming
+      // Interior Manager & Building Streaming
       this.interiorManager = new InteriorManager(
         this.scene,
         this.sceneGenerator.chunkManager,
@@ -119,13 +184,13 @@ export class GameLoop {
         1337
       );
 
-      // 8. Initialize NPC Manager, Spawner, & Destinations
+      // NPC Manager, Spawner, & Destinations
       this.npcManager = new NPCManager();
       this.npcSimulation = new NPCSimulation(this.npcManager, this.sceneGenerator.chunkManager.roadGraph);
 
       this.initNPCPopulationAndDestinations();
 
-      // 8b. Initialize Interaction Manager & Conversation UI
+      // Interaction Manager & Conversation UI
       this.interactionManager = new InteractionManager(
         this.playerController.interactionSystem,
         this.npcManager,
@@ -141,10 +206,10 @@ export class GameLoop {
         this.interactionManager.conversationSystem.selectResponse('player_1', respId);
       });
 
-      // 9. Register Sample Interactables for Acceptance Tests
+      // Register Sample Interactables for Acceptance Tests
       this.registerInteractables();
 
-      // 10. Attach UI Overlay, HUD, Speedometer & Minimap
+      // Attach UI Overlay, HUD, Speedometer & Minimap
       this.debugOverlay = new DebugOverlay(document.body);
       this.hudOverlay = new HUDOverlay(document.body);
       this.minimapUI = new MinimapUI(document.body);
@@ -152,7 +217,6 @@ export class GameLoop {
 
       this.mainMenuUI = new MainMenuUI(document.body, (mode) => {
         if (mode === 'matatu') {
-          // Find first matatu and put player inside
           const matatus = Array.from(this.vehicleManager.vehicles.values()).filter(v => v.definition.type === 'matatu');
           if (matatus.length > 0) {
             this.vehicleManager.enterVehicle(matatus[0]);
@@ -160,7 +224,6 @@ export class GameLoop {
             AudioManager.getInstance().setMatatuRadio(true);
           }
         } else if (mode === 'club') {
-          // Teleport player near Club Velvet
           this.playerController.motor.position.set(45, 0.5, 20);
         }
       });
@@ -173,20 +236,25 @@ export class GameLoop {
         this.hudOverlay.updateInteractionPrompt(promptState);
       });
 
-      // 11. Attach Window Resize Listener
+      // Attach Window Resize Listener
       window.addEventListener('resize', this.onWindowResize.bind(this));
 
-      // 12. Start RAF Loop
+      // Boot Stage -> READY
+      this.setBootStage('READY');
+
+      // Start RAF Loop
       this.isRunning = true;
       this.lastFrameTime = performance.now();
       this.tick(this.lastFrameTime);
 
       console.log('🚀 KINGMAKER Rise of Africa — Production Game Experience Loaded!');
     } catch (err) {
+      this.setBootStage('FAILED');
       console.error('🔴 Critical Engine Error during boot:', err);
       this.showBootErrorScreen(err);
     }
   }
+
 
   private initNPCPopulationAndDestinations(): void {
     const spawner = new NPCSpawner();
@@ -294,13 +362,22 @@ export class GameLoop {
       // 3b. Update Interactive Building Interiors, Streaming & Door Prompts
       this.interiorManager.update(playerPos, this.playerController);
 
-      // 4. Obtain Chunk-Local Collision Proxies from SpatialIndex
-      const collisionProxies = this.sceneGenerator.chunkManager.getNearbyCollisionProxies(playerPos, 80.0);
-      const environmentMeshes = this.scene.children;
+      // 4. Obtain Dedicated Query Collections (Ground Meshes, Camera Occluders, Spatial Collision Proxies)
+      const worldQueries = this.sceneGenerator.getWorldQueries(playerPos, 80.0);
 
-      // 5. Update Player Controller & Vehicles
-      this.playerController.update(deltaSeconds, environmentMeshes, collisionProxies);
-      this.vehicleManager.update(deltaSeconds, playerPos, environmentMeshes);
+      // 5. Update Player Controller & Vehicles with strictly isolated queries
+      this.playerController.update(
+        deltaSeconds,
+        worldQueries.groundMeshes,
+        worldQueries.staticCollisionProxies,
+        worldQueries.cameraOccluders
+      );
+      this.vehicleManager.update(
+        deltaSeconds,
+        playerPos,
+        worldQueries.groundMeshes,
+        worldQueries.cameraOccluders
+      );
 
       // 5b. Update Core Interaction & Social World System
       const inputState = this.playerController.input.getInput();
@@ -343,7 +420,7 @@ export class GameLoop {
         playerPos,
         this.vehicleManager.activeVehicle,
         npcPositions,
-        environmentMeshes
+        worldQueries.groundMeshes
       );
 
       // Check vehicle proximity interaction prompt
@@ -387,6 +464,7 @@ export class GameLoop {
 
       // 10. Telemetry & Debug Overlay Update
       this.perfMonitor.update();
+      const assetStats = AssetPipeline.getInstance().getStats();
       const stats = this.perfMonitor.getStats(
         this.rendererManager.renderer as any,
         this.rendererManager.mode,
@@ -394,7 +472,7 @@ export class GameLoop {
         this.scene,
         todConfig.hours,
         this.sceneGenerator.chunkManager.getActiveChunkCount(),
-        collisionProxies.length,
+        worldQueries.staticCollisionProxies.length,
         npcTelemetry.totalNPCs,
         npcTelemetry.detailedNPCs,
         npcTelemetry.abstractNPCs,
@@ -402,13 +480,25 @@ export class GameLoop {
         trafficStats.totalTrafficVehicles,
         trafficStats.activeTrafficVehicles,
         trafficStats.averageTrafficSpeedKph,
-        trafficStats.congestedRoadsCount
+        trafficStats.congestedRoadsCount,
+        {
+          buildRevision: typeof __BUILD_REVISION__ !== 'undefined' ? __BUILD_REVISION__ : 'dev',
+          bootStage: this.bootStage,
+          generatedChunkCount: this.sceneGenerator.chunkManager.chunks.size,
+          assetLoadedCount: assetStats.assetLoadedCount,
+          assetFallbacksCount: assetStats.assetFallbacksCount,
+          assetFailuresCount: assetStats.assetFailuresCount,
+          glbFailuresCount: assetStats.assetFailuresCount
+        }
       );
 
       this.debugOverlay.update(stats);
 
+
       // 11. Request Next Frame
-      this.animationFrameId = requestAnimationFrame((t) => this.tick(t));
+      if (typeof requestAnimationFrame === 'function') {
+        this.animationFrameId = requestAnimationFrame((t) => this.tick(t));
+      }
     } catch (err) {
       console.error('🔴 Runtime Error in Game Loop execution:', err);
       this.stop();
@@ -424,7 +514,7 @@ export class GameLoop {
 
   public stop(): void {
     this.isRunning = false;
-    if (this.animationFrameId !== null) {
+    if (this.animationFrameId !== null && typeof cancelAnimationFrame === 'function') {
       cancelAnimationFrame(this.animationFrameId);
     }
   }

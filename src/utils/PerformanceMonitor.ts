@@ -36,7 +36,8 @@ export class PerformanceMonitor {
     trafficVehiclesCount: number = 0,
     activeTrafficCount: number = 0,
     avgTrafficSpeedKph: number = 0,
-    congestedRoadsCount: number = 0
+    congestedRoadsCount: number = 0,
+    extraStats?: Partial<RenderStats>
   ): RenderStats {
     let drawCalls = 0;
     let triangles = 0;
@@ -52,18 +53,34 @@ export class PerformanceMonitor {
     }
 
     let activeObjects = 0;
-    let sceneMeshCount = 0;
+    let registeredMeshCount = 0;
+    let activeMeshCount = 0;
     let terrainTileCount = 0;
     let roadMeshCount = 0;
     let buildingMeshCount = 0;
     let visibleNPCCount = 0;
     let visibleVehicleCount = 0;
 
+    // Helper to test if an object is visible throughout its parent hierarchy
+    const isHierarchyVisible = (obj: THREE.Object3D): boolean => {
+      let current: THREE.Object3D | null = obj;
+      while (current) {
+        if (!current.visible) return false;
+        current = current.parent;
+      }
+      return true;
+    };
+
     scene.traverse((obj) => {
-      if (obj.visible) {
+      const isMesh = (obj as THREE.Mesh).isMesh;
+      if (isMesh) {
+        registeredMeshCount++;
+      }
+
+      if (isHierarchyVisible(obj)) {
         activeObjects++;
-        if ((obj as THREE.Mesh).isMesh) {
-          sceneMeshCount++;
+        if (isMesh) {
+          activeMeshCount++;
         }
         if (obj.name.startsWith('TerrainChunk_')) terrainTileCount++;
         if (obj.name.startsWith('Road_') || obj.name.includes('RoadSegment')) roadMeshCount++;
@@ -94,12 +111,15 @@ export class PerformanceMonitor {
       congestedRoadsCount,
       webGpuSupported,
       timeOfDayHours: parseFloat(timeOfDayHours.toFixed(1)),
-      sceneMeshCount,
+      sceneMeshCount: activeMeshCount,
+      registeredMeshCount,
+      activeMeshCount,
       terrainTileCount,
       roadMeshCount,
       buildingMeshCount,
       visibleNPCCount,
-      visibleVehicleCount
+      visibleVehicleCount,
+      ...extraStats
     };
   }
 }

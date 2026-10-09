@@ -37,7 +37,7 @@ export class CharacterMotor {
     input: IInputState,
     cameraYaw: number,
     deltaSeconds: number,
-    environmentMeshes: THREE.Object3D[] = []
+    groundMeshes: THREE.Object3D[] = []
   ): PlayerStateMode {
     // 1. Determine Target Speed based on input
     const isMoving = input.forward || input.backward || input.left || input.right;
@@ -78,11 +78,11 @@ export class CharacterMotor {
       }
     }
 
-    // 3. Accelerate / Decelerate Speed
+    // 3. Accelerate / Decelerate Speed with Realistic Physics Lerp
     if (isMoving) {
-      this.currentSpeed = Math.min(targetSpeed, this.currentSpeed + this.config.acceleration * deltaSeconds);
+      this.currentSpeed = THREE.MathUtils.lerp(this.currentSpeed, targetSpeed, Math.min(1.0, deltaSeconds * 10.0));
     } else {
-      this.currentSpeed = Math.max(0, this.currentSpeed - this.config.deceleration * deltaSeconds);
+      this.currentSpeed = THREE.MathUtils.lerp(this.currentSpeed, 0, Math.min(1.0, deltaSeconds * 12.0));
     }
 
     // 4. Calculate Horizontal Velocity & Update Position
@@ -90,24 +90,24 @@ export class CharacterMotor {
     this.position.x += this.targetVelocity.x * deltaSeconds;
     this.position.z += this.targetVelocity.z * deltaSeconds;
 
-    // 5. Environment Collision Resolution (Obstacle Box Collision)
-    this.resolveObstacleCollisions(environmentMeshes);
+    // 5. Environment Collision Resolution
+    this.resolveObstacleCollisions(groundMeshes);
 
-    // 6. Terrain Ground Height Snap Raycast
-    this.updateGroundHeight(environmentMeshes);
+    // 6. Terrain Ground Height Snap Raycast (only queries groundMeshes)
+    this.updateGroundHeight(groundMeshes);
 
     return this.currentSpeed > 0.1 ? determinedMode : 'IDLE';
   }
 
-  private updateGroundHeight(environmentMeshes: THREE.Object3D[]): void {
-    if (environmentMeshes.length === 0) return;
+  private updateGroundHeight(groundMeshes: THREE.Object3D[]): void {
+    if (groundMeshes.length === 0) return;
 
     // Cast ray downwards from slightly above player position
     const rayOrigin = this.position.clone();
     rayOrigin.y += 3.0;
 
     this.downRaycaster.set(rayOrigin, this.downVector);
-    const hits = this.downRaycaster.intersectObjects(environmentMeshes, true);
+    const hits = this.downRaycaster.intersectObjects(groundMeshes, true);
 
     if (hits.length > 0) {
       const groundY = hits[0].point.y;
@@ -116,6 +116,7 @@ export class CharacterMotor {
       this.isGrounded = true;
     }
   }
+
 
   public resolveObstacleCollisionsFromProxies(collisionProxies: THREE.Box3[]): void {
     const playerRadius = 0.6;

@@ -144,4 +144,38 @@ export class EnvironmentAssetKit {
 
     return group;
   }
+
+  public static createRoadBarrierMesh(): THREE.Group {
+    const group = new THREE.Group();
+    group.name = 'RoadBarrierMesh';
+
+    const barrierMat = new THREE.MeshStandardMaterial({ color: 0xe2e8f0, roughness: 0.8 });
+    const barrierGeo = new THREE.BoxGeometry(2.0, 0.8, 0.5);
+    const barrier = new THREE.Mesh(barrierGeo, barrierMat);
+    barrier.position.y = 0.4;
+    barrier.castShadow = true;
+    group.add(barrier);
+
+    return group;
+  }
+
+  public static createUtilityPoleMesh(): THREE.Group {
+    const group = new THREE.Group();
+    group.name = 'UtilityPoleMesh';
+
+    const poleMat = new THREE.MeshStandardMaterial({ color: 0x5c4033, roughness: 0.9 });
+    const poleGeo = new THREE.CylinderGeometry(0.1, 0.14, 8.0, 8);
+    const pole = new THREE.Mesh(poleGeo, poleMat);
+    pole.position.y = 4.0;
+    pole.castShadow = true;
+    group.add(pole);
+
+    const crossArmGeo = new THREE.BoxGeometry(2.0, 0.1, 0.1);
+    const crossArm = new THREE.Mesh(crossArmGeo, poleMat);
+    crossArm.position.y = 7.5;
+    crossArm.castShadow = true;
+    group.add(crossArm);
+
+    return group;
+  }
 }

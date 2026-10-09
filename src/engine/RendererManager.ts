@@ -10,12 +10,30 @@ export class RendererManager implements IRendererManager {
 
   constructor(canvasContainer: HTMLElement) {
     this.canvasContainer = canvasContainer;
-    this.domElement = document.createElement('canvas');
-    this.domElement.id = 'game-canvas';
-    this.canvasContainer.appendChild(this.domElement);
+    if (typeof document !== 'undefined') {
+      this.domElement = document.createElement('canvas');
+      this.domElement.id = 'game-canvas';
+      this.canvasContainer?.appendChild?.(this.domElement);
+    } else {
+      this.domElement = { addEventListener: () => {}, removeEventListener: () => {} } as any;
+    }
   }
 
   public async init(): Promise<void> {
+    const isNode = typeof process !== 'undefined' && process.env?.NODE_ENV === 'test';
+    if (isNode || typeof window === 'undefined') {
+      this.renderer = {
+        render: () => {},
+        setSize: () => {},
+        setPixelRatio: () => {},
+        info: { render: { calls: 0, triangles: 0 }, memory: { geometries: 0, textures: 0 } },
+        shadowMap: { enabled: false }
+      };
+      this.mode = 'WebGL2';
+      this.isWebGPU = false;
+      return;
+    }
+
     // Initialize high-performance WebGL2 Renderer for guaranteed PBR material & shadow rendering
     console.log('⚡ KINGMAKER Engine initializing WebGL2 Renderer');
     const webglRenderer = new THREE.WebGLRenderer({
@@ -38,6 +56,7 @@ export class RendererManager implements IRendererManager {
     // Configure common renderer properties
     this.setSize(window.innerWidth, window.innerHeight);
   }
+
 
   public render(scene: THREE.Scene, camera: THREE.Camera): void {
     if (this.renderer) {

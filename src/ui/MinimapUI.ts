@@ -38,6 +38,9 @@ export class MinimapUI {
     vehicles: { position: THREE.Vector3; isMatatu?: boolean }[],
     npcs: THREE.Vector3[]
   ): void {
+    if (!this.ctx || typeof this.ctx.moveTo !== 'function') {
+      return;
+    }
     const width = this.canvas.width;
     const height = this.canvas.height;
     const cx = width / 2;

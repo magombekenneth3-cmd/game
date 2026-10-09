@@ -9,6 +9,12 @@ import { AssetManager } from '../engine/AssetManager';
 import { AssetPipeline } from '../assets/AssetPipeline';
 import { BuildingData } from './BuildingData';
 
+export interface WorldQueries {
+  groundMeshes: THREE.Object3D[];
+  cameraOccluders: THREE.Object3D[];
+  staticCollisionProxies: THREE.Box3[];
+}
+
 export class NairobiDistrictScene {
   private scene: THREE.Scene;
   private assetManager: AssetManager;
@@ -19,6 +25,7 @@ export class NairobiDistrictScene {
   private ingestionEngine: GeoJSONIngestionEngine;
 
   private streetPointLights: THREE.PointLight[] = [];
+  private groundMeshes: THREE.Object3D[] = [];
 
   constructor(scene: THREE.Scene, assetManager: AssetManager) {
     this.scene = scene;
@@ -44,10 +51,12 @@ export class NairobiDistrictScene {
     }
 
     // 2. Generate Chunked Terrain Tiles (-2 to +2 grid chunks)
+    this.groundMeshes = [];
     for (let cx = -2; cx <= 2; cx++) {
       for (let cz = -2; cz <= 2; cz++) {
         const terrainChunk = this.terrainChunkManager.createTerrainChunkMesh(cx, cz);
         this.scene.add(terrainChunk);
+        this.groundMeshes.push(terrainChunk);
       }
     }
 
@@ -55,12 +64,15 @@ export class NairobiDistrictScene {
     district.roads.forEach((road) => {
       const roadMeshGroup = this.roadGen.generateRoadMesh(road);
       this.scene.add(roadMeshGroup);
+      this.groundMeshes.push(roadMeshGroup);
     });
 
     district.intersections.forEach((intNode) => {
       const roundaboutGroup = this.roadGen.generateRoundaboutMesh(intNode);
       this.scene.add(roundaboutGroup);
+      this.groundMeshes.push(roundaboutGroup);
     });
+
 
     // 4. Register Building Data Entities into WorldChunkManager
     normalizedBuildings.forEach((bldData) => {
@@ -216,5 +228,22 @@ export class NairobiDistrictScene {
     this.streetPointLights.forEach((pl) => {
       pl.intensity = on ? 4.5 : 0.0;
     });
+  }
+
+  public getGroundMeshes(): THREE.Object3D[] {
+    return this.groundMeshes;
+  }
+
+  public getCameraOccluders(): THREE.Object3D[] {
+    return this.chunkManager.getActiveCameraOccluders();
+  }
+
+  public getWorldQueries(playerPos?: THREE.Vector3, radius: number = 80.0): WorldQueries {
+    const center = playerPos || new THREE.Vector3(0, 0, 0);
+    return {
+      groundMeshes: this.groundMeshes,
+      cameraOccluders: this.chunkManager.getActiveCameraOccluders(),
+      staticCollisionProxies: this.chunkManager.getNearbyCollisionProxies(center, radius)
+    };
   }
 }
