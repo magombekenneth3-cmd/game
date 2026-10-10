@@ -275,6 +275,7 @@ async function main() {
     if (!debug) return;
     if (debug.interiorManager) {
       debug.interiorManager.enterBuilding('bld_bespoke_nightclub_kilimani', debug.player);
+      debug.player.cameraManager.snapToTarget(debug.player.motor.position);
     }
     debug.player.cameraManager.setOrbit(Math.PI * 0.1, 0.15, 6.0);
   });
@@ -285,6 +286,7 @@ async function main() {
       const debug = window.__KINGMAKER_DEBUG__;
       if (debug && debug.interiorManager) {
         debug.interiorManager.exitBuilding(debug.player);
+        debug.player.cameraManager.snapToTarget(debug.player.motor.position);
       }
     })()`,
     returnByValue: true
@@ -296,8 +298,8 @@ async function main() {
     const debug = window.__KINGMAKER_DEBUG__;
     if (!debug) return;
     debug.player.motor.position.set(0, 0.45, 15);
-    if (debug.lightingSystem) {
-      debug.lightingSystem.setTimeOfDay(14.0);
+    if (debug.timeOfDay) {
+      debug.timeOfDay.setTime(14.0);
     }
     debug.player.cameraManager.setOrbit(0, 0.18, 12.0);
   });
@@ -306,8 +308,8 @@ async function main() {
     const debug = window.__KINGMAKER_DEBUG__;
     if (!debug) return;
     debug.player.motor.position.set(0, 0.45, 15);
-    if (debug.lightingSystem) {
-      debug.lightingSystem.setTimeOfDay(19.5);
+    if (debug.timeOfDay) {
+      debug.timeOfDay.setTime(19.5);
     }
     debug.player.cameraManager.setOrbit(0, 0.18, 12.0);
   });
@@ -316,7 +318,7 @@ async function main() {
   await sendCommand('Runtime.evaluate', {
     expression: `(() => {
       const debug = window.__KINGMAKER_DEBUG__;
-      if (debug && debug.lightingSystem) debug.lightingSystem.setTimeOfDay(14.0);
+      if (debug && debug.timeOfDay) debug.timeOfDay.setTime(14.0);
     })()`,
     returnByValue: true
   });

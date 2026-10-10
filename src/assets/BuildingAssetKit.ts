@@ -60,8 +60,8 @@ export class BuildingAssetKit {
       emissiveMap: facadeEmissiveMap,
       emissive: new THREE.Color(0xfff0dd),
       emissiveIntensity: 0.35,
-      roughness: 0.7,
-      metalness: 0.15
+      roughness: 0.75,
+      metalness: 0.02
     });
 
     const bodyMesh = new THREE.Mesh(geom, facadeMat);
@@ -74,13 +74,13 @@ export class BuildingAssetKit {
     if (bld.hasGroundFloorShops) {
       const storefrontHeight = Math.min(4.0, bld.height * 0.35);
       const glassMat = new THREE.MeshPhysicalMaterial({
-        color: 0x0f172a,
-        roughness: 0.1,
-        metalness: 0.85,
+        color: 0x64748b,
+        roughness: 0.05,
+        metalness: 0.0,
         transparent: true,
-        opacity: 0.85,
-        clearcoat: 0.8,
-        clearcoatRoughness: 0.1
+        opacity: 0.45,
+        clearcoat: 0.9,
+        clearcoatRoughness: 0.05
       });
 
       const glassGeom = new THREE.ExtrudeGeometry(shape, { depth: storefrontHeight, bevelEnabled: false });

@@ -175,6 +175,8 @@ export class AssetPipeline {
             loadedGroup.userData.animations = anims;
             this.animationCache.set(assetId, anims);
 
+            this.calibrateModelMaterials(loadedGroup, assetId);
+
             let meshCount = 0;
             loadedGroup.traverse((child) => {
               if ((child as THREE.Mesh).isMesh) meshCount++;
@@ -310,9 +312,114 @@ export class AssetPipeline {
       ? (SkeletonUtils.clone(template) as THREE.Group)
       : template.clone(true);
 
+    instance.traverse((child) => {
+      const mesh = child as THREE.Mesh;
+      if (mesh.isMesh) {
+        mesh.castShadow = true;
+        mesh.receiveShadow = true;
+      }
+    });
+
     const anims = this.getAnimations(assetId);
     instance.userData.animations = anims;
     return instance;
+  }
+
+  /**
+   * Calibrates GLB mesh materials to physically believable PBR parameters.
+   * Fixes raw asset defects like metallic character clothing/skin and chalky car bodies.
+   */
+  public calibrateModelMaterials(group: THREE.Group, assetId: string): void {
+    const isCharacter = assetId.startsWith('char_');
+    const isVehicle = assetId.startsWith('veh_');
+    const isVegetation = assetId.startsWith('env_acacia_') || assetId.startsWith('env_palm_');
+    const isBuilding = assetId.startsWith('bld_');
+
+    group.traverse((child) => {
+      const mesh = child as THREE.Mesh;
+      if (!mesh.isMesh) return;
+
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
+
+      const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+      materials.forEach((mat) => {
+        if (!mat) return;
+        const stdMat = mat as THREE.MeshStandardMaterial;
+        const name = (mat.name || mesh.name || '').toLowerCase();
+
+        if (isCharacter) {
+          // Characters: Skin, Hair, and Clothing must NOT be metallic
+          if (name.includes('skin') || name.includes('face') || name.includes('body') || name.includes('head')) {
+            stdMat.metalness = 0.0;
+            stdMat.roughness = 0.65;
+          } else if (name.includes('hair')) {
+            stdMat.metalness = 0.0;
+            stdMat.roughness = 0.8;
+          } else if (name.includes('eye')) {
+            stdMat.metalness = 0.0;
+            stdMat.roughness = 0.1;
+          } else {
+            // Outfits, jackets, pants, shoes (ReadyPlayerMe Wolf3D_Outfit_Top / Bottom)
+            stdMat.metalness = 0.0;
+            stdMat.roughness = 0.85;
+          }
+          stdMat.needsUpdate = true;
+        } else if (isVehicle) {
+          // Vehicles: Glass, Clearcoat Paint, Rubber, Chrome Trim
+          if (name.includes('glass') || name.includes('window') || name.includes('windshield')) {
+            stdMat.metalness = 0.0;
+            stdMat.roughness = 0.05;
+            stdMat.transparent = true;
+            stdMat.opacity = 0.45;
+          } else if (name.includes('tire') || name.includes('wheel') || name.includes('rubber')) {
+            stdMat.metalness = 0.02;
+            stdMat.roughness = 0.9;
+          } else if (name.includes('bumper') || name.includes('grill') || name.includes('chrome') || name.includes('rim')) {
+            stdMat.metalness = 0.85;
+            stdMat.roughness = 0.18;
+          } else {
+            // Vehicle body car paint: smooth clearcoat sheen with realistic reflections
+            stdMat.metalness = 0.55;
+            stdMat.roughness = 0.22;
+          }
+          stdMat.needsUpdate = true;
+        } else if (isVegetation) {
+          // Trees & Foliage: nonmetallic
+          if (name.includes('leaf') || name.includes('foliage') || name.includes('branch')) {
+            stdMat.metalness = 0.0;
+            stdMat.roughness = 0.75;
+          } else {
+            stdMat.metalness = 0.0;
+            stdMat.roughness = 0.9;
+          }
+          stdMat.needsUpdate = true;
+        } else if (isBuilding) {
+          // Architectural structures: diffuse concrete/brick, dielectric windows
+          if (name.includes('glass') || name.includes('window')) {
+            stdMat.metalness = 0.0;
+            stdMat.roughness = 0.05;
+            stdMat.transparent = true;
+            stdMat.opacity = 0.45;
+          } else if (name.includes('metal') || name.includes('iron') || name.includes('steel')) {
+            stdMat.metalness = 0.8;
+            stdMat.roughness = 0.3;
+          } else {
+            stdMat.metalness = 0.02;
+            stdMat.roughness = 0.8;
+          }
+          stdMat.needsUpdate = true;
+        } else {
+          // General props / furniture / kiosks
+          if (name.includes('glass')) {
+            stdMat.metalness = 0.0;
+            stdMat.roughness = 0.05;
+            stdMat.transparent = true;
+            stdMat.opacity = 0.45;
+          }
+        }
+      });
+    });
   }
 
   /**

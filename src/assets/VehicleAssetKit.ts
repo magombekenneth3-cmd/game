@@ -41,8 +41,16 @@ export class VehicleAssetKit {
     body.castShadow = true;
     group.add(body);
 
-    // Windshield & Windows
-    const glassMat = new THREE.MeshPhysicalMaterial({ color: 0x0f172a, roughness: 0.1, metalness: 0.9, transparent: true, opacity: 0.8 });
+    // Windshield & Windows (Dielectric Automotive Glass)
+    const glassMat = new THREE.MeshPhysicalMaterial({
+      color: 0x1e293b,
+      roughness: 0.05,
+      metalness: 0.0,
+      transparent: true,
+      opacity: 0.45,
+      clearcoat: 0.9,
+      clearcoatRoughness: 0.05
+    });
     const glassGeo = new THREE.BoxGeometry(1.9, 0.7, 1.2);
     const glass = new THREE.Mesh(glassGeo, glassMat);
     glass.position.set(0, 1.5, 1.2);
@@ -66,7 +74,7 @@ export class VehicleAssetKit {
     const group = new THREE.Group();
     group.name = 'SedanMesh';
 
-    const paintMat = new THREE.MeshStandardMaterial({ color, metalness: 0.7, roughness: 0.2 });
+    const paintMat = new THREE.MeshStandardMaterial({ color, metalness: 0.55, roughness: 0.22 });
 
     // Lower chassis
     const bodyGeo = new THREE.BoxGeometry(1.8, 0.65, 4.2);
@@ -82,7 +90,15 @@ export class VehicleAssetKit {
     cabin.castShadow = true;
     group.add(cabin);
 
-    const glassMat = new THREE.MeshPhysicalMaterial({ color: 0x0f172a, roughness: 0.1, metalness: 0.9, transparent: true, opacity: 0.8 });
+    const glassMat = new THREE.MeshPhysicalMaterial({
+      color: 0x1e293b,
+      roughness: 0.05,
+      metalness: 0.0,
+      transparent: true,
+      opacity: 0.45,
+      clearcoat: 0.9,
+      clearcoatRoughness: 0.05
+    });
     const glassGeo = new THREE.BoxGeometry(1.52, 0.5, 1.9);
     const glass = new THREE.Mesh(glassGeo, glassMat);
     glass.position.set(0, 1.12, -0.2);
@@ -98,7 +114,7 @@ export class VehicleAssetKit {
     const group = new THREE.Group();
     group.name = 'SUVMesh';
 
-    const paintMat = new THREE.MeshStandardMaterial({ color, metalness: 0.6, roughness: 0.3 });
+    const paintMat = new THREE.MeshStandardMaterial({ color, metalness: 0.55, roughness: 0.22 });
 
     const bodyGeo = new THREE.BoxGeometry(2.1, 1.1, 4.6);
     const body = new THREE.Mesh(bodyGeo, paintMat);

@@ -19,7 +19,6 @@ export class LightingSystem {
 
   public update(timeConfig: TimeOfDayConfig, weatherConfig: WeatherStateConfig): void {
     if (this.sunLight) {
-      this.sunLight.position.copy(timeConfig.sunPosition);
       this.sunLight.color.copy(timeConfig.sunLightColor);
       this.sunLight.intensity = timeConfig.sunIntensity * weatherConfig.sunIntensity * weatherConfig.visibilityMultiplier;
     }

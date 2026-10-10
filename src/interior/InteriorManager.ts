@@ -164,6 +164,9 @@ export class InteriorManager {
 
     // Set Interior LOD to ACTIVE
     interior.setLOD('INTERIOR_ACTIVE', this.scene, this.assetManager);
+    if ('environmentIntensity' in this.scene) {
+      (this.scene as any).environmentIntensity = 0.2;
+    }
 
     // Teleport player to interior spawn position
     playerController.motor.position.copy(door.interiorSpawnPosition);
@@ -181,6 +184,10 @@ export class InteriorManager {
 
     if (interior) {
       interior.setLOD('INTERIOR_BACKGROUND', this.scene, this.assetManager);
+    }
+
+    if ('environmentIntensity' in this.scene) {
+      (this.scene as any).environmentIntensity = 0.85;
     }
 
     this.activeInteriorId = null;

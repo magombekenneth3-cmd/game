@@ -27,7 +27,10 @@ export class RendererManager implements IRendererManager {
         setSize: () => {},
         setPixelRatio: () => {},
         info: { render: { calls: 0, triangles: 0 }, memory: { geometries: 0, textures: 0 } },
-        shadowMap: { enabled: false }
+        shadowMap: { enabled: true, type: THREE.PCFSoftShadowMap },
+        toneMapping: THREE.ACESFilmicToneMapping,
+        toneMappingExposure: 1.0,
+        outputColorSpace: THREE.SRGBColorSpace
       };
       this.mode = 'WebGL2';
       this.isWebGPU = false;
@@ -46,7 +49,7 @@ export class RendererManager implements IRendererManager {
     webglRenderer.shadowMap.enabled = true;
     webglRenderer.shadowMap.type = THREE.PCFSoftShadowMap;
     webglRenderer.toneMapping = THREE.ACESFilmicToneMapping;
-    webglRenderer.toneMappingExposure = 1.1;
+    webglRenderer.toneMappingExposure = 1.0;
     webglRenderer.outputColorSpace = THREE.SRGBColorSpace;
 
     this.renderer = webglRenderer;

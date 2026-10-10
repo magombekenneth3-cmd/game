@@ -14,6 +14,14 @@ export class TextureGenerator {
     return { canvas, ctx };
   }
 
+  private static createFallbackTexture(isColor: boolean): THREE.CanvasTexture {
+    const tex = new THREE.CanvasTexture({} as any);
+    if (isColor) {
+      tex.colorSpace = THREE.SRGBColorSpace;
+    }
+    return tex;
+  }
+
   /**
    * Generates realistic PBR Asphalt texture with aggregate noise, double yellow center line, white edge lines & wear.
    */
@@ -21,7 +29,11 @@ export class TextureGenerator {
     if (this.cache.has('asphalt')) return this.cache.get('asphalt')!;
 
     const { canvas, ctx } = this.createCanvas(512, 512);
-    if (!ctx.fillRect) return new THREE.CanvasTexture({} as any);
+    if (!ctx.fillRect) {
+      const tex = this.createFallbackTexture(true);
+      this.cache.set('asphalt', tex);
+      return tex;
+    }
 
     // Dark asphalt base
     ctx.fillStyle = '#1e1e24';
@@ -76,7 +88,11 @@ export class TextureGenerator {
     if (this.cache.has('sidewalk')) return this.cache.get('sidewalk')!;
 
     const { canvas, ctx } = this.createCanvas(256, 256);
-    if (!ctx.fillRect) return new THREE.CanvasTexture({} as any);
+    if (!ctx.fillRect) {
+      const tex = this.createFallbackTexture(true);
+      this.cache.set('sidewalk', tex);
+      return tex;
+    }
 
     ctx.fillStyle = '#94a3b8';
     ctx.fillRect(0, 0, 256, 256);
@@ -112,7 +128,11 @@ export class TextureGenerator {
     if (this.cache.has(cacheKey)) return this.cache.get(cacheKey)!;
 
     const { canvas, ctx } = this.createCanvas(256, 256);
-    if (!ctx.fillRect) return new THREE.CanvasTexture({} as any);
+    if (!ctx.fillRect) {
+      const tex = this.createFallbackTexture(true);
+      this.cache.set(cacheKey, tex);
+      return tex;
+    }
 
     let baseColor = '#e2c9a5'; // Sandstone
     if (style === 'terracotta') baseColor = '#c85a32';
@@ -160,7 +180,11 @@ export class TextureGenerator {
     if (this.cache.has('facade_normal')) return this.cache.get('facade_normal')!;
 
     const { canvas, ctx } = this.createCanvas(256, 256);
-    if (!ctx.fillRect) return new THREE.CanvasTexture({} as any);
+    if (!ctx.fillRect) {
+      const tex = this.createFallbackTexture(false);
+      this.cache.set('facade_normal', tex);
+      return tex;
+    }
 
     // Flat normal vector RGB(128, 128, 255)
     ctx.fillStyle = 'rgb(128, 128, 255)';
@@ -199,7 +223,11 @@ export class TextureGenerator {
     if (this.cache.has('facade_roughness')) return this.cache.get('facade_roughness')!;
 
     const { canvas, ctx } = this.createCanvas(256, 256);
-    if (!ctx.fillRect) return new THREE.CanvasTexture({} as any);
+    if (!ctx.fillRect) {
+      const tex = this.createFallbackTexture(false);
+      this.cache.set('facade_roughness', tex);
+      return tex;
+    }
 
     // Concrete facade high roughness (0.75 -> RGB 190)
     ctx.fillStyle = 'rgb(190, 190, 190)';
@@ -230,7 +258,11 @@ export class TextureGenerator {
     if (this.cache.has('facade_emissive')) return this.cache.get('facade_emissive')!;
 
     const { canvas, ctx } = this.createCanvas(256, 256);
-    if (!ctx.fillRect) return new THREE.CanvasTexture({} as any);
+    if (!ctx.fillRect) {
+      const tex = this.createFallbackTexture(true);
+      this.cache.set('facade_emissive', tex);
+      return tex;
+    }
 
     ctx.fillStyle = '#000000';
     ctx.fillRect(0, 0, 256, 256);
@@ -248,6 +280,7 @@ export class TextureGenerator {
     }
 
     const texture = new THREE.CanvasTexture(canvas);
+    texture.colorSpace = THREE.SRGBColorSpace;
     texture.wrapS = THREE.RepeatWrapping;
     texture.wrapT = THREE.RepeatWrapping;
 
@@ -263,7 +296,11 @@ export class TextureGenerator {
     if (this.cache.has(cacheKey)) return this.cache.get(cacheKey)!;
 
     const { canvas, ctx } = this.createCanvas(512, 128);
-    if (!ctx.fillRect) return new THREE.CanvasTexture({} as any);
+    if (!ctx.fillRect) {
+      const tex = this.createFallbackTexture(true);
+      this.cache.set(cacheKey, tex);
+      return tex;
+    }
 
     // M-Pesa Green or Brand colors
     let bg = '#10b981';
@@ -300,7 +337,11 @@ export class TextureGenerator {
     if (this.cache.has('matatu_art')) return this.cache.get('matatu_art')!;
 
     const { canvas, ctx } = this.createCanvas(512, 128);
-    if (!ctx.fillRect) return new THREE.CanvasTexture({} as any);
+    if (!ctx.fillRect) {
+      const tex = this.createFallbackTexture(true);
+      this.cache.set('matatu_art', tex);
+      return tex;
+    }
 
     // Yellow base
     ctx.fillStyle = '#fbc02d';

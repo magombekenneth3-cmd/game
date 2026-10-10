@@ -25,7 +25,8 @@ export class SkyAtmosphere implements ISkyAtmosphere {
     this.sunLight.shadow.camera.right = d;
     this.sunLight.shadow.camera.top = d;
     this.sunLight.shadow.camera.bottom = -d;
-    this.sunLight.shadow.bias = -0.0002;
+    this.sunLight.shadow.bias = -0.0001;
+    this.sunLight.shadow.normalBias = 0.04;
     this.sunLight.shadow.radius = 2.0;
 
     this.scene.add(this.sunLight);
@@ -48,7 +49,96 @@ export class SkyAtmosphere implements ISkyAtmosphere {
     this.scene.fog = new THREE.FogExp2(0x87ceeb, 0.0012);
   }
 
-  public update(config: TimeOfDayConfig, camera?: THREE.Camera): void {
+  private pmremGenerator?: THREE.PMREMGenerator;
+  private envRenderTarget?: THREE.WebGLRenderTarget;
+  private lastEnvProbeHours: number = -999;
+  private probeCanvas?: HTMLCanvasElement;
+  private probeTexture?: THREE.CanvasTexture;
+
+  /**
+   * Generates a high-quality, lightweight procedural sky IBL environment probe
+   * using THREE.PMREMGenerator for authentic PBR indirect specular reflections.
+   */
+  public updateEnvironmentProbe(renderer: any, config: TimeOfDayConfig): void {
+    if (!renderer || typeof document === 'undefined') return;
+
+    // Only regenerate when time of day changes significantly (> 0.2h / 12 min game time)
+    if (Math.abs(config.hours - this.lastEnvProbeHours) < 0.2 && this.envRenderTarget) {
+      return;
+    }
+    this.lastEnvProbeHours = config.hours;
+
+    try {
+      if (!this.pmremGenerator && typeof THREE.PMREMGenerator === 'function') {
+        this.pmremGenerator = new THREE.PMREMGenerator(renderer);
+        this.pmremGenerator.compileEquirectangularShader();
+      }
+
+      if (!this.pmremGenerator) return;
+
+      if (!this.probeCanvas) {
+        this.probeCanvas = document.createElement('canvas');
+        this.probeCanvas.width = 256;
+        this.probeCanvas.height = 128;
+      }
+
+      const ctx = this.probeCanvas.getContext('2d');
+      if (!ctx) return;
+
+      // Draw dynamic equirectangular sky gradient
+      const skyHex = '#' + config.skyColor.getHexString();
+      const groundHex = '#' + config.groundColor.getHexString();
+      const sunHex = '#' + config.sunLightColor.getHexString();
+
+      // Top to bottom gradient (Zenith -> Horizon -> Ground)
+      const grad = ctx.createLinearGradient(0, 0, 0, 128);
+      grad.addColorStop(0.0, skyHex);
+      grad.addColorStop(0.48, skyHex);
+      grad.addColorStop(0.50, sunHex);
+      grad.addColorStop(0.54, groundHex);
+      grad.addColorStop(1.0, groundHex);
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, 256, 128);
+
+      // Sun spot glow
+      if (config.sunIntensity > 0.5) {
+        const sunNorm = config.sunPosition.clone().normalize();
+        const u = 0.5 + Math.atan2(sunNorm.z, sunNorm.x) / (Math.PI * 2);
+        const v = 0.5 - Math.asin(THREE.MathUtils.clamp(sunNorm.y, -1, 1)) / Math.PI;
+        const sx = u * 256;
+        const sy = v * 128;
+
+        const sunGrad = ctx.createRadialGradient(sx, sy, 2, sx, sy, 24);
+        sunGrad.addColorStop(0, 'rgba(255, 255, 255, 0.95)');
+        sunGrad.addColorStop(0.3, sunHex);
+        sunGrad.addColorStop(1, 'rgba(255, 255, 255, 0)');
+        ctx.fillStyle = sunGrad;
+        ctx.beginPath();
+        ctx.arc(sx, sy, 24, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      if (!this.probeTexture) {
+        this.probeTexture = new THREE.CanvasTexture(this.probeCanvas);
+        this.probeTexture.colorSpace = THREE.SRGBColorSpace;
+      } else {
+        this.probeTexture.needsUpdate = true;
+      }
+
+      const prevTarget = this.envRenderTarget;
+      this.envRenderTarget = this.pmremGenerator.fromEquirectangular(this.probeTexture);
+      this.scene.environment = this.envRenderTarget.texture;
+      (this.scene as any).environmentIntensity = 0.85;
+
+      if (prevTarget) {
+        prevTarget.dispose();
+      }
+    } catch (_err) {
+      // In test or non-webgl environments, fail silently
+    }
+  }
+
+  public update(config: TimeOfDayConfig, camera?: THREE.Camera, renderer?: any): void {
     // Dynamically center shadow camera target on active player camera
     if (camera) {
       this.sunLight.target.position.copy(camera.position);
@@ -74,6 +164,23 @@ export class SkyAtmosphere implements ISkyAtmosphere {
     this.skyMaterial.color.copy(config.skyColor);
     if (this.scene.fog) {
       (this.scene.fog as THREE.FogExp2).color.copy(config.fogColor);
+    }
+
+    // Update Environment Reflection Probe
+    if (renderer) {
+      this.updateEnvironmentProbe(renderer, config);
+    }
+  }
+
+  public dispose(): void {
+    if (this.envRenderTarget) {
+      this.envRenderTarget.dispose();
+    }
+    if (this.pmremGenerator) {
+      this.pmremGenerator.dispose();
+    }
+    if (this.probeTexture) {
+      this.probeTexture.dispose();
     }
   }
 }

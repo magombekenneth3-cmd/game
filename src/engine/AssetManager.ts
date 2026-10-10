@@ -33,7 +33,7 @@ export class AssetManager {
     const earthMat = new THREE.MeshStandardMaterial({
       map: earthCanvas,
       roughness: 0.95,
-      metalness: 0.02
+      metalness: 0.01
     });
     this.materials.set('ground_earth', earthMat);
 
@@ -44,8 +44,8 @@ export class AssetManager {
 
     const roadMat = new THREE.MeshStandardMaterial({
       map: asphaltTexture,
-      roughness: 0.75,
-      metalness: 0.1
+      roughness: 0.85,
+      metalness: 0.02
     });
     this.materials.set('road_asphalt', roadMat);
 
@@ -57,19 +57,21 @@ export class AssetManager {
 
     const sidewalkMat = new THREE.MeshStandardMaterial({
       map: sidewalkTexture,
-      roughness: 0.65,
-      metalness: 0.05
+      roughness: 0.75,
+      metalness: 0.02
     });
     this.materials.set('sidewalk_concrete', sidewalkMat);
 
-    // 4. Glass Window Material
+    // 4. Glass Window Material (Dielectric Architectural Glass)
     const glassMat = new THREE.MeshPhysicalMaterial({
-      color: 0x223344,
-      metalness: 0.9,
-      roughness: 0.1,
+      color: 0x94a3b8,
+      metalness: 0.0,
+      roughness: 0.06,
       transparent: true,
-      opacity: 0.75,
-      reflectivity: 0.9
+      opacity: 0.45,
+      reflectivity: 0.6,
+      clearcoat: 0.9,
+      clearcoatRoughness: 0.05
     });
     this.materials.set('building_glass', glassMat);
 
@@ -86,8 +88,8 @@ export class AssetManager {
     facadeColors.forEach(({ id, color }) => {
       this.materials.set(id, new THREE.MeshStandardMaterial({
         color,
-        roughness: 0.6,
-        metalness: 0.1
+        roughness: 0.75,
+        metalness: 0.02
       }));
     });
 
@@ -101,13 +103,13 @@ export class AssetManager {
     this.materials.set('streetlight_emissive', streetlightEmissive);
 
     // 7. Tree Foliage & Trunk Materials
-    this.materials.set('foliage_green', new THREE.MeshStandardMaterial({ color: 0x2E7D32, roughness: 0.7 }));
-    this.materials.set('tree_wood', new THREE.MeshStandardMaterial({ color: 0x4E3629, roughness: 0.9 }));
+    this.materials.set('foliage_green', new THREE.MeshStandardMaterial({ color: 0x2E7D32, roughness: 0.75, metalness: 0.0 }));
+    this.materials.set('tree_wood', new THREE.MeshStandardMaterial({ color: 0x4E3629, roughness: 0.9, metalness: 0.0 }));
 
-    // 8. Vehicle Materials (Matatu Yellow/White & Metallic)
-    this.materials.set('matatu_yellow', new THREE.MeshStandardMaterial({ color: 0xFBC02D, metalness: 0.5, roughness: 0.3 }));
-    this.materials.set('vehicle_metal', new THREE.MeshStandardMaterial({ color: 0x1A237E, metalness: 0.7, roughness: 0.2 }));
-    this.materials.set('vehicle_tire', new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.9 }));
+    // 8. Vehicle Materials (Matatu Yellow/White & Metallic Clearcoat)
+    this.materials.set('matatu_yellow', new THREE.MeshStandardMaterial({ color: 0xFBC02D, metalness: 0.4, roughness: 0.25 }));
+    this.materials.set('vehicle_metal', new THREE.MeshStandardMaterial({ color: 0x1A237E, metalness: 0.65, roughness: 0.2 }));
+    this.materials.set('vehicle_tire', new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.92, metalness: 0.02 }));
 
     // 9. Shared Geometries
     this.geometries.set('box', new THREE.BoxGeometry(1, 1, 1));

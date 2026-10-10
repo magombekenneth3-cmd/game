@@ -259,6 +259,7 @@ export class GameLoop {
           rendererManager: this.rendererManager,
           assetPipeline: AssetPipeline.getInstance(),
           chunkManager: this.sceneGenerator.chunkManager,
+          interiorManager: this.interiorManager,
           perfMonitor: this.perfMonitor
         };
       }
@@ -370,7 +371,7 @@ export class GameLoop {
       const activeCamera = this.vehicleManager.driving
         ? this.vehicleManager.vehicleCamera.camera
         : this.cameraManager.camera;
-      this.skyAtmosphere.update(todConfig, activeCamera);
+      this.skyAtmosphere.update(todConfig, activeCamera, this.rendererManager.renderer);
       this.sceneGenerator.updateStreetlights(todConfig.streetlightsOn);
 
       // 2. Update World Chunk Streaming around Player Position

@@ -70,7 +70,7 @@ export interface IRendererManager {
 export interface ISkyAtmosphere {
   sunLight: THREE.DirectionalLight;
   ambientLight: THREE.HemisphereLight;
-  update(timeConfig: TimeOfDayConfig): void;
+  update(timeConfig: TimeOfDayConfig, camera?: THREE.Camera, renderer?: any): void;
 }
 
 export interface ICameraManager {
