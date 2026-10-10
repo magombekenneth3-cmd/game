@@ -2,11 +2,26 @@ import * as THREE from 'three';
 import { RoadSegment, IntersectionNode } from './GISDataTypes';
 import { AssetManager } from '../engine/AssetManager';
 
+export interface ElevationProvider {
+  getElevationAt(x: number, z: number): number;
+}
+
 export class ProceduralRoadGenerator {
   private assetManager: AssetManager;
+  private elevationProvider?: ElevationProvider;
 
-  constructor(assetManager: AssetManager) {
+  constructor(assetManager: AssetManager, elevationProvider?: ElevationProvider) {
     this.assetManager = assetManager;
+    this.elevationProvider = elevationProvider;
+  }
+
+  public getTerrainElevation(x: number, z: number): number {
+    if (this.elevationProvider) {
+      return this.elevationProvider.getElevationAt(x, z) - 0.1;
+    }
+    const slope = (x * 0.04) + (z * 0.03);
+    const noise = Math.sin(x * 0.05) * Math.cos(z * 0.05) * 1.5;
+    return Math.max(-2, slope + noise) - 0.1;
   }
 
   public generateRoadMesh(road: RoadSegment): THREE.Group {
@@ -119,6 +134,44 @@ export class ProceduralRoadGenerator {
       roadGroup.add(rightMesh);
     }
 
+    // --- 2b. ROAD-TO-TERRAIN TRANSITION SHOULDER RIBBONS ---
+    const shoulderMat = this.assetManager.getMaterial('road_shoulder_transition');
+    const shoulderWidth = 2.0;
+
+    const outerLeft = road.hasSidewalks ? (halfWidth + 3.0) : halfWidth;
+    const outerRight = road.hasSidewalks ? (-halfWidth - 3.0) : -halfWidth;
+    const innerHeight = road.hasSidewalks ? 0.20 : 0.05;
+
+    // Left shoulder transition ribbon
+    const leftShoulderGeo = this.createRoadShoulderRibbon(
+      curvePoints,
+      curve,
+      samples,
+      road.path.length,
+      outerLeft,
+      outerLeft + shoulderWidth,
+      innerHeight,
+      true
+    );
+    const leftShoulderMesh = new THREE.Mesh(leftShoulderGeo, shoulderMat);
+    leftShoulderMesh.receiveShadow = true;
+    roadGroup.add(leftShoulderMesh);
+
+    // Right shoulder transition ribbon
+    const rightShoulderGeo = this.createRoadShoulderRibbon(
+      curvePoints,
+      curve,
+      samples,
+      road.path.length,
+      outerRight,
+      outerRight - shoulderWidth,
+      innerHeight,
+      false
+    );
+    const rightShoulderMesh = new THREE.Mesh(rightShoulderGeo, shoulderMat);
+    rightShoulderMesh.receiveShadow = true;
+    roadGroup.add(rightShoulderMesh);
+
     // --- 3. 3D ZEBRA CROSSWALK GEOMETRY AT ROAD ENDS ---
     const crosswalkGeo = this.createZebraCrosswalk(curvePoints[0], curve.getTangentAt(0).normalize(), road.width);
     const crosswalkMesh = new THREE.Mesh(crosswalkGeo, laneMarkingMatWhite);
@@ -148,6 +201,53 @@ export class ProceduralRoadGenerator {
     ring.position.set(intersection.position.x, 0.06, intersection.position.z);
     ring.receiveShadow = true;
     group.add(ring);
+
+    // Outer Shoulder Transition Collar (r + 4 to r + 6.5)
+    const collarSegments = 32;
+    const collarGeo = new THREE.BufferGeometry();
+    const collarVertices: number[] = [];
+    const collarUvs: number[] = [];
+    const collarIndices: number[] = [];
+
+    const innerR = r + 4;
+    const outerR = r + 6.5;
+
+    for (let s = 0; s <= collarSegments; s++) {
+      const theta = (s / collarSegments) * Math.PI * 2;
+      const cosT = Math.cos(theta);
+      const sinT = Math.sin(theta);
+
+      const innerX = intersection.position.x + cosT * innerR;
+      const innerZ = intersection.position.z + sinT * innerR;
+      const innerY = 0.06;
+
+      const outerX = intersection.position.x + cosT * outerR;
+      const outerZ = intersection.position.z + sinT * outerR;
+      const outerY = this.getTerrainElevation(outerX, outerZ);
+
+      collarVertices.push(innerX, innerY, innerZ);
+      collarVertices.push(outerX, outerY, outerZ);
+
+      const v = (s / collarSegments) * 8;
+      collarUvs.push(0.0, v);
+      collarUvs.push(1.0, v);
+
+      if (s < collarSegments) {
+        const base = s * 2;
+        collarIndices.push(base, base + 2, base + 1);
+        collarIndices.push(base + 1, base + 2, base + 3);
+      }
+    }
+
+    collarGeo.setAttribute('position', new THREE.Float32BufferAttribute(collarVertices, 3));
+    collarGeo.setAttribute('uv', new THREE.Float32BufferAttribute(collarUvs, 2));
+    collarGeo.setIndex(collarIndices);
+    collarGeo.computeVertexNormals();
+
+    const shoulderCollarMat = this.assetManager.getMaterial('road_shoulder_transition');
+    const collarMesh = new THREE.Mesh(collarGeo, shoulderCollarMat);
+    collarMesh.receiveShadow = true;
+    group.add(collarMesh);
 
     return group;
   }
@@ -288,5 +388,56 @@ export class ProceduralRoadGenerator {
     groupGeo.setIndex(indices);
     groupGeo.computeVertexNormals();
     return groupGeo;
+  }
+
+  private createRoadShoulderRibbon(
+    curvePoints: THREE.Vector3[],
+    curve: THREE.CatmullRomCurve3,
+    samples: number,
+    pathLength: number,
+    offsetInner: number,
+    offsetOuter: number,
+    innerY: number,
+    isLeftSide: boolean
+  ): THREE.BufferGeometry {
+    const geo = new THREE.BufferGeometry();
+    const vertices: number[] = [];
+    const uvs: number[] = [];
+    const indices: number[] = [];
+
+    for (let i = 0; i <= samples; i++) {
+      const pt = curvePoints[i];
+      const tangent = curve.getTangentAt(i / samples).normalize();
+      const normal = new THREE.Vector3(-tangent.z, 0, tangent.x).normalize();
+
+      const inner = pt.clone().add(normal.clone().multiplyScalar(offsetInner));
+      const outer = pt.clone().add(normal.clone().multiplyScalar(offsetOuter));
+
+      const outerY = this.getTerrainElevation(outer.x, outer.z);
+
+      vertices.push(inner.x, innerY, inner.z);
+      vertices.push(outer.x, outerY, outer.z);
+
+      const v = (i / samples) * (pathLength * 3);
+      uvs.push(0.0, v);
+      uvs.push(1.0, v);
+
+      if (i < samples) {
+        const base = i * 2;
+        if (isLeftSide) {
+          indices.push(base, base + 1, base + 2);
+          indices.push(base + 1, base + 3, base + 2);
+        } else {
+          indices.push(base, base + 2, base + 1);
+          indices.push(base + 1, base + 2, base + 3);
+        }
+      }
+    }
+
+    geo.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+    geo.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
+    geo.setIndex(indices);
+    geo.computeVertexNormals();
+    return geo;
   }
 }

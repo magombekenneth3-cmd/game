@@ -31,9 +31,9 @@ export class NairobiDistrictScene {
     this.scene = scene;
     this.assetManager = assetManager;
     this.buildingGen = new ProceduralBuildingGenerator(assetManager);
-    this.roadGen = new ProceduralRoadGenerator(assetManager);
-    this.chunkManager = new WorldChunkManager(scene);
     this.terrainChunkManager = new TerrainChunkManager(assetManager);
+    this.roadGen = new ProceduralRoadGenerator(assetManager, this.terrainChunkManager);
+    this.chunkManager = new WorldChunkManager(scene);
     this.ingestionEngine = new GeoJSONIngestionEngine();
   }
 

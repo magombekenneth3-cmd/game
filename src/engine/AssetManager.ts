@@ -10,44 +10,83 @@ export class AssetManager {
   }
 
   private initProceduralAssets(): void {
-    // 1. Red Soil / Savanna Earth Texture
-    const earthCanvas = this.createCanvasTexture(512, (ctx) => {
-      ctx.fillStyle = '#964B00';
-      ctx.fillRect(0, 0, 512, 512);
-      // Grass patches & reddish earth noise
-      for (let i = 0; i < 15000; i++) {
-        const x = Math.random() * 512;
-        const y = Math.random() * 512;
-        const r = Math.random() * 2.5;
-        const rand = Math.random();
-        ctx.fillStyle = rand > 0.6 ? '#6B3E08' : (rand > 0.3 ? '#A0522D' : '#3E5C26');
-        ctx.beginPath();
-        ctx.arc(x, y, r, 0, Math.PI * 2);
-        ctx.fill();
-      }
-    });
-    earthCanvas.wrapS = THREE.RepeatWrapping;
-    earthCanvas.wrapT = THREE.RepeatWrapping;
-    earthCanvas.repeat.set(16, 16);
+    // 1. Red Soil / Savanna Earth Texture (PBR laterite soil with aggregate & roughness)
+    const soilTexture = TextureGenerator.createSoilTexture();
+    soilTexture.wrapS = THREE.RepeatWrapping;
+    soilTexture.wrapT = THREE.RepeatWrapping;
+    soilTexture.repeat.set(8, 8);
+
+    const soilNormal = TextureGenerator.createSoilNormalMap();
+    soilNormal.wrapS = THREE.RepeatWrapping;
+    soilNormal.wrapT = THREE.RepeatWrapping;
+    soilNormal.repeat.set(8, 8);
+
+    const soilRoughness = TextureGenerator.createSoilRoughnessMap();
+    soilRoughness.wrapS = THREE.RepeatWrapping;
+    soilRoughness.wrapT = THREE.RepeatWrapping;
+    soilRoughness.repeat.set(8, 8);
 
     const earthMat = new THREE.MeshStandardMaterial({
-      map: earthCanvas,
-      roughness: 0.95,
+      map: soilTexture,
+      normalMap: soilNormal,
+      normalScale: new THREE.Vector2(0.6, 0.6),
+      roughnessMap: soilRoughness,
+      roughness: 0.94,
       metalness: 0.01
     });
     this.materials.set('ground_earth', earthMat);
 
+    // 2. High-Fidelity PBR Asphalt (Micro stone chips, wear paths & normal relief)
     const asphaltTexture = TextureGenerator.createAsphaltTexture();
     asphaltTexture.wrapS = THREE.RepeatWrapping;
     asphaltTexture.wrapT = THREE.RepeatWrapping;
     asphaltTexture.repeat.set(1, 10);
 
+    const asphaltNormal = TextureGenerator.createAsphaltNormalMap();
+    asphaltNormal.wrapS = THREE.RepeatWrapping;
+    asphaltNormal.wrapT = THREE.RepeatWrapping;
+    asphaltNormal.repeat.set(1, 10);
+
+    const asphaltRoughness = TextureGenerator.createAsphaltRoughnessMap();
+    asphaltRoughness.wrapS = THREE.RepeatWrapping;
+    asphaltRoughness.wrapT = THREE.RepeatWrapping;
+    asphaltRoughness.repeat.set(1, 10);
+
     const roadMat = new THREE.MeshStandardMaterial({
       map: asphaltTexture,
+      normalMap: asphaltNormal,
+      normalScale: new THREE.Vector2(0.5, 0.5),
+      roughnessMap: asphaltRoughness,
       roughness: 0.85,
       metalness: 0.02
     });
     this.materials.set('road_asphalt', roadMat);
+
+    // 2b. Road-to-Terrain Transition Shoulder (Bitumen & gravel -> red laterite soil blend)
+    const shoulderTexture = TextureGenerator.createRoadShoulderTexture();
+    shoulderTexture.wrapS = THREE.ClampToEdgeWrapping;
+    shoulderTexture.wrapT = THREE.RepeatWrapping;
+    shoulderTexture.repeat.set(1, 10);
+
+    const shoulderNormal = TextureGenerator.createRoadShoulderNormalMap();
+    shoulderNormal.wrapS = THREE.ClampToEdgeWrapping;
+    shoulderNormal.wrapT = THREE.RepeatWrapping;
+    shoulderNormal.repeat.set(1, 10);
+
+    const shoulderRoughness = TextureGenerator.createRoadShoulderRoughnessMap();
+    shoulderRoughness.wrapS = THREE.ClampToEdgeWrapping;
+    shoulderRoughness.wrapT = THREE.RepeatWrapping;
+    shoulderRoughness.repeat.set(1, 10);
+
+    const shoulderMat = new THREE.MeshStandardMaterial({
+      map: shoulderTexture,
+      normalMap: shoulderNormal,
+      normalScale: new THREE.Vector2(0.5, 0.5),
+      roughnessMap: shoulderRoughness,
+      roughness: 0.90,
+      metalness: 0.02
+    });
+    this.materials.set('road_shoulder_transition', shoulderMat);
 
     // 3. Sidewalk Concrete Paver Texture
     const sidewalkTexture = TextureGenerator.createSidewalkPaverTexture();
@@ -116,20 +155,6 @@ export class AssetManager {
     this.geometries.set('sphere', new THREE.SphereGeometry(1, 16, 16));
     this.geometries.set('cylinder', new THREE.CylinderGeometry(1, 1, 1, 16));
     this.geometries.set('capsule', new THREE.CapsuleGeometry(0.4, 1.2, 8, 16));
-  }
-
-  private createCanvasTexture(size: number, draw: (ctx: CanvasRenderingContext2D) => void): THREE.CanvasTexture {
-    if (typeof document === 'undefined') {
-      return new THREE.CanvasTexture({} as any);
-    }
-    const canvas = document.createElement('canvas');
-    canvas.width = size;
-    canvas.height = size;
-    const ctx = canvas.getContext('2d');
-    if (ctx) draw(ctx);
-    const texture = new THREE.CanvasTexture(canvas);
-    texture.colorSpace = THREE.SRGBColorSpace;
-    return texture;
   }
 
   public getMaterial(id: string): THREE.Material {

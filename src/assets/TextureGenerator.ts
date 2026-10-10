@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { SeededRandom } from '../utils/SeededRandom';
 
 export class TextureGenerator {
   private static cache: Map<string, THREE.CanvasTexture> = new Map();
@@ -23,7 +24,8 @@ export class TextureGenerator {
   }
 
   /**
-   * Generates realistic PBR Asphalt texture with aggregate noise, double yellow center line, white edge lines & wear.
+   * Generates realistic PBR Asphalt texture with fine stone aggregate noise, bituminous binder,
+   * double yellow center line, white edge lines & wear. Deterministically seeded.
    */
   public static createAsphaltTexture(): THREE.CanvasTexture {
     if (this.cache.has('asphalt')) return this.cache.get('asphalt')!;
@@ -35,34 +37,60 @@ export class TextureGenerator {
       return tex;
     }
 
-    // Dark asphalt base
-    ctx.fillStyle = '#1e1e24';
+    const rng = new SeededRandom(42);
+
+    // Dark asphalt bitumen base
+    ctx.fillStyle = '#1c1c22';
     ctx.fillRect(0, 0, 512, 512);
 
-    // Aggregate noise & gravel texture
-    for (let i = 0; i < 12000; i++) {
-      const x = Math.random() * 512;
-      const y = Math.random() * 512;
-      const shade = Math.floor(20 + Math.random() * 35);
-      ctx.fillStyle = `rgb(${shade},${shade},${shade + 5})`;
-      ctx.fillRect(x, y, 2, 2);
+    // Macro tonal variations (subtle rolling tire streaks)
+    for (let i = 0; i < 20; i++) {
+      const y = rng.nextFloat() * 512;
+      const h = 10 + rng.nextFloat() * 30;
+      const shade = Math.floor(26 + rng.nextFloat() * 10);
+      ctx.fillStyle = `rgba(${shade},${shade},${shade + 4}, 0.25)`;
+      ctx.fillRect(0, y, 512, h);
     }
 
-    // Oil stains & wear spots
-    for (let i = 0; i < 15; i++) {
-      const cx = Math.random() * 512;
-      const cy = Math.random() * 512;
-      const r = 10 + Math.random() * 30;
+    // Fine stone aggregate chips (Basalt, Granite, and Silica minerals)
+    for (let i = 0; i < 16000; i++) {
+      const x = rng.nextFloat() * 512;
+      const y = rng.nextFloat() * 512;
+      const roll = rng.nextFloat();
+
+      if (roll < 0.45) {
+        // Dark basalt chips
+        const shade = Math.floor(18 + rng.nextFloat() * 10);
+        ctx.fillStyle = `rgb(${shade},${shade},${shade + 2})`;
+        ctx.fillRect(x, y, 2, 2);
+      } else if (roll < 0.85) {
+        // Mid-grey granite aggregate
+        const shade = Math.floor(42 + rng.nextFloat() * 25);
+        ctx.fillStyle = `rgb(${shade},${shade},${shade + 3})`;
+        ctx.fillRect(x, y, 2, 2);
+      } else {
+        // Light quartz / silica flecks
+        const shade = Math.floor(75 + rng.nextFloat() * 30);
+        ctx.fillStyle = `rgb(${shade},${shade},${shade + 5})`;
+        ctx.fillRect(x, y, 1, 1);
+      }
+    }
+
+    // Traffic wear tire tracks & subtle oil weathering
+    for (let i = 0; i < 24; i++) {
+      const cx = rng.nextFloat() * 512;
+      const cy = rng.nextFloat() * 512;
+      const r = 8 + rng.nextFloat() * 24;
       const grad = ctx.createRadialGradient(cx, cy, 2, cx, cy, r);
-      grad.addColorStop(0, 'rgba(10, 10, 12, 0.4)');
-      grad.addColorStop(1, 'rgba(10, 10, 12, 0)');
+      grad.addColorStop(0, 'rgba(14, 14, 18, 0.45)');
+      grad.addColorStop(1, 'rgba(14, 14, 18, 0)');
       ctx.fillStyle = grad;
       ctx.beginPath();
       ctx.arc(cx, cy, r, 0, Math.PI * 2);
       ctx.fill();
     }
 
-    // Double yellow center lines
+    // Double yellow center divider lines
     ctx.fillStyle = '#f59e0b';
     ctx.fillRect(250, 0, 4, 512);
     ctx.fillRect(258, 0, 4, 512);
@@ -78,6 +106,479 @@ export class TextureGenerator {
     texture.wrapT = THREE.RepeatWrapping;
 
     this.cache.set('asphalt', texture);
+    return texture;
+  }
+
+  /**
+   * Generates PBR Asphalt Normal Map for micro-surface aggregate stone relief.
+   * Linear data texture (no sRGB color space).
+   */
+  public static createAsphaltNormalMap(): THREE.CanvasTexture {
+    if (this.cache.has('asphalt_normal')) return this.cache.get('asphalt_normal')!;
+
+    const { canvas, ctx } = this.createCanvas(512, 512);
+    if (!ctx.fillRect) {
+      const tex = this.createFallbackTexture(false);
+      this.cache.set('asphalt_normal', tex);
+      return tex;
+    }
+
+    const rng = new SeededRandom(42);
+
+    // Base flat normal vector RGB(128, 128, 255)
+    ctx.fillStyle = 'rgb(128, 128, 255)';
+    ctx.fillRect(0, 0, 512, 512);
+
+    // Fine stone aggregate bevel normal facets
+    for (let i = 0; i < 16000; i++) {
+      const x = rng.nextFloat() * 512;
+      const y = rng.nextFloat() * 512;
+      const roll = rng.nextFloat();
+      const sz = roll > 0.8 ? 2 : 1;
+
+      // Perturb normal left (-X) and right (+X)
+      ctx.fillStyle = 'rgb(105, 128, 255)';
+      ctx.fillRect(x, y, 1, sz);
+      ctx.fillStyle = 'rgb(152, 128, 255)';
+      ctx.fillRect(x + 1, y, 1, sz);
+
+      // Perturb normal top (-Y) and bottom (+Y)
+      if (sz > 1) {
+        ctx.fillStyle = 'rgb(128, 105, 255)';
+        ctx.fillRect(x, y, sz, 1);
+        ctx.fillStyle = 'rgb(128, 152, 255)';
+        ctx.fillRect(x, y + 1, sz, 1);
+      }
+    }
+
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.wrapS = THREE.RepeatWrapping;
+    texture.wrapT = THREE.RepeatWrapping;
+
+    this.cache.set('asphalt_normal', texture);
+    return texture;
+  }
+
+  /**
+   * Generates PBR Asphalt Roughness Map (Bitumen binder = High ~0.88, Stone chips = Lower ~0.72).
+   * Linear data texture (no sRGB color space).
+   */
+  public static createAsphaltRoughnessMap(): THREE.CanvasTexture {
+    if (this.cache.has('asphalt_roughness')) return this.cache.get('asphalt_roughness')!;
+
+    const { canvas, ctx } = this.createCanvas(512, 512);
+    if (!ctx.fillRect) {
+      const tex = this.createFallbackTexture(false);
+      this.cache.set('asphalt_roughness', tex);
+      return tex;
+    }
+
+    const rng = new SeededRandom(42);
+
+    // High roughness bitumen binder base (0.88 -> RGB 225)
+    ctx.fillStyle = 'rgb(225, 225, 225)';
+    ctx.fillRect(0, 0, 512, 512);
+
+    // Stone aggregate chips: lower roughness (0.70-0.76 -> RGB 178-195)
+    for (let i = 0; i < 16000; i++) {
+      const x = rng.nextFloat() * 512;
+      const y = rng.nextFloat() * 512;
+      const roll = rng.nextFloat();
+
+      const rVal = roll > 0.85
+        ? Math.floor(165 + rng.nextFloat() * 20)
+        : Math.floor(185 + rng.nextFloat() * 15);
+
+      ctx.fillStyle = `rgb(${rVal},${rVal},${rVal})`;
+      ctx.fillRect(x, y, roll > 0.5 ? 2 : 1, roll > 0.5 ? 2 : 1);
+    }
+
+    // Worn tire paths: slightly smoother (0.80 -> RGB 204)
+    ctx.fillStyle = 'rgba(200, 200, 200, 0.35)';
+    ctx.fillRect(100, 0, 80, 512);
+    ctx.fillRect(330, 0, 80, 512);
+
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.wrapS = THREE.RepeatWrapping;
+    texture.wrapT = THREE.RepeatWrapping;
+
+    this.cache.set('asphalt_roughness', texture);
+    return texture;
+  }
+
+  /**
+   * Generates authentic Kenyan red-brown laterite soil texture with ochre patches,
+   * fine volcanic gravel, quartz grains, and dry savanna moss clusters.
+   * Deterministic seed: 1337.
+   */
+  public static createSoilTexture(): THREE.CanvasTexture {
+    if (this.cache.has('soil_diffuse')) return this.cache.get('soil_diffuse')!;
+
+    const { canvas, ctx } = this.createCanvas(512, 512);
+    if (!ctx.fillRect) {
+      const tex = this.createFallbackTexture(true);
+      this.cache.set('soil_diffuse', tex);
+      return tex;
+    }
+
+    const rng = new SeededRandom(1337);
+
+    // 1. Rich Kenyan laterite base coat (#7e321b)
+    ctx.fillStyle = '#7e321b';
+    ctx.fillRect(0, 0, 512, 512);
+
+    // 2. Macro soil gradients & tonal warmth (ochre, sienna, deep umber)
+    for (let i = 0; i < 60; i++) {
+      const cx = rng.nextFloat() * 512;
+      const cy = rng.nextFloat() * 512;
+      const r = 25 + rng.nextFloat() * 50;
+      const roll = rng.nextFloat();
+      let color = 'rgba(164, 77, 40, 0.22)';
+      if (roll > 0.65) color = 'rgba(89, 40, 21, 0.25)';
+      else if (roll > 0.35) color = 'rgba(180, 106, 54, 0.20)';
+
+      const grad = ctx.createRadialGradient(cx, cy, 2, cx, cy, r);
+      grad.addColorStop(0, color);
+      grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.arc(cx, cy, r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // 3. Savanna grass & dry lichen/moss clusters
+    for (let i = 0; i < 45; i++) {
+      const cx = rng.nextFloat() * 512;
+      const cy = rng.nextFloat() * 512;
+      const r = 10 + rng.nextFloat() * 20;
+      const roll = rng.nextFloat();
+      const color = roll > 0.5 ? 'rgba(77, 89, 38, 0.25)' : 'rgba(96, 109, 45, 0.20)';
+
+      const grad = ctx.createRadialGradient(cx, cy, 1, cx, cy, r);
+      grad.addColorStop(0, color);
+      grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.arc(cx, cy, r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // 4. Fine mineral particles and volcanic basalt chips
+    for (let i = 0; i < 22000; i++) {
+      const x = rng.nextFloat() * 512;
+      const y = rng.nextFloat() * 512;
+      const roll = rng.nextFloat();
+
+      if (roll > 0.85) {
+        ctx.fillStyle = 'rgba(38, 30, 26, 0.7)';
+        ctx.fillRect(x, y, 1, 1);
+      } else if (roll > 0.70) {
+        ctx.fillStyle = 'rgba(203, 182, 152, 0.6)';
+        ctx.fillRect(x, y, 1, 1);
+      } else if (roll > 0.45) {
+        ctx.fillStyle = 'rgba(186, 112, 56, 0.5)';
+        ctx.fillRect(x, y, 1.5, 1.5);
+      } else {
+        ctx.fillStyle = 'rgba(92, 36, 17, 0.5)';
+        ctx.fillRect(x, y, 1, 1);
+      }
+    }
+
+    // 5. Small roadside pebbles / gravel stones
+    for (let i = 0; i < 350; i++) {
+      const x = rng.nextFloat() * 512;
+      const y = rng.nextFloat() * 512;
+      const sz = 1.5 + rng.nextFloat() * 2.5;
+      const roll = rng.nextFloat();
+      ctx.fillStyle = roll > 0.5 ? '#4a3f35' : '#8c7b6d';
+      ctx.beginPath();
+      ctx.arc(x, y, sz, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.colorSpace = THREE.SRGBColorSpace;
+    texture.wrapS = THREE.RepeatWrapping;
+    texture.wrapT = THREE.RepeatWrapping;
+
+    this.cache.set('soil_diffuse', texture);
+    return texture;
+  }
+
+  /**
+   * Generates PBR Soil Normal Map with pebble, gravel, and organic clump relief.
+   * Linear data texture.
+   */
+  public static createSoilNormalMap(): THREE.CanvasTexture {
+    if (this.cache.has('soil_normal')) return this.cache.get('soil_normal')!;
+
+    const { canvas, ctx } = this.createCanvas(512, 512);
+    if (!ctx.fillRect) {
+      const tex = this.createFallbackTexture(false);
+      this.cache.set('soil_normal', tex);
+      return tex;
+    }
+
+    const rng = new SeededRandom(1337);
+
+    ctx.fillStyle = 'rgb(128, 128, 255)';
+    ctx.fillRect(0, 0, 512, 512);
+
+    for (let i = 0; i < 18000; i++) {
+      const x = rng.nextFloat() * 512;
+      const y = rng.nextFloat() * 512;
+      const dx = (rng.nextFloat() - 0.5) * 35;
+      const dy = (rng.nextFloat() - 0.5) * 35;
+
+      ctx.fillStyle = `rgb(${Math.floor(128 + dx)}, ${Math.floor(128 + dy)}, 255)`;
+      ctx.fillRect(x, y, 1, 1);
+    }
+
+    for (let i = 0; i < 350; i++) {
+      const cx = rng.nextFloat() * 512;
+      const cy = rng.nextFloat() * 512;
+      const r = 2 + rng.nextFloat() * 3;
+
+      ctx.fillStyle = 'rgb(105, 128, 255)';
+      ctx.beginPath();
+      ctx.arc(cx - 0.7, cy, r * 0.8, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = 'rgb(151, 128, 255)';
+      ctx.beginPath();
+      ctx.arc(cx + 0.7, cy, r * 0.8, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = 'rgb(128, 105, 255)';
+      ctx.beginPath();
+      ctx.arc(cx, cy - 0.7, r * 0.8, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = 'rgb(128, 151, 255)';
+      ctx.beginPath();
+      ctx.arc(cx, cy + 0.7, r * 0.8, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.wrapS = THREE.RepeatWrapping;
+    texture.wrapT = THREE.RepeatWrapping;
+
+    this.cache.set('soil_normal', texture);
+    return texture;
+  }
+
+  /**
+   * Generates PBR Soil Roughness Map (Matte porous earth ~0.95, compact dirt ~0.89, pebbles ~0.76).
+   * Linear data texture.
+   */
+  public static createSoilRoughnessMap(): THREE.CanvasTexture {
+    if (this.cache.has('soil_roughness')) return this.cache.get('soil_roughness')!;
+
+    const { canvas, ctx } = this.createCanvas(512, 512);
+    if (!ctx.fillRect) {
+      const tex = this.createFallbackTexture(false);
+      this.cache.set('soil_roughness', tex);
+      return tex;
+    }
+
+    const rng = new SeededRandom(1337);
+
+    ctx.fillStyle = 'rgb(242, 242, 242)';
+    ctx.fillRect(0, 0, 512, 512);
+
+    for (let i = 0; i < 40; i++) {
+      const cx = rng.nextFloat() * 512;
+      const cy = rng.nextFloat() * 512;
+      const r = 20 + rng.nextFloat() * 40;
+
+      const grad = ctx.createRadialGradient(cx, cy, 2, cx, cy, r);
+      grad.addColorStop(0, 'rgba(227, 227, 227, 0.6)');
+      grad.addColorStop(1, 'rgba(242, 242, 242, 0)');
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.arc(cx, cy, r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    for (let i = 0; i < 15000; i++) {
+      const x = rng.nextFloat() * 512;
+      const y = rng.nextFloat() * 512;
+      const rVal = Math.floor(235 + rng.nextFloat() * 18);
+      ctx.fillStyle = `rgb(${rVal},${rVal},${rVal})`;
+      ctx.fillRect(x, y, 1, 1);
+    }
+
+    for (let i = 0; i < 350; i++) {
+      const cx = rng.nextFloat() * 512;
+      const cy = rng.nextFloat() * 512;
+      const r = 1.5 + rng.nextFloat() * 2.5;
+      const rVal = Math.floor(185 + rng.nextFloat() * 15);
+      ctx.fillStyle = `rgb(${rVal},${rVal},${rVal})`;
+      ctx.beginPath();
+      ctx.arc(cx, cy, r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.wrapS = THREE.RepeatWrapping;
+    texture.wrapT = THREE.RepeatWrapping;
+
+    this.cache.set('soil_roughness', texture);
+    return texture;
+  }
+
+  /**
+   * Generates Roadside Transition Shoulder Texture that smoothly blends across U from
+   * road-edge weathered bitumen & gravel (U=0) into Kenyan red laterite soil (U=1).
+   * Deterministic seed: 2024.
+   */
+  public static createRoadShoulderTexture(): THREE.CanvasTexture {
+    if (this.cache.has('road_shoulder_diffuse')) return this.cache.get('road_shoulder_diffuse')!;
+
+    const { canvas, ctx } = this.createCanvas(512, 512);
+    if (!ctx.fillRect) {
+      const tex = this.createFallbackTexture(true);
+      this.cache.set('road_shoulder_diffuse', tex);
+      return tex;
+    }
+
+    const rng = new SeededRandom(2024);
+
+    const baseGrad = ctx.createLinearGradient(0, 0, 512, 0);
+    baseGrad.addColorStop(0.0, '#38393d');
+    baseGrad.addColorStop(0.2, '#484441');
+    baseGrad.addColorStop(0.5, '#6a4731');
+    baseGrad.addColorStop(0.8, '#7e321b');
+    baseGrad.addColorStop(1.0, '#8d3b20');
+    ctx.fillStyle = baseGrad;
+    ctx.fillRect(0, 0, 512, 512);
+
+    for (let i = 0; i < 20000; i++) {
+      const x = rng.nextFloat() * 512;
+      const y = rng.nextFloat() * 512;
+      const u = x / 512;
+      const roll = rng.nextFloat();
+
+      if (u < 0.35) {
+        ctx.fillStyle = roll > 0.5 ? 'rgba(30, 30, 32, 0.6)' : 'rgba(80, 80, 85, 0.5)';
+        ctx.fillRect(x, y, 1.5, 1.5);
+      } else if (u < 0.7) {
+        ctx.fillStyle = roll > 0.5 ? 'rgba(120, 95, 75, 0.5)' : 'rgba(75, 45, 30, 0.5)';
+        ctx.fillRect(x, y, 1.5, 1.5);
+      } else {
+        ctx.fillStyle = roll > 0.5 ? 'rgba(164, 77, 40, 0.4)' : 'rgba(60, 24, 12, 0.4)';
+        ctx.fillRect(x, y, 1.5, 1.5);
+      }
+    }
+
+    for (let i = 0; i < 400; i++) {
+      const x = rng.nextFloat() * 512;
+      const y = rng.nextFloat() * 512;
+      const sz = 1.0 + rng.nextFloat() * 2.5;
+      ctx.fillStyle = rng.nextFloat() > 0.5 ? '#55483e' : '#736152';
+      ctx.beginPath();
+      ctx.arc(x, y, sz, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.colorSpace = THREE.SRGBColorSpace;
+    texture.wrapS = THREE.RepeatWrapping;
+    texture.wrapT = THREE.RepeatWrapping;
+
+    this.cache.set('road_shoulder_diffuse', texture);
+    return texture;
+  }
+
+  /**
+   * Generates Roadside Transition Shoulder Normal Map.
+   * Linear data texture.
+   */
+  public static createRoadShoulderNormalMap(): THREE.CanvasTexture {
+    if (this.cache.has('road_shoulder_normal')) return this.cache.get('road_shoulder_normal')!;
+
+    const { canvas, ctx } = this.createCanvas(512, 512);
+    if (!ctx.fillRect) {
+      const tex = this.createFallbackTexture(false);
+      this.cache.set('road_shoulder_normal', tex);
+      return tex;
+    }
+
+    const rng = new SeededRandom(2024);
+
+    ctx.fillStyle = 'rgb(128, 128, 255)';
+    ctx.fillRect(0, 0, 512, 512);
+
+    for (let i = 0; i < 16000; i++) {
+      const x = rng.nextFloat() * 512;
+      const y = rng.nextFloat() * 512;
+      const dx = (rng.nextFloat() - 0.5) * 30;
+      const dy = (rng.nextFloat() - 0.5) * 30;
+      ctx.fillStyle = `rgb(${Math.floor(128 + dx)}, ${Math.floor(128 + dy)}, 255)`;
+      ctx.fillRect(x, y, 1, 1);
+    }
+
+    for (let i = 0; i < 400; i++) {
+      const cx = rng.nextFloat() * 512;
+      const cy = rng.nextFloat() * 512;
+      const r = 1.5 + rng.nextFloat() * 2.0;
+
+      ctx.fillStyle = 'rgb(105, 128, 255)';
+      ctx.beginPath();
+      ctx.arc(cx - 0.5, cy, r, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = 'rgb(151, 128, 255)';
+      ctx.beginPath();
+      ctx.arc(cx + 0.5, cy, r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.wrapS = THREE.RepeatWrapping;
+    texture.wrapT = THREE.RepeatWrapping;
+
+    this.cache.set('road_shoulder_normal', texture);
+    return texture;
+  }
+
+  /**
+   * Generates Roadside Transition Shoulder Roughness Map.
+   * Linear data texture.
+   */
+  public static createRoadShoulderRoughnessMap(): THREE.CanvasTexture {
+    if (this.cache.has('road_shoulder_roughness')) return this.cache.get('road_shoulder_roughness')!;
+
+    const { canvas, ctx } = this.createCanvas(512, 512);
+    if (!ctx.fillRect) {
+      const tex = this.createFallbackTexture(false);
+      this.cache.set('road_shoulder_roughness', tex);
+      return tex;
+    }
+
+    const rng = new SeededRandom(2024);
+
+    const baseGrad = ctx.createLinearGradient(0, 0, 512, 0);
+    baseGrad.addColorStop(0.0, 'rgb(217, 217, 217)');
+    baseGrad.addColorStop(0.4, 'rgb(228, 228, 228)');
+    baseGrad.addColorStop(1.0, 'rgb(242, 242, 242)');
+    ctx.fillStyle = baseGrad;
+    ctx.fillRect(0, 0, 512, 512);
+
+    for (let i = 0; i < 12000; i++) {
+      const x = rng.nextFloat() * 512;
+      const y = rng.nextFloat() * 512;
+      const rVal = Math.floor(190 + rng.nextFloat() * 45);
+      ctx.fillStyle = `rgb(${rVal},${rVal},${rVal})`;
+      ctx.fillRect(x, y, 1, 1);
+    }
+
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.wrapS = THREE.RepeatWrapping;
+    texture.wrapT = THREE.RepeatWrapping;
+
+    this.cache.set('road_shoulder_roughness', texture);
     return texture;
   }
 
