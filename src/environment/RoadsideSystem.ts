@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { EnvironmentObject, EnvironmentActivityTag } from './EnvironmentTypes';
 import { AssetManager } from '../engine/AssetManager';
+import { AssetPipeline } from '../assets/AssetPipeline';
 import { SeededRandom } from '../utils/SeededRandom';
 
 export class RoadsideSystem {
@@ -38,28 +39,12 @@ export class RoadsideSystem {
       const isFood = rng.nextFloat() < 0.5;
       const tags: EnvironmentActivityTag[] = isFood ? ['FOOD', 'SOCIAL'] : ['SHOPPING', 'SERVICES'];
 
-      const kioskGroup = new THREE.Group();
-      kioskGroup.name = `Kiosk_${chunkX}_${chunkZ}_${i}`;
-
-      const mainMat = isFood
-        ? this.assetManager.getMaterial('facade_ochre')
-        : this.assetManager.getMaterial('facade_teal');
-
-      // Stand box
-      const standGeo = new THREE.BoxGeometry(2.5, 2.2, 2.0);
-      const stand = new THREE.Mesh(standGeo, mainMat);
-      stand.position.y = 1.1;
-      stand.castShadow = true;
-      kioskGroup.add(stand);
-
-      // Umbrella / Awning
-      const umbrellaGeo = new THREE.ConeGeometry(1.8, 0.6, 8);
-      const umbrellaMat = this.assetManager.getMaterial('facade_terracotta');
-      const umbrella = new THREE.Mesh(umbrellaGeo, umbrellaMat);
-      umbrella.position.set(0, 2.5, 0);
-      kioskGroup.add(umbrella);
+      const kioskGroup = isFood
+        ? AssetPipeline.getInstance().getMamaMbogaStallMesh()
+        : AssetPipeline.getInstance().getMPesaKioskMesh();
 
       kioskGroup.position.copy(pos);
+      kioskGroup.rotation.y = rng.nextFloat() * Math.PI * 2;
       group.add(kioskGroup);
 
       const obj: EnvironmentObject = {

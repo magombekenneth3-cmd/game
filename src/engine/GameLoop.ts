@@ -100,6 +100,9 @@ export class GameLoop {
     console.info(`[KINGMAKER Boot] ${this.bootStage} completed in ${duration.toFixed(1)}ms -> Entering ${stage}`);
     this.bootStage = stage;
     this.bootStageStartTime = now;
+    if (typeof window !== 'undefined') {
+      (window as any).__KINGMAKER_BOOT_STAGE__ = stage;
+    }
   }
 
   public async start(): Promise<void> {
@@ -241,6 +244,24 @@ export class GameLoop {
 
       // Boot Stage -> READY
       this.setBootStage('READY');
+
+      if (typeof window !== 'undefined') {
+        (window as any).THREE = THREE;
+        (window as any).__KINGMAKER_GAME__ = this;
+        (window as any).__KINGMAKER_DEBUG__ = {
+          scene: this.scene,
+          camera: this.cameraManager.camera,
+          cameraManager: this.cameraManager,
+          player: this.playerController,
+          vehicleManager: this.vehicleManager,
+          npcManager: this.npcManager,
+          timeOfDay: this.timeOfDay,
+          rendererManager: this.rendererManager,
+          assetPipeline: AssetPipeline.getInstance(),
+          chunkManager: this.sceneGenerator.chunkManager,
+          perfMonitor: this.perfMonitor
+        };
+      }
 
       // Start RAF Loop
       this.isRunning = true;

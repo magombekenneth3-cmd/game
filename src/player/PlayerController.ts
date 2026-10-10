@@ -21,6 +21,8 @@ export class PlayerController {
   // Humanoid Body Parts for Animation
   private leftLeg!: THREE.Mesh;
   private rightLeg!: THREE.Mesh;
+  private leftArm?: THREE.Object3D;
+  private rightArm?: THREE.Object3D;
   private walkCycleTime: number = 0;
 
   constructor(
@@ -51,8 +53,10 @@ export class PlayerController {
     const characterMesh = AssetPipeline.getInstance().getCharacterMesh('player');
     this.mesh.add(characterMesh);
 
-    this.leftLeg = characterMesh.getObjectByName('LeftLeg') as THREE.Mesh || new THREE.Mesh();
-    this.rightLeg = characterMesh.getObjectByName('RightLeg') as THREE.Mesh || new THREE.Mesh();
+    this.leftLeg = (characterMesh.getObjectByName('LeftUpLeg') || characterMesh.getObjectByName('LeftLeg')) as THREE.Mesh || new THREE.Mesh();
+    this.rightLeg = (characterMesh.getObjectByName('RightUpLeg') || characterMesh.getObjectByName('RightLeg')) as THREE.Mesh || new THREE.Mesh();
+    this.leftArm = characterMesh.getObjectByName('LeftArm') || undefined;
+    this.rightArm = characterMesh.getObjectByName('RightArm') || undefined;
   }
 
   public update(
@@ -151,13 +155,17 @@ export class PlayerController {
     const speed = this.motor.getSpeed();
     if (speed > 0.1) {
       this.walkCycleTime += deltaSeconds * speed * 2.5;
-      const legAngle = Math.sin(this.walkCycleTime) * 0.4;
+      const legAngle = Math.sin(this.walkCycleTime) * 0.45;
       this.leftLeg.rotation.x = legAngle;
       this.rightLeg.rotation.x = -legAngle;
+      if (this.leftArm) this.leftArm.rotation.x = -legAngle * 0.6;
+      if (this.rightArm) this.rightArm.rotation.x = legAngle * 0.6;
     } else {
       this.walkCycleTime = 0;
       this.leftLeg.rotation.x = 0;
       this.rightLeg.rotation.x = 0;
+      if (this.leftArm) this.leftArm.rotation.x = 0;
+      if (this.rightArm) this.rightArm.rotation.x = 0;
     }
   }
 

@@ -107,7 +107,7 @@ export class NairobiDistrictScene {
       // Block A: Ngong Corridor Primary Spawn Infill
       { id: 'bld_infill_start_left', name: 'Ngong Road Plaza & M-Pesa Arcade', x: -28, z: 15, width: 22, depth: 18, floors: 4, height: 15, category: 'shop' },
       { id: 'bld_infill_start_right', name: 'Kilimani Heights Executive Towers', x: 28, z: 20, width: 26, depth: 22, floors: 9, height: 32, category: 'apartment_block' },
-      { id: 'bld_infill_start_north', name: 'Upper Hill Horizon Skyscraper', x: 0, z: -45, width: 28, depth: 24, floors: 16, height: 58, category: 'commercial_tower' },
+      { id: 'bld_infill_start_north', name: 'Upper Hill Horizon Skyscraper', x: -36, z: -55, width: 28, depth: 24, floors: 16, height: 58, category: 'commercial_tower' },
 
       // Block A: Ngong Corridor North Infill
       { id: 'bld_infill_1', name: 'Valley Arcade Shopping Suites', x: -110, z: -80, width: 22, depth: 18, floors: 5, height: 18, category: 'shop' },
@@ -169,8 +169,8 @@ export class NairobiDistrictScene {
 
   private createCorridorStreetlights(): void {
     const lightPositions = [
-      { x: -140, z: -110 }, { x: -100, z: -85 }, { x: -60, z: -60 }, { x: -20, z: -25 },
-      { x: 0, z: 0 },       { x: 25, z: 25 },    { x: 60, z: 55 },   { x: 100, z: 85 },
+      { x: -140, z: -110 }, { x: -100, z: -85 }, { x: -60, z: -60 }, { x: -25, z: -25 },
+      { x: 8.5, z: 0 },     { x: -8.5, z: 35 },   { x: 8.5, z: 70 },  { x: 100, z: 85 },
       { x: 140, z: 120 },   { x: -50, z: 45 },   { x: -90, z: 80 },  { x: 30, z: -40 },
       { x: 70, z: -70 },    { x: 110, z: -100 }
     ];

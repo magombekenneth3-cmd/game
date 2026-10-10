@@ -275,6 +275,29 @@ export class AssetPipeline {
     if (assetId.includes('interior_table')) return InteriorAssetKit.createDJBoothRig();
     if (assetId.includes('interior_chair')) return InteriorAssetKit.createVIPLoungeMesh();
 
+    if (assetId.includes('bld_')) {
+      const dummyBld: BuildingData = {
+        id: `fallback_${assetId}`,
+        name: 'Fallback Building',
+        footprintPolygon: [
+          { x: -5, z: -5 },
+          { x: 5, z: -5 },
+          { x: 5, z: 5 },
+          { x: -5, z: 5 }
+        ],
+        center: new THREE.Vector3(0, 0, 0),
+        height: 10,
+        floors: 3,
+        zone: 'commercial_corridor',
+        districtId: 'district_nairobi',
+        buildingCategory: assetId.includes('tower') ? 'commercial_tower' : (assetId.includes('mixed') ? 'mixed_use' : 'shop'),
+        entrances: [{ id: 'ent1', position: new THREE.Vector3(0, 0, 5), type: 'main' }],
+        hasGroundFloorShops: true,
+        rooftopEquipment: ['water_tank']
+      };
+      return BuildingAssetKit.createBuildingGroup(dummyBld);
+    }
+
     const fallbackGroup = new THREE.Group();
     fallbackGroup.name = `FallbackGroup_${assetId}`;
     const box = new THREE.Mesh(
@@ -378,21 +401,17 @@ export class AssetPipeline {
         const sz = orient.targetD / nativeD;
         const sy = targetHeight / nativeH;
 
-        // Scaling policy: permit modest scaling between 0.5x and 2.2x
-        const isWithinScaleRange = sx >= 0.5 && sx <= 2.2 && sz >= 0.5 && sz <= 2.2 && sy >= 0.4 && sy <= 3.0;
-        // Aspect ratio distortion factor (must not distort more than 60%)
+        // Scaling policy: permit flexible scaling between 0.3x and 5.0x for city architecture
+        const isWithinScaleRange = sx >= 0.3 && sx <= 5.0 && sz >= 0.3 && sz <= 5.0 && sy >= 0.3 && sy <= 5.0;
+        // Aspect ratio distortion factor
         const aspectDistortion = Math.max(sx / sz, sz / sx);
 
-        if (isWithinScaleRange && aspectDistortion < 1.6) {
-          const totalScore = aspectDistortion + Math.abs(sx - 1.0) * 0.2 + Math.abs(sz - 1.0) * 0.2;
+        if (isWithinScaleRange && aspectDistortion < 2.8) {
+          const totalScore = aspectDistortion + Math.abs(sx - 1.0) * 0.15 + Math.abs(sz - 1.0) * 0.15;
           if (totalScore < bestDistortion) {
             bestDistortion = totalScore;
             bestCandidate = candId;
-            bestScale = new THREE.Vector3(
-              Math.min(2.2, Math.max(0.5, sx)),
-              Math.min(3.0, Math.max(0.4, sy)),
-              Math.min(2.2, Math.max(0.5, sz))
-            );
+            bestScale = new THREE.Vector3(sx, sy, sz);
             bestRotation = orient.rot;
             fitsFootprint = true;
           }
@@ -401,14 +420,14 @@ export class AssetPipeline {
     }
 
     if (!fitsFootprint) {
-      bestScale = new THREE.Vector3(1, targetHeight / 10, 1);
+      bestScale = new THREE.Vector3(fpWidth / 10, targetHeight / 10, fpDepth / 10);
     }
 
     return {
       assetId: bestCandidate,
       scale: bestScale,
       rotationY: bestRotation,
-      fitsFootprint
+      fitsFootprint: fitsFootprint
     };
   }
 
@@ -416,14 +435,6 @@ export class AssetPipeline {
   public getBuildingMesh(bld: BuildingData): THREE.Group {
     this.buildingCount++;
     const fit = this.fitBuildingToFootprint(bld);
-
-    // If authored model does not fit the footprint proportions cleanly,
-    // generate procedural building matching the exact GIS footprint polygon!
-    if (!fit.fitsFootprint) {
-      const proceduralBld = BuildingAssetKit.createBuildingGroup(bld);
-      this.activeInstances.add(proceduralBld);
-      return proceduralBld;
-    }
 
     const glbMesh = this.createInstance(fit.assetId);
     const wrapper = new THREE.Group();

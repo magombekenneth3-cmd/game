@@ -34,7 +34,8 @@ export class BuildingAssetKit {
     };
 
     const geom = new THREE.ExtrudeGeometry(shape, extrudeSettings);
-    geom.rotateX(Math.PI / 2);
+    geom.rotateX(-Math.PI / 2);
+    geom.computeVertexNormals();
 
     // 2. Select Hyperrealistic PBR Facade Textures & Materials
     const facadeStyle = this.getStyleForCategory(bld.buildingCategory);
@@ -83,7 +84,8 @@ export class BuildingAssetKit {
       });
 
       const glassGeom = new THREE.ExtrudeGeometry(shape, { depth: storefrontHeight, bevelEnabled: false });
-      glassGeom.rotateX(Math.PI / 2);
+      glassGeom.rotateX(-Math.PI / 2);
+      glassGeom.computeVertexNormals();
       const glassMesh = new THREE.Mesh(glassGeom, glassMat);
       glassMesh.name = `Detail_Storefront_${bld.id}`;
       glassMesh.position.y = 0.05;

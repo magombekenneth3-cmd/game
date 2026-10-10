@@ -1,13 +1,10 @@
 import * as THREE from 'three';
 import { AssetManager } from '../engine/AssetManager';
+import { AssetPipeline } from '../assets/AssetPipeline';
 import { SeededRandom } from '../utils/SeededRandom';
 
 export class StreetFurnitureSystem {
-  private assetManager: AssetManager;
-
-  constructor(assetManager: AssetManager) {
-    this.assetManager = assetManager;
-  }
+  constructor(_assetManager?: AssetManager) {}
 
   public generateFurnitureForChunk(
     chunkX: number,
@@ -24,40 +21,22 @@ export class StreetFurnitureSystem {
     const minX = chunkX * chunkSize;
     const minZ = chunkZ * chunkSize;
 
-    const metalMat = this.assetManager.getMaterial('facade_charcoal');
-    const woodMat = this.assetManager.getMaterial('tree_wood');
-
-    // Utility Poles & Overhead Cable Hooks
-    const poleCount = Math.floor(rng.nextFloat() * 3) + 2;
+    // Utility Poles along road corridor edges
+    const poleCount = Math.floor(rng.nextFloat() * 2) + 2;
     for (let i = 0; i < poleCount; i++) {
-      const poleGroup = new THREE.Group();
-      poleGroup.name = 'Detail_UtilityPole';
+      const poleSide = i % 2 === 0 ? 1 : -1;
+      const posX = minX + (poleSide * (14 + rng.nextFloat() * 4));
+      const posZ = minZ + 20 + i * (chunkSize / poleCount);
 
-      const posX = minX + 5 + i * (chunkSize / poleCount);
-      const posZ = minZ + 15 + (rng.nextFloat() - 0.5) * 10;
-
-      const poleGeo = new THREE.CylinderGeometry(0.15, 0.22, 7.5, 8);
-      const pole = new THREE.Mesh(poleGeo, woodMat);
-      pole.position.y = 3.75;
-      pole.castShadow = true;
-      poleGroup.add(pole);
-
-      // Crossarm
-      const armGeo = new THREE.BoxGeometry(1.6, 0.15, 0.15);
-      const arm = new THREE.Mesh(armGeo, woodMat);
-      arm.position.set(0, 7.0, 0);
-      poleGroup.add(arm);
-
+      const poleGroup = AssetPipeline.getInstance().getCachedGLB('env_utility_pole_01');
       poleGroup.position.set(posX, 0.3, posZ);
       group.add(poleGroup);
     }
 
-    // Bus Shelter & Seating
-    const shelterGeo = new THREE.BoxGeometry(4.0, 2.5, 2.0);
-    const shelter = new THREE.Mesh(shelterGeo, metalMat);
-    shelter.name = 'Detail_BusShelter';
-    shelter.position.set(minX + 30, 1.55, minZ + 80);
-    group.add(shelter);
+    // Street Bench along pedestrian sidewalk
+    const benchGroup = AssetPipeline.getInstance().getCachedGLB('env_bench_01');
+    benchGroup.position.set(minX + 16, 0.3, minZ + 45);
+    group.add(benchGroup);
 
     return group;
   }

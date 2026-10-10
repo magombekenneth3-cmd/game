@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { LandUseType } from './EnvironmentTypes';
 import { AssetManager } from '../engine/AssetManager';
+import { AssetPipeline } from '../assets/AssetPipeline';
 import { SeededRandom } from '../utils/SeededRandom';
 
 export type VegetationCategory =
@@ -20,11 +21,7 @@ export interface VegetationInstance {
 }
 
 export class VegetationSystem {
-  private assetManager: AssetManager;
-
-  constructor(assetManager: AssetManager) {
-    this.assetManager = assetManager;
-  }
+  constructor(_assetManager?: AssetManager) {}
 
   public getVegetationDensity(landUse: LandUseType): number {
     switch (landUse) {
@@ -98,56 +95,16 @@ export class VegetationSystem {
     const group = new THREE.Group();
     group.name = 'InstancedVegetationGroup';
 
-    const byCategory: Map<VegetationCategory, VegetationInstance[]> = new Map();
     instances.forEach((inst) => {
-      const list = byCategory.get(inst.category) || [];
-      list.push(inst);
-      byCategory.set(inst.category, list);
-    });
+      const pipeline = AssetPipeline.getInstance();
+      const tree = (inst.category === 'palms')
+        ? pipeline.getPalmTreeMesh()
+        : pipeline.getAcaciaTreeMesh();
 
-    const woodMat = this.assetManager.getMaterial('tree_wood');
-    const foliageMat = this.assetManager.getMaterial('foliage_green');
-
-    byCategory.forEach((list, cat) => {
-      const trunkGeo = cat === 'palms'
-        ? new THREE.CylinderGeometry(0.2, 0.4, 6.0, 8)
-        : new THREE.CylinderGeometry(0.3, 0.5, 4.5, 8);
-
-      const crownGeo = cat === 'palms'
-        ? new THREE.ConeGeometry(3.5, 2.0, 8)
-        : new THREE.CylinderGeometry(4.2, 1.0, 1.8, 8);
-
-      const trunkInst = new THREE.InstancedMesh(trunkGeo, woodMat, list.length);
-      const crownInst = new THREE.InstancedMesh(crownGeo, foliageMat, list.length);
-
-      trunkInst.castShadow = true;
-      crownInst.castShadow = true;
-
-      const dummy = new THREE.Object3D();
-
-      list.forEach((item, idx) => {
-        // Trunk Matrix
-        dummy.position.copy(item.position);
-        dummy.position.y += cat === 'palms' ? 3.0 : 2.25;
-        dummy.rotation.y = item.rotationY;
-        dummy.scale.copy(item.scale);
-        dummy.updateMatrix();
-        trunkInst.setMatrixAt(idx, dummy.matrix);
-
-        // Crown Matrix
-        dummy.position.copy(item.position);
-        dummy.position.y += cat === 'palms' ? 6.0 : 5.0;
-        dummy.rotation.y = item.rotationY;
-        dummy.scale.copy(item.scale);
-        dummy.updateMatrix();
-        crownInst.setMatrixAt(idx, dummy.matrix);
-      });
-
-      trunkInst.instanceMatrix.needsUpdate = true;
-      crownInst.instanceMatrix.needsUpdate = true;
-
-      group.add(trunkInst);
-      group.add(crownInst);
+      tree.position.copy(inst.position);
+      tree.rotation.y = inst.rotationY;
+      tree.scale.multiply(inst.scale);
+      group.add(tree);
     });
 
     return group;

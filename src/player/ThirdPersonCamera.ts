@@ -7,12 +7,12 @@ export class ThirdPersonCamera {
   private currentLookAt: THREE.Vector3 = new THREE.Vector3();
 
   // Camera Orbit Parameters
-  private distance: number = 7.0;
-  private minDistance: number = 2.0;
-  private maxDistance: number = 15.0;
-  private heightOffset: number = 1.8;
+  private distance: number = 3.8;
+  private minDistance: number = 1.5;
+  private maxDistance: number = 35.0;
+  private heightOffset: number = 1.5;
   private yaw: number = 0; // Horizontal angle in radians
-  private pitch: number = 0.25; // Vertical angle in radians
+  private pitch: number = 0.18; // Vertical angle in radians
 
   private minPitch: number = -Math.PI / 6; // -30 degrees
   private maxPitch: number = Math.PI / 3;  // +60 degrees
@@ -23,6 +23,12 @@ export class ThirdPersonCamera {
 
   constructor(camera: THREE.PerspectiveCamera) {
     this.camera = camera;
+  }
+
+  public setOrbit(yaw: number, pitch: number, distance: number): void {
+    this.yaw = yaw;
+    this.pitch = Math.max(this.minPitch, Math.min(this.maxPitch, pitch));
+    this.distance = Math.max(this.minDistance, Math.min(this.maxDistance, distance));
   }
 
   public handleZoom(delta: number): void {

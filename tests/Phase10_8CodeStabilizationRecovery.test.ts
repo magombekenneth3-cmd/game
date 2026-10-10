@@ -189,7 +189,7 @@ describe('Phase 10.8 — Code Stabilization & World Rendering Recovery Tests', (
       center: new THREE.Vector3(0, 0, 0),
       height: 8,
       floors: 2,
-      zone: 'commercial',
+      zone: 'commercial_corridor',
       districtId: 'district_nairobi',
       buildingCategory: 'shop',
       entrances: [{ id: 'ent1', position: new THREE.Vector3(0, 0, 5), type: 'main' }],
