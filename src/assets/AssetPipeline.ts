@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import * as SkeletonUtils from 'three/examples/jsm/utils/SkeletonUtils.js';
 import { ASSET_MANIFEST } from './AssetManifest';
 import { TextureGenerator } from './TextureGenerator';
 import { BuildingAssetKit } from './BuildingAssetKit';
@@ -56,6 +57,7 @@ export class AssetPipeline {
   private loadingPromises: Map<string, Promise<THREE.Group>> = new Map();
   private glbCache: Map<string, THREE.Group> = new Map();
   private instanceMeshCache: Map<string, THREE.Group> = new Map();
+  private animationCache: Map<string, THREE.AnimationClip[]> = new Map();
 
   // Diagnostics & Status Tracking
   private assetStatuses: Map<string, AssetLoadStatus> = new Map();
@@ -74,11 +76,14 @@ export class AssetPipeline {
   }
 
   public async preloadCoreAssets(): Promise<void> {
+    // Preload pedestrian business model first so its animations are available for player retargeting
+    await this.ensureAssetLoaded('char_pedestrian_business_01').catch(() => {});
+
     const coreAssetIds = [
       // First Real Vertical Slice (16 Core Assets)
       'bld_nairobi_shop_01', 'bld_modern_apartment_01', 'bld_commercial_tower_01',
       'veh_sedan_01', 'veh_suv_landcruiser_01', 'veh_matatu_ngong_01',
-      'char_player_01', 'char_pedestrian_business_01',
+      'char_player_01',
       'env_acacia_tree_01', 'env_mpesa_kiosk_01', 'env_streetlight_01', 'env_mama_mboga_stall_01',
       'interior_sofa_01', 'interior_table_01', 'interior_chair_01', 'interior_dj_booth_rig_01',
       // Additional Secondary Core Assets
@@ -166,6 +171,10 @@ export class AssetPipeline {
             loadedGroup.name = `GLB_${assetId}`;
             loadedGroup.scale.copy(entry.intendedScale);
 
+            const anims = gltf.animations || [];
+            loadedGroup.userData.animations = anims;
+            this.animationCache.set(assetId, anims);
+
             let meshCount = 0;
             loadedGroup.traverse((child) => {
               if ((child as THREE.Mesh).isMesh) meshCount++;
@@ -208,6 +217,104 @@ export class AssetPipeline {
     return await loadPromise;
   }
 
+  public getAnimations(assetId: string): THREE.AnimationClip[] {
+    const cached = this.animationCache.get(assetId);
+    if (cached && cached.length > 0) return cached;
+
+    const template = this.glbCache.get(assetId);
+    if (template && template.userData?.animations && template.userData.animations.length > 0) {
+      return template.userData.animations;
+    }
+
+    // Retarget fallback: if char_player_01 has 0 baked clips, share retargeted Mixamo clips from char_pedestrian_business_01
+    if (assetId === 'char_player_01') {
+      const sourceClips = this.getAnimations('char_pedestrian_business_01');
+      if (sourceClips.length > 0) {
+        const retargetedClips = this.retargetMixamoClipsToPlayer(sourceClips);
+        this.animationCache.set(assetId, retargetedClips);
+        return retargetedClips;
+      }
+    }
+
+    // Mixamo humanoid models that only contain dance/tpose (student/casual/worker) share walking & idle from business pedestrian
+    if (
+      assetId === 'char_pedestrian_student_01' ||
+      assetId === 'char_pedestrian_casual_01' ||
+      assetId === 'char_worker_street_01'
+    ) {
+      const businessClips = this.getAnimations('char_pedestrian_business_01');
+      if (businessClips.length > 0) return businessClips;
+    }
+
+    return [];
+  }
+
+  public getCharacterMeshAnimations(archetype: NPCArchetype | 'player'): THREE.AnimationClip[] {
+    let assetId = 'char_player_01';
+    switch (archetype) {
+      case 'player': assetId = 'char_player_01'; break;
+      case 'young_professional':
+      case 'office_worker':
+      case 'business_owner': assetId = 'char_pedestrian_business_01'; break;
+      case 'student': assetId = 'char_pedestrian_student_01'; break;
+      case 'driver': assetId = 'char_driver_01'; break;
+      case 'security_guard': assetId = 'char_guard_security_01'; break;
+      default: assetId = 'char_pedestrian_business_01'; break;
+    }
+    return this.getAnimations(assetId);
+  }
+
+  private retargetMixamoClipsToPlayer(clips: THREE.AnimationClip[]): THREE.AnimationClip[] {
+    const playerRestHips = new THREE.Vector3(0, 1.019, 0.01);
+    const mixamoRestHips = new THREE.Vector3(-0.160, 1.147, 106.13);
+
+    return clips.map((clip) => {
+      const retargetedTracks: THREE.KeyframeTrack[] = [];
+
+      clip.tracks.forEach((track) => {
+        // Strip mixamorig / mixamorig: prefix
+        const cleanName = track.name.replace(/^mixamorig:?/, '');
+
+        if (cleanName === 'Hips.position') {
+          const values = new Float32Array(track.values.length);
+          for (let i = 0; i < track.values.length; i += 3) {
+            // Scale translation delta by 0.01 (Mixamo cm to ReadyPlayerMe meters)
+            const dx = (track.values[i] - mixamoRestHips.x) * 0.01;
+            const dy = (track.values[i + 1] - mixamoRestHips.y) * 0.01;
+            const dz = (track.values[i + 2] - mixamoRestHips.z) * 0.01;
+            values[i] = playerRestHips.x + dx;
+            values[i + 1] = playerRestHips.y + dy;
+            values[i + 2] = playerRestHips.z + dz;
+          }
+          retargetedTracks.push(new THREE.VectorKeyframeTrack('Hips.position', track.times, values));
+        } else if (cleanName.endsWith('.quaternion')) {
+          const clonedTrack = track.clone();
+          clonedTrack.name = cleanName;
+          retargetedTracks.push(clonedTrack);
+        }
+      });
+
+      return new THREE.AnimationClip(clip.name, clip.duration, retargetedTracks);
+    });
+  }
+
+  public cloneAssetTemplate(assetId: string, template: THREE.Group): THREE.Group {
+    let hasSkinnedMesh = false;
+    template.traverse((child) => {
+      if ((child as THREE.SkinnedMesh).isSkinnedMesh) {
+        hasSkinnedMesh = true;
+      }
+    });
+
+    const instance = hasSkinnedMesh
+      ? (SkeletonUtils.clone(template) as THREE.Group)
+      : template.clone(true);
+
+    const anims = this.getAnimations(assetId);
+    instance.userData.animations = anims;
+    return instance;
+  }
+
   /**
    * Creates an active scene instance for an asset. Tracks the allocated instance.
    */
@@ -215,7 +322,7 @@ export class AssetPipeline {
     if (this.glbCache.has(assetId)) {
       this.cacheHitCount++;
       const template = this.glbCache.get(assetId)!;
-      const instance = template.clone(true);
+      const instance = this.cloneAssetTemplate(assetId, template);
       this.activeInstances.add(instance);
       return instance;
     }
@@ -227,8 +334,9 @@ export class AssetPipeline {
 
     this.ensureAssetLoaded(assetId).then((template) => {
       proxyGroup.clear();
-      const instance = template.clone(true);
+      const instance = this.cloneAssetTemplate(assetId, template);
       proxyGroup.add(instance);
+      proxyGroup.userData.animations = this.getAnimations(assetId);
     }).catch((_err) => {
       const fallback = this.createFallbackMesh(assetId);
       proxyGroup.clear();

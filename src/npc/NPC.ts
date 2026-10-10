@@ -2,10 +2,12 @@ import * as THREE from 'three';
 import { NPCData } from './NPCTypes';
 import { NPCState } from './NPCState';
 import { AssetPipeline } from '../assets/AssetPipeline';
+import { CharacterAnimationController } from '../assets/CharacterAnimationController';
 
 export class NPC {
   public state: NPCState;
   public visualMesh?: THREE.Group;
+  public animController?: CharacterAnimationController;
   private scene: THREE.Scene;
   private walkSpeed: number = 2.8;
 
@@ -15,8 +17,28 @@ export class NPC {
   }
 
   public updateMovement(deltaSeconds: number): void {
-    if (this.state.pathWaypoints.length === 0) return;
-    if (this.state.currentWaypointIndex >= this.state.pathWaypoints.length) return;
+    const isMoving = this.state.pathWaypoints.length > 0 && this.state.currentWaypointIndex < this.state.pathWaypoints.length;
+
+    if (!this.animController && this.visualMesh) {
+      const childMesh = this.visualMesh.children[0];
+      const anims = (childMesh?.userData?.animations as THREE.AnimationClip[]) ||
+        AssetPipeline.getInstance().getCharacterMeshAnimations(this.state.data.archetype);
+      let hasBones = false;
+      this.visualMesh.traverse((c) => { if ((c as THREE.Bone).isBone) hasBones = true; });
+
+      if (hasBones && anims && anims.length > 0) {
+        const root = childMesh || this.visualMesh;
+        this.animController = new CharacterAnimationController(root, anims);
+        this.animController.setState('idle');
+      }
+    }
+
+    if (this.animController) {
+      this.animController.setState(isMoving ? 'walk' : 'idle');
+      this.animController.update(deltaSeconds);
+    }
+
+    if (!isMoving) return;
 
     const targetWaypoint = this.state.pathWaypoints[this.state.currentWaypointIndex];
     const distToWaypoint = this.state.currentPosition.distanceTo(targetWaypoint);
@@ -43,6 +65,9 @@ export class NPC {
 
   public onArrivalAtDestination(): void {
     this.state.pathWaypoints = [];
+    if (this.animController) {
+      this.animController.setState('idle');
+    }
     console.log(`📍 NPC ${this.state.data.firstName} ${this.state.data.lastName} arrived at ${this.state.currentActivity} destination.`);
   }
 
@@ -56,6 +81,10 @@ export class NPC {
       this.scene.add(this.visualMesh);
     } else if (!isDetailed && this.visualMesh) {
       // Remove 3D Visual Mesh when transitioning to abstract Tier 2/3 simulation
+      if (this.animController) {
+        this.animController.dispose();
+        this.animController = undefined;
+      }
       this.scene.remove(this.visualMesh);
       this.visualMesh = undefined;
     }
@@ -68,6 +97,16 @@ export class NPC {
     const charMesh = AssetPipeline.getInstance().getCharacterMesh(this.state.data.archetype);
     group.add(charMesh);
 
+    const anims = (charMesh.userData?.animations as THREE.AnimationClip[]) ||
+      AssetPipeline.getInstance().getCharacterMeshAnimations(this.state.data.archetype);
+    let hasBones = false;
+    charMesh.traverse((c) => { if ((c as THREE.Bone).isBone) hasBones = true; });
+
+    if (hasBones && anims.length > 0) {
+      this.animController = new CharacterAnimationController(charMesh, anims);
+      this.animController.setState('idle');
+    }
+
     return group;
   }
 
@@ -79,6 +118,10 @@ export class NPC {
   }
 
   public dispose(): void {
+    if (this.animController) {
+      this.animController.dispose();
+      this.animController = undefined;
+    }
     if (this.visualMesh) {
       this.scene.remove(this.visualMesh);
       this.visualMesh = undefined;

@@ -6,6 +6,7 @@ import { ThirdPersonCamera } from './ThirdPersonCamera';
 import { InteractionSystem } from './InteractionSystem';
 import { VehicleManager } from '../vehicles/VehicleManager';
 import { AssetPipeline } from '../assets/AssetPipeline';
+import { CharacterAnimationController } from '../assets/CharacterAnimationController';
 
 export class PlayerController {
   public mesh: THREE.Group;
@@ -15,6 +16,7 @@ export class PlayerController {
   public cameraManager: ThirdPersonCamera;
   public interactionSystem: InteractionSystem;
   public vehicleManager?: VehicleManager;
+  public animController: CharacterAnimationController | null = null;
 
   private scene: THREE.Scene;
 
@@ -52,6 +54,16 @@ export class PlayerController {
   private createPlaceholderHumanoid(): void {
     const characterMesh = AssetPipeline.getInstance().getCharacterMesh('player');
     this.mesh.add(characterMesh);
+
+    const anims = (characterMesh.userData?.animations as THREE.AnimationClip[]) ||
+      AssetPipeline.getInstance().getAnimations('char_player_01');
+    let hasBones = false;
+    characterMesh.traverse((c) => { if ((c as THREE.Bone).isBone) hasBones = true; });
+
+    if (hasBones && anims && anims.length > 0) {
+      this.animController = new CharacterAnimationController(characterMesh, anims);
+      this.animController.setState('idle');
+    }
 
     this.leftLeg = (characterMesh.getObjectByName('LeftUpLeg') || characterMesh.getObjectByName('LeftLeg')) as THREE.Mesh || new THREE.Mesh();
     this.rightLeg = (characterMesh.getObjectByName('RightUpLeg') || characterMesh.getObjectByName('RightLeg')) as THREE.Mesh || new THREE.Mesh();
@@ -127,8 +139,8 @@ export class PlayerController {
     this.mesh.position.copy(this.motor.position);
     this.mesh.rotation.y = this.motor.rotationY;
 
-    // 5. Update Leg Swing Animation
-    this.updateWalkAnimation(deltaSeconds);
+    // 5. Update Character Animation (Skeletal Mixer or Procedural Fallback)
+    this.updateCharacterAnimation(deltaSeconds);
 
     // 6. Update Third-Person Orbit Camera (collision checks strictly against cameraOccluders)
     this.cameraManager.update(this.motor.position, deltaSeconds, cameraOccluders || []);
@@ -151,6 +163,41 @@ export class PlayerController {
     this.interactionSystem.update(this.motor.position, inputState.interact);
   }
 
+  private updateCharacterAnimation(deltaSeconds: number): void {
+    const speed = this.motor.getSpeed();
+
+    // Lazy initialization if model/animations finished loading asynchronously
+    if (!this.animController) {
+      const childMesh = this.mesh.children[0];
+      const anims = (childMesh?.userData?.animations as THREE.AnimationClip[]) ||
+        AssetPipeline.getInstance().getAnimations('char_player_01');
+      let hasBones = false;
+      this.mesh.traverse((c) => { if ((c as THREE.Bone).isBone) hasBones = true; });
+
+      if (hasBones && anims && anims.length > 0) {
+        const root = childMesh || this.mesh;
+        this.animController = new CharacterAnimationController(root, anims);
+        this.animController.setState('idle');
+      }
+    }
+
+    if (this.animController && this.animController.actions.size > 0) {
+      const isSprinting = this.state.getMode() === 'SPRINTING' || speed > 7.0;
+      if (isSprinting) {
+        this.animController.setState('run');
+      } else if (speed > 0.1) {
+        this.animController.setState('walk');
+      } else {
+        this.animController.setState('idle');
+      }
+      this.animController.update(deltaSeconds);
+      return;
+    }
+
+    // Procedural Fallback if no skeletal animations
+    this.updateWalkAnimation(deltaSeconds);
+  }
+
   private updateWalkAnimation(deltaSeconds: number): void {
     const speed = this.motor.getSpeed();
     if (speed > 0.1) {
@@ -166,6 +213,13 @@ export class PlayerController {
       this.rightLeg.rotation.x = 0;
       if (this.leftArm) this.leftArm.rotation.x = 0;
       if (this.rightArm) this.rightArm.rotation.x = 0;
+    }
+  }
+
+  public dispose(): void {
+    if (this.animController) {
+      this.animController.dispose();
+      this.animController = null;
     }
   }
 

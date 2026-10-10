@@ -4,15 +4,28 @@ import path from 'path';
 import WebSocket from 'ws';
 
 const PORT = 9224;
-const TARGET_URL = 'http://localhost:3001/';
 const SCREENSHOTS_DIR = path.resolve('public/screenshots_vertical_slice');
 
 if (!fs.existsSync(SCREENSHOTS_DIR)) {
   fs.mkdirSync(SCREENSHOTS_DIR, { recursive: true });
 }
 
+async function findActivePort() {
+  const ports = [3000, 3001];
+  for (const p of ports) {
+    try {
+      const res = await fetch(`http://localhost:${p}/`);
+      if (res.ok) return p;
+    } catch (e) {}
+  }
+  return 3000;
+}
+
 async function main() {
   console.log('=== KINGMAKER: Realistic Nairobi Vertical Slice Verification ===\n');
+  const devPort = await findActivePort();
+  const TARGET_URL = `http://localhost:${devPort}/`;
+  console.log(`[CDP] Connecting to target at ${TARGET_URL}...`);
   console.log('[CDP] Launching Chrome Headless on port ' + PORT + '...');
 
   const chrome = spawn('/Applications/Google Chrome.app/Contents/MacOS/Google Chrome', [
@@ -45,7 +58,7 @@ async function main() {
     try {
       const res = await fetch(`http://127.0.0.1:${PORT}/json`);
       const tabs = await res.json();
-      const tab = tabs.find(t => t.url.includes('3001'));
+      const tab = tabs.find(t => t.url.includes(String(devPort)));
       if (tab && tab.webSocketDebuggerUrl) {
         wsUrl = tab.webSocketDebuggerUrl;
         break;
@@ -154,6 +167,7 @@ async function main() {
   // --- SCENARIO 2: Player & 2 Visible Rigged NPCs ---
   console.log('\n--- Scenario 2: Player & 2 Visible NPCs ---');
   await captureShot('2_player_and_two_npcs.png', () => {
+    const THREE = window.THREE;
     const debug = window.__KINGMAKER_DEBUG__;
     if (!debug) return;
     const scene = debug.scene;
@@ -161,6 +175,10 @@ async function main() {
     const pipeline = debug.assetPipeline;
 
     player.motor.position.set(0, 0.45, 15);
+    if (player.animController) {
+      player.animController.setState('idle');
+      player.animController.update(0.1);
+    }
 
     let npc1 = scene.getObjectByName('NPC_Inspection_Business');
     if (!npc1) {
@@ -169,6 +187,14 @@ async function main() {
       npc1.position.set(-1.2, 0.45, 12.8);
       npc1.rotation.y = Math.PI * 0.7;
       scene.add(npc1);
+      const anims = npc1.userData.animations || pipeline.getAnimations('char_pedestrian_business_01');
+      if (anims && anims.length > 0) {
+        const mixer = new THREE.AnimationMixer(npc1);
+        const clip = anims.find(c => c.name.toLowerCase().includes('idle')) || anims[0];
+        mixer.clipAction(clip).play();
+        mixer.update(0.1);
+        npc1.userData.mixer = mixer;
+      }
     }
 
     let npc2 = scene.getObjectByName('NPC_Inspection_Student');
@@ -178,6 +204,14 @@ async function main() {
       npc2.position.set(1.2, 0.45, 12.5);
       npc2.rotation.y = -Math.PI * 0.6;
       scene.add(npc2);
+      const anims = npc2.userData.animations || pipeline.getAnimations('char_pedestrian_student_01');
+      if (anims && anims.length > 0) {
+        const mixer = new THREE.AnimationMixer(npc2);
+        const clip = anims.find(c => !c.name.toLowerCase().includes('tpose')) || anims[0];
+        mixer.clipAction(clip).play();
+        mixer.update(0.1);
+        npc2.userData.mixer = mixer;
+      }
     }
 
     player.cameraManager.setOrbit(0, 0.12, 3.8);
