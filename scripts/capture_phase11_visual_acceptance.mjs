@@ -308,23 +308,29 @@ async function main() {
     if (!debug) return;
     const player = debug.player;
 
-    // Move player out of camera view
-    player.motor.position.set(500, 0, 500);
-    player.mesh.position.set(500, 0, 500);
+    player.motor.position.set(0, 0.45, 15);
+    player.motor.rotationY = 0;
+    // Hide player model so it does not overlap with Business NPC
+    if (player.mesh.children[0]) player.mesh.children[0].visible = false;
 
+    // Park student NPC far away
     const s = debug.scene.getObjectByName('NPC_Showcase_Student');
-    if (s) s.position.set(500, 0, 500);
+    if (s) {
+      s.position.set(500, 0, 500);
+      s.visible = false;
+    }
 
-    // Position Business NPC at crosswalk
+    // Position Business NPC right at target position
     const b = debug.scene.getObjectByName('NPC_Showcase_Business');
     if (b) {
       b.position.set(0, 0.45, 15.0);
       b.rotation.y = 0;
+      b.visible = true;
     }
 
     // Orbit around Business NPC at 2.1m
     player.cameraManager.setOrbit(0, 0.04, 2.1);
-    player.cameraManager.snapToTarget(new window.THREE.Vector3(0, 0.45, 15.0));
+    player.cameraManager.snapToTarget(player.motor.position);
   });
 
   // -------------------------------------------------------------
@@ -336,23 +342,40 @@ async function main() {
     if (!debug) return;
     const player = debug.player;
 
-    // Move player and Business NPC out of view
-    player.motor.position.set(500, 0, 500);
-    player.mesh.position.set(500, 0, 500);
+    player.motor.position.set(0, 0.45, 15);
+    player.motor.rotationY = 0;
+    // Hide player model so it does not overlap with Student NPC
+    if (player.mesh.children[0]) player.mesh.children[0].visible = false;
 
+    // Park Business NPC far away
     const b = debug.scene.getObjectByName('NPC_Showcase_Business');
-    if (b) b.position.set(500, 0, 500);
+    if (b) {
+      b.position.set(500, 0, 500);
+      b.visible = false;
+    }
 
-    // Position Student NPC at crosswalk
+    // Position Student NPC at target position
     const s = debug.scene.getObjectByName('NPC_Showcase_Student');
     if (s) {
       s.position.set(0, 0.45, 15.0);
       s.rotation.y = 0;
+      s.visible = true;
     }
 
     // Orbit around Student NPC at 2.1m
     player.cameraManager.setOrbit(0, 0.04, 2.1);
-    player.cameraManager.snapToTarget(new window.THREE.Vector3(0, 0.45, 15.0));
+    player.cameraManager.snapToTarget(player.motor.position);
+  });
+
+  // Restore player model visibility for subsequent shots
+  await sendCommand('Runtime.evaluate', {
+    expression: `(() => {
+      const debug = window.__KINGMAKER_DEBUG__;
+      if (debug && debug.player && debug.player.mesh.children[0]) {
+        debug.player.mesh.children[0].visible = true;
+      }
+    })()`,
+    returnByValue: true
   });
 
   // -------------------------------------------------------------
@@ -441,6 +464,7 @@ async function main() {
     if (b) {
       b.position.set(-1.15, 0.45, 15.0);
       b.rotation.y = 0.12;
+      b.visible = true;
     }
 
     // Student NPC on Right
@@ -448,6 +472,7 @@ async function main() {
     if (s) {
       s.position.set(1.15, 0.45, 15.0);
       s.rotation.y = -0.12;
+      s.visible = true;
     }
 
     // Frame all three characters together at 3.6m distance

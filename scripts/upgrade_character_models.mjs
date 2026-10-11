@@ -595,9 +595,142 @@ async function main() {
   console.log('  Generating Polished Oxford Calfskin Leather Shoes...');
   writeJpegFromPng(createBusinessOxfordShoesTexture(), path.join(bizBuildDir, 'outfit-wedding-01-v2-m-footwear-D.jpg'));
 
+  // Inject authentic 3D Executive Briefcase mesh and tailored shoulder silhouette
+  console.log('  Adding authentic 3D Executive Briefcase accessory and tailored shoulder silhouette...');
+  const bizGltfPath = path.join(bizBuildDir, 'business.gltf');
+  const bizGltf = JSON.parse(fs.readFileSync(bizGltfPath, 'utf8'));
+  const bizBinPath = path.join(bizBuildDir, bizGltf.buffers[0].uri);
+  let bizBin = fs.readFileSync(bizBinPath);
+
+  function createBoxGeom(minX, minY, minZ, maxX, maxY, maxZ) {
+    const pos = [];
+    const norm = [];
+    const uv = [];
+    const ind = [];
+    const faces = [
+      { n: [0, 0, 1], q: [[minX, minY, maxZ], [maxX, minY, maxZ], [maxX, maxY, maxZ], [minX, maxY, maxZ]] },
+      { n: [0, 0, -1], q: [[maxX, minY, minZ], [minX, minY, minZ], [minX, maxY, minZ], [maxX, maxY, minZ]] },
+      { n: [0, 1, 0], q: [[minX, maxY, maxZ], [maxX, maxY, maxZ], [maxX, maxY, minZ], [minX, maxY, minZ]] },
+      { n: [0, -1, 0], q: [[minX, minY, minZ], [maxX, minY, minZ], [maxX, minY, maxZ], [minX, minY, maxZ]] },
+      { n: [1, 0, 0], q: [[maxX, minY, maxZ], [maxX, minY, minZ], [maxX, maxY, minZ], [maxX, maxY, maxZ]] },
+      { n: [-1, 0, 0], q: [[minX, minY, minZ], [minX, minY, maxZ], [minX, maxY, maxZ], [minX, maxY, minZ]] },
+    ];
+    let vBase = 0;
+    faces.forEach((f) => {
+      f.q.forEach((p, i) => {
+        pos.push(...p);
+        norm.push(...f.n);
+        uv.push(i === 0 || i === 3 ? 0 : 1, i < 2 ? 0 : 1);
+      });
+      ind.push(vBase, vBase + 1, vBase + 2, vBase, vBase + 2, vBase + 3);
+      vBase += 4;
+    });
+    return { pos, norm, uv, ind };
+  }
+
+  // 1. Briefcase case body + stitched leather handle
+  const caseBox = createBoxGeom(-0.05, -0.36, -0.20, 0.05, -0.08, 0.20);
+  const handleBox = createBoxGeom(-0.02, -0.08, -0.06, 0.02, -0.02, 0.06);
+  const vOffset = caseBox.pos.length / 3;
+  const comboPos = [...caseBox.pos, ...handleBox.pos];
+  const comboNorm = [...caseBox.norm, ...handleBox.norm];
+  const comboUv = [...caseBox.uv, ...handleBox.uv];
+  const comboInd = [...caseBox.ind, ...handleBox.ind.map((i) => i + vOffset)];
+
+  let minP = [Infinity, Infinity, Infinity];
+  let maxP = [-Infinity, -Infinity, -Infinity];
+  for (let i = 0; i < comboPos.length; i += 3) {
+    minP[0] = Math.min(minP[0], comboPos[i]);
+    minP[1] = Math.min(minP[1], comboPos[i + 1]);
+    minP[2] = Math.min(minP[2], comboPos[i + 2]);
+    maxP[0] = Math.max(maxP[0], comboPos[i]);
+    maxP[1] = Math.max(maxP[1], comboPos[i + 1]);
+    maxP[2] = Math.max(maxP[2], comboPos[i + 2]);
+  }
+
+  // 4-byte padding alignment
+  const padLen = (4 - (bizBin.length % 4)) % 4;
+  if (padLen > 0) bizBin = Buffer.concat([bizBin, Buffer.alloc(padLen)]);
+
+  const posB = Buffer.from(new Float32Array(comboPos).buffer);
+  const normB = Buffer.from(new Float32Array(comboNorm).buffer);
+  const uvB = Buffer.from(new Float32Array(comboUv).buffer);
+  const indB = Buffer.from(new Uint16Array(comboInd).buffer);
+
+  const posOffset = bizBin.length;
+  const normOffset = posOffset + posB.length;
+  const uvOffset = normOffset + normB.length;
+  const indOffset = uvOffset + uvB.length;
+
+  bizBin = Buffer.concat([bizBin, posB, normB, uvB, indB]);
+  fs.writeFileSync(bizBinPath, bizBin);
+  bizGltf.buffers[0].byteLength = bizBin.length;
+
+  // BufferViews
+  const bvP = bizGltf.bufferViews.length;
+  bizGltf.bufferViews.push({ buffer: 0, byteOffset: posOffset, byteLength: posB.length, target: 34962 });
+  const bvN = bizGltf.bufferViews.length;
+  bizGltf.bufferViews.push({ buffer: 0, byteOffset: normOffset, byteLength: normB.length, target: 34962 });
+  const bvU = bizGltf.bufferViews.length;
+  bizGltf.bufferViews.push({ buffer: 0, byteOffset: uvOffset, byteLength: uvB.length, target: 34962 });
+  const bvI = bizGltf.bufferViews.length;
+  bizGltf.bufferViews.push({ buffer: 0, byteOffset: indOffset, byteLength: indB.length, target: 34963 });
+
+  // Accessors
+  const vertCount = comboPos.length / 3;
+  const indCount = comboInd.length;
+  const accP = bizGltf.accessors.length;
+  bizGltf.accessors.push({ bufferView: bvP, byteOffset: 0, componentType: 5126, count: vertCount, type: 'VEC3', min: minP, max: maxP });
+  const accN = bizGltf.accessors.length;
+  bizGltf.accessors.push({ bufferView: bvN, byteOffset: 0, componentType: 5126, count: vertCount, type: 'VEC3' });
+  const accU = bizGltf.accessors.length;
+  bizGltf.accessors.push({ bufferView: bvU, byteOffset: 0, componentType: 5126, count: vertCount, type: 'VEC2' });
+  const accI = bizGltf.accessors.length;
+  bizGltf.accessors.push({ bufferView: bvI, byteOffset: 0, componentType: 5123, count: indCount, type: 'SCALAR' });
+
+  // Material: Espresso leather briefcase
+  const leatherMatIdx = bizGltf.materials.length;
+  bizGltf.materials.push({
+    name: 'Briefcase_Leather',
+    pbrMetallicRoughness: {
+      baseColorFactor: [0.15, 0.09, 0.06, 1.0],
+      metallicFactor: 0.1,
+      roughnessFactor: 0.38
+    }
+  });
+
+  // Mesh
+  const briefcaseMeshIdx = bizGltf.meshes.length;
+  bizGltf.meshes.push({
+    name: 'Executive_Briefcase',
+    primitives: [{
+      attributes: { POSITION: accP, NORMAL: accN, TEXCOORD_0: accU },
+      indices: accI,
+      material: leatherMatIdx,
+      mode: 4
+    }]
+  });
+
+  // Node attached to RightHand (node 49)
+  const briefcaseNodeIdx = bizGltf.nodes.length;
+  bizGltf.nodes.push({
+    name: 'Executive_Briefcase_Node',
+    mesh: briefcaseMeshIdx,
+    translation: [0, -0.05, 0]
+  });
+
+  if (!bizGltf.nodes[49].children) bizGltf.nodes[49].children = [];
+  bizGltf.nodes[49].children.push(briefcaseNodeIdx);
+
+  // Apply broader tailored shoulders (LeftShoulder node 28, RightShoulder node 52)
+  if (bizGltf.nodes[28]) bizGltf.nodes[28].scale = [1.08, 1.0, 1.0];
+  if (bizGltf.nodes[52]) bizGltf.nodes[52].scale = [1.08, 1.0, 1.0];
+
+  fs.writeFileSync(bizGltfPath, JSON.stringify(bizGltf, null, 2));
+
   // Repack Business NPC GLB
   const finalBizGlb = path.join(CHAR_DIR, 'char_pedestrian_business_01.glb');
-  execSync(`gltf-pipeline -i "${path.join(bizBuildDir, 'business.gltf')}" -o "${finalBizGlb}" -b`, { stdio: 'pipe' });
+  execSync(`gltf-pipeline -i "${bizGltfPath}" -o "${finalBizGlb}" -b`, { stdio: 'pipe' });
   const bizSz = fs.statSync(finalBizGlb).size;
   console.log(`✓ Upgraded Business Professional: ${finalBizGlb} (${(bizSz / 1024).toFixed(1)} KB)`);
 

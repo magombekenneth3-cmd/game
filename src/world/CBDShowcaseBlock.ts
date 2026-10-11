@@ -5,6 +5,8 @@ import { BuildingData } from './BuildingData';
 import { BuildingAssetKit } from '../assets/BuildingAssetKit';
 import { EnvironmentAssetKit } from '../assets/EnvironmentAssetKit';
 
+import { DistrictBlockBoundary } from './UrbanLayout';
+
 export class CBDShowcaseBlock {
   private scene: THREE.Scene;
   private assetManager: AssetManager;
@@ -18,20 +20,31 @@ export class CBDShowcaseBlock {
     this.group.name = 'NairobiCBD_ShowcaseBlock';
   }
 
+  public getBoundary(): DistrictBlockBoundary {
+    return {
+      blockId: 'CBDShowcaseBlock_Kenyatta_North',
+      zMin: -30,
+      zMax: 55,
+      carriagewayWidth: 14.6,
+      westPromenade: { xMin: -26, xMax: -7.3, elevation: 0.20 },
+      eastPromenade: { xMin: 7.3, xMax: 26, elevation: 0.20 }
+    };
+  }
+
   /**
    * Builds the authentic Nairobi CBD Showcase Block along Kenyatta Avenue (X = 0, Z = -30 to 55).
    * Generates continuous commercial street walls, ground-floor active shops with awnings,
    * seamless Cabro paving promenades, street trees in iron grates, traffic signals,
    * street name posts, and a dedicated Matatu Stage.
    */
-  public generate(): { buildings: BuildingData[]; group: THREE.Group } {
+  public generate(): { buildings: BuildingData[]; group: THREE.Group; boundary: DistrictBlockBoundary } {
     this.createContinuousCabroPromenades();
     this.createStreetWallBuildings();
     this.createStreetFurniture();
     this.createMatatuStage();
 
     this.scene.add(this.group);
-    return { buildings: this.buildings, group: this.group };
+    return { buildings: this.buildings, group: this.group, boundary: this.getBoundary() };
   }
 
   /**

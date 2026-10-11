@@ -9,6 +9,7 @@ import { AssetManager } from '../engine/AssetManager';
 import { AssetPipeline } from '../assets/AssetPipeline';
 import { BuildingData } from './BuildingData';
 import { CBDShowcaseBlock } from './CBDShowcaseBlock';
+import { CBDAdjacentCommercialBlock } from './CBDAdjacentCommercialBlock';
 
 export interface WorldQueries {
   groundMeshes: THREE.Object3D[];
@@ -74,18 +75,25 @@ export class NairobiDistrictScene {
       this.groundMeshes.push(roundaboutGroup);
     });
 
-
     // 4. Register Building Data Entities into WorldChunkManager
     normalizedBuildings.forEach((bldData) => {
       const meshGroup = this.buildingGen.generateBuildingFromData(bldData);
       this.chunkManager.registerBuildingToChunk(bldData, meshGroup);
     });
 
-    // 4b. Generate Authentic Nairobi CBD Showcase Block along Avenue
+    // 4b. Generate Authentic Nairobi CBD Showcase Block along Avenue (Z = -30 to 55)
     const cbdBlock = new CBDShowcaseBlock(this.scene, this.assetManager);
     const { buildings: cbdBuildings, group: cbdGroup } = cbdBlock.generate();
     this.groundMeshes.push(cbdGroup);
     cbdBuildings.forEach((bldData) => {
+      this.chunkManager.registerBuildingToChunk(bldData, new THREE.Group());
+    });
+
+    // 4c. Generate Authentic Nairobi CBD Adjacent Commercial Block (District Continuity Z = 55 to 140)
+    const adjacentBlock = new CBDAdjacentCommercialBlock(this.scene, this.assetManager);
+    const { buildings: adjacentBuildings, group: adjacentGroup } = adjacentBlock.generate();
+    this.groundMeshes.push(adjacentGroup);
+    adjacentBuildings.forEach((bldData) => {
       this.chunkManager.registerBuildingToChunk(bldData, new THREE.Group());
     });
 
@@ -131,8 +139,7 @@ export class NairobiDistrictScene {
       { id: 'bld_infill_8', name: 'Lenana Residency Block C', x: -95, z: 75, width: 25, depth: 20, floors: 6, height: 21, category: 'apartment_block' },
       { id: 'bld_infill_9', name: 'Dennis Pritt Townhouses', x: -65, z: 110, width: 30, depth: 24, floors: 4, height: 14, category: 'residential_house' },
 
-      // Block D: Hurlingham & Yaya South Infill
-      { id: 'bld_infill_10', name: 'Adlife Commercial Annex', x: 25, z: 85, width: 24, depth: 24, floors: 10, height: 35, category: 'office_block' },
+      // Block D: Hurlingham & Upper Hill South-East Infill (Excludes Kenyatta Ave Commercial Corridor)
       { id: 'bld_infill_11', name: 'Rose Avenue Suites Phase II', x: 65, z: 65, width: 28, depth: 22, floors: 8, height: 27, category: 'apartment_block' },
       { id: 'bld_infill_12', name: 'Upper Hill View Office Park', x: 95, z: 105, width: 32, depth: 26, floors: 14, height: 48, category: 'commercial_tower' }
     ];
@@ -177,9 +184,9 @@ export class NairobiDistrictScene {
   private createCorridorStreetlights(): void {
     const lightPositions = [
       { x: -140, z: -110 }, { x: -100, z: -85 }, { x: -60, z: -60 }, { x: -25, z: -25 },
-      { x: 8.5, z: 0 },     { x: -8.5, z: 35 },   { x: 8.5, z: 70 },  { x: 100, z: 85 },
-      { x: 140, z: 120 },   { x: -50, z: 45 },   { x: -90, z: 80 },  { x: 30, z: -40 },
-      { x: 70, z: -70 },    { x: 110, z: -100 }
+      { x: 8.5, z: 0 },     { x: -8.5, z: 35 },   { x: 8.5, z: 70 },  { x: -8.5, z: 95 },
+      { x: 8.5, z: 120 },   { x: 100, z: 85 },    { x: 140, z: 120 }, { x: -50, z: 45 },
+      { x: -90, z: 80 },    { x: 30, z: -40 },    { x: 70, z: -70 },  { x: 110, z: -100 }
     ];
 
     lightPositions.forEach((pos) => {

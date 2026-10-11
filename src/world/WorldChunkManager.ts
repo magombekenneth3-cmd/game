@@ -97,6 +97,12 @@ export class WorldChunkManager {
 
     // Create Collision Proxy Box
     const box = new THREE.Box3().setFromObject(meshGroup);
+    if (box.isEmpty() && bldData.footprintPolygon && bldData.footprintPolygon.length > 0) {
+      bldData.footprintPolygon.forEach((p) => {
+        box.expandByPoint(new THREE.Vector3(p.x, 0, p.z));
+        box.expandByPoint(new THREE.Vector3(p.x, bldData.height, p.z));
+      });
+    }
     chunk.collisionProxies.push(box);
 
     // Insert into SpatialIndex

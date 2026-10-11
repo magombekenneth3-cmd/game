@@ -353,6 +353,41 @@ async function main() {
     debug.player.cameraManager.setOrbit(0, 0.22, 30.0);
   });
 
+  // --- PHASE 11.5: ADJACENT COMMERCIAL BLOCK DISTRICT CONTINUITY SHOTS ---
+  console.log('\n--- Phase 11.5: Adjacent Commercial Block District Continuity ---');
+  // 1. Boundary Seam at Z = 55 (Transition into Adjacent Block with continuous Cabro paving, curbs, & signs)
+  await captureShot('phase11_5_adjacent_block_seam_55m.png', () => {
+    const debug = window.__KINGMAKER_DEBUG__;
+    if (!debug) return;
+    debug.player.motor.position.set(0, 0.45, 48.0);
+    debug.player.motor.rotationY = 0;
+    debug.player.mesh.position.copy(debug.player.motor.position);
+    debug.chunkManager.updatePlayerPosition(debug.player.motor.position);
+    debug.player.cameraManager.setOrbit(Math.PI, 0.12, 10.0); // Facing south down avenue across Z=55 seam
+  });
+
+  // 2. Walking down the Adjacent Block Promenade at Z = 80 (Multistory Towers, Active Shops & M-Pesa Kiosk)
+  await captureShot('phase11_5_adjacent_block_promenade_80m.png', () => {
+    const debug = window.__KINGMAKER_DEBUG__;
+    if (!debug) return;
+    debug.player.motor.position.set(-11.0, 0.45, 80.0);
+    debug.player.motor.rotationY = 0;
+    debug.player.mesh.position.copy(debug.player.motor.position);
+    debug.chunkManager.updatePlayerPosition(debug.player.motor.position);
+    debug.player.cameraManager.setOrbit(Math.PI * 0.9, 0.10, 8.0); // Framing Jubilee Exchange & Kenya Re Plaza shopfronts
+  });
+
+  // 3. Adjacent Block Vista at Z = 110 (Teleposta, Sarova Stanley Wing, Mid-Block Crosswalk)
+  await captureShot('phase11_5_adjacent_block_vista_110m.png', () => {
+    const debug = window.__KINGMAKER_DEBUG__;
+    if (!debug) return;
+    debug.player.motor.position.set(0, 0.45, 100.0);
+    debug.player.motor.rotationY = 0;
+    debug.player.mesh.position.copy(debug.player.motor.position);
+    debug.chunkManager.updatePlayerPosition(debug.player.motor.position);
+    debug.player.cameraManager.setOrbit(Math.PI, 0.18, 18.0); // Broad avenue framing with commercial towers
+  });
+
   console.log('\n=== Telemetry Verification Complete ===');
   ws.close();
   cleanup();

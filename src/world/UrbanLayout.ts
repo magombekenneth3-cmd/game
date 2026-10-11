@@ -331,3 +331,85 @@ export function generateFrontageRow(road: RoadSegment, rng: SeededRandom, opts: 
   }
   return slots;
 }
+
+// ---------------------------------------------------------------------------------------
+// District continuity & block boundaries (Phase 11.5)
+// ---------------------------------------------------------------------------------------
+
+export interface CommercialBuildingSpec {
+  id: string;
+  name: string;
+  cx: number;
+  cz: number;
+  width: number;
+  depth: number;
+  floors: number;
+  height: number;
+  category: 'commercial_tower' | 'office_block' | 'shop';
+  shops: string[];
+  entranceX: number;
+  entranceZ: number;
+}
+
+export interface DistrictBlockBoundary {
+  blockId: string;
+  zMin: number;
+  zMax: number;
+  carriagewayWidth: number;
+  westPromenade: { xMin: number; xMax: number; elevation: number };
+  eastPromenade: { xMin: number; xMax: number; elevation: number };
+}
+
+/**
+ * Validates that two adjacent commercial street blocks meet at a common boundary seam
+ * with zero spatial tearing, matching carriageway profiles, matching sidewalk elevations,
+ * and aligned lateral boundaries.
+ */
+export function verifyBlockSeamContinuity(
+  northBlock: DistrictBlockBoundary,
+  southBlock: DistrictBlockBoundary,
+  tolerance = 0.05
+): { continuous: boolean; issues: string[] } {
+  const issues: string[] = [];
+
+  // Check Z seam alignment
+  const seamGap = Math.abs(northBlock.zMax - southBlock.zMin);
+  if (seamGap > tolerance) {
+    issues.push(`Z boundary gap between ${northBlock.blockId} (zMax=${northBlock.zMax}) and ${southBlock.blockId} (zMin=${southBlock.zMin}) is ${seamGap.toFixed(2)}m (tolerance=${tolerance}m)`);
+  }
+
+  // Check carriageway width matching
+  const roadWidthDiff = Math.abs(northBlock.carriagewayWidth - southBlock.carriagewayWidth);
+  if (roadWidthDiff > tolerance) {
+    issues.push(`Carriageway width mismatch: ${northBlock.blockId} has ${northBlock.carriagewayWidth}m vs ${southBlock.blockId} has ${southBlock.carriagewayWidth}m`);
+  }
+
+  // Check West promenade lateral and vertical alignment
+  const westXMinDiff = Math.abs(northBlock.westPromenade.xMin - southBlock.westPromenade.xMin);
+  const westXMaxDiff = Math.abs(northBlock.westPromenade.xMax - southBlock.westPromenade.xMax);
+  const westElevDiff = Math.abs(northBlock.westPromenade.elevation - southBlock.westPromenade.elevation);
+
+  if (westXMinDiff > tolerance || westXMaxDiff > tolerance) {
+    issues.push(`West promenade lateral bounds mismatch: [${northBlock.westPromenade.xMin}, ${northBlock.westPromenade.xMax}] vs [${southBlock.westPromenade.xMin}, ${southBlock.westPromenade.xMax}]`);
+  }
+  if (westElevDiff > tolerance) {
+    issues.push(`West promenade elevation step: ${northBlock.westPromenade.elevation}m vs ${southBlock.westPromenade.elevation}m`);
+  }
+
+  // Check East promenade lateral and vertical alignment
+  const eastXMinDiff = Math.abs(northBlock.eastPromenade.xMin - southBlock.eastPromenade.xMin);
+  const eastXMaxDiff = Math.abs(northBlock.eastPromenade.xMax - southBlock.eastPromenade.xMax);
+  const eastElevDiff = Math.abs(northBlock.eastPromenade.elevation - southBlock.eastPromenade.elevation);
+
+  if (eastXMinDiff > tolerance || eastXMaxDiff > tolerance) {
+    issues.push(`East promenade lateral bounds mismatch: [${northBlock.eastPromenade.xMin}, ${northBlock.eastPromenade.xMax}] vs [${southBlock.eastPromenade.xMin}, ${southBlock.eastPromenade.xMax}]`);
+  }
+  if (eastElevDiff > tolerance) {
+    issues.push(`East promenade elevation step: ${northBlock.eastPromenade.elevation}m vs ${southBlock.eastPromenade.elevation}m`);
+  }
+
+  return {
+    continuous: issues.length === 0,
+    issues
+  };
+}
