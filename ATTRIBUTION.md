@@ -74,3 +74,15 @@ This document provides formal legal attribution, provenance records, and license
   - Nairobi Bilingual Green/White Enamel Street Name Signs (Kenyatta Ave, Kimathi St, Moi Ave, Wabera St, Muindi Mbingu St, Haile Selassie Ave).
   - Kenyan Street Vending Infrastructure: Green M-Pesa Authorized Agent Kiosks with metal security grilles and Mama Mboga wooden produce stalls.
   - Cast-iron hexagonal tree grates, traffic signals, zebra crossings, and concrete curbs.
+
+### G. KINGMAKER Phase 11.6 — High-Fidelity Nairobi Vegetation (CC-BY 4.0)
+- **Copyright**: © 2026 KINGMAKER Studio Team
+- **License**: Creative Commons Attribution 4.0 International (CC-BY 4.0)
+- **Generator Script**: `scripts/generate_high_fidelity_vegetation_models.mjs` (Node.js + Three.js GLTFExporter with custom FileReader polyfill)
+- **Assets**:
+
+| Asset ID | Filename | Meshes | Materials | File Size | Description |
+|:---|:---|:---|:---|:---|:---|
+| `env_jacaranda_tree_01` | `public/assets/models/environment/env_jacaranda_tree_01.glb` | 26 | 5 | 153.6 KB | *Jacaranda mimosifolia* street tree — curved sculptural trunk with root flare, 4 primary spreading limbs, 5 secondary sub-branches, 14 volumetric organic purple blossom canopy clusters. Materials: bark, violet blossom, deep purple highlight, lavender accent, green leaf. |
+| `env_acacia_tree_01` | `public/assets/models/environment/env_acacia_tree_01.glb` | 19 | 4 | 61.7 KB | *Vachellia tortilis* (Umbrella Acacia) — organic tapered trunk with root flare, 6 radial umbrella branch arms, 3 tiered flat-topped canopy shelves. Materials: bark, shaded, deep, and sunlit savanna acacia foliage. |
+| `env_bougainvillea_planter_01` | `public/assets/models/environment/env_bougainvillea_planter_01.glb` | 14 | 5 | 105.6 KB | Precast concrete sidewalk planter (2.4 m × 0.9 m × 0.45 m) with laterite soil and cascading magenta/fuchsia bract clusters. Materials: concrete box, laterite soil, magenta bracts, deep magenta bracts, glossy leaves. |

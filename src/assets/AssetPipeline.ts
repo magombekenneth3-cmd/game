@@ -85,7 +85,8 @@ export class AssetPipeline {
       'bld_nairobi_shop_01', 'bld_modern_apartment_01', 'bld_commercial_tower_01',
       'veh_sedan_01', 'veh_suv_landcruiser_01', 'veh_matatu_ngong_01',
       'char_player_01',
-      'env_acacia_tree_01', 'env_mpesa_kiosk_01', 'env_streetlight_01', 'env_mama_mboga_stall_01',
+      'env_acacia_tree_01', 'env_jacaranda_tree_01', 'env_bougainvillea_planter_01',
+      'env_mpesa_kiosk_01', 'env_streetlight_01', 'env_mama_mboga_stall_01',
       'interior_sofa_01', 'interior_table_01', 'interior_chair_01', 'interior_dj_booth_rig_01',
       // Additional Secondary Core Assets
       'bld_mixed_use_01', 'bld_office_block_01', 'bld_residential_villa_01', 'bld_nightclub_01', 'bld_industrial_warehouse_01', 'bld_informal_kiosk_01',
@@ -520,6 +521,8 @@ export class AssetPipeline {
 
     if (assetId.includes('char')) return CharacterAssetKit.createHumanoidMesh('young_professional');
 
+    if (assetId.includes('jacaranda')) return EnvironmentAssetKit.createJacarandaTreeMesh(true);
+    if (assetId.includes('bougainvillea')) return EnvironmentAssetKit.createBougainvilleaPlanter();
     if (assetId.includes('acacia')) return EnvironmentAssetKit.createAcaciaTreeMesh();
     if (assetId.includes('palm')) return EnvironmentAssetKit.createPalmTreeMesh();
     if (assetId.includes('mpesa')) return EnvironmentAssetKit.createMPesaKioskMesh();
@@ -751,8 +754,20 @@ export class AssetPipeline {
   }
 
   // --- ENVIRONMENT FOLIAGE & PROPS ---
+
+  /** Returns the high-fidelity Jacaranda street tree (flowering). */
+  public getJacarandaTreeMesh(): THREE.Group {
+    return this.getCachedGLB('env_jacaranda_tree_01');
+  }
+
+  /** Returns the Umbrella Acacia tree (Vachellia tortilis). */
   public getAcaciaTreeMesh(): THREE.Group {
     return this.getCachedGLB('env_acacia_tree_01');
+  }
+
+  /** Returns the Bougainvillea planter box (concrete, magenta bracts). */
+  public getBougainvilleaPlanterMesh(): THREE.Group {
+    return this.getCachedGLB('env_bougainvillea_planter_01');
   }
 
   public getPalmTreeMesh(): THREE.Group {

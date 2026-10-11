@@ -203,19 +203,50 @@ export class NairobiDistrictScene {
   }
 
   private createVegetation(): void {
-    const treePositions = [
-      { x: 15, z: 10 },   { x: -15, z: -10 }, { x: -60, z: -10 }, { x: -40, z: 70 },
-      { x: 50, z: -80 },  { x: 110, z: 10 },  { x: -120, z: -40 }, { x: -90, z: 110 },
-      { x: 80, z: -120 }, { x: 130, z: -60 }, { x: 45, z: -30 },  { x: -30, z: -85 }
+    const pipeline = AssetPipeline.getInstance();
+
+    // --- Jacaranda Street Trees — along Kenyatta Avenue corridor (Z = -30 to 55) ---
+    // Placed in curbside grates at X = ±8.4 m, spaced ~15 m apart along the avenue
+    const jacarandaPositions = [
+      { x:  8.4, z: -20, ry: 0.0  }, { x:  8.4, z:  -5, ry: 0.8 },
+      { x:  8.4, z:  15, ry: 1.6  }, { x:  8.4, z:  35, ry: 2.4 },
+      { x:  8.4, z:  50, ry: 3.1  },
+      { x: -8.4, z: -15, ry: 0.4  }, { x: -8.4, z:   5, ry: 1.2 },
+      { x: -8.4, z:  25, ry: 2.0  }, { x: -8.4, z:  45, ry: 2.8 },
     ];
+    jacarandaPositions.forEach(({ x, z, ry }) => {
+      const mesh = pipeline.getJacarandaTreeMesh();
+      mesh.position.set(x, 0, z);
+      mesh.rotation.y = ry;
+      this.scene.add(mesh);
+    });
 
-    treePositions.forEach((pos, idx) => {
-      const treeGroup = idx % 2 === 0
-        ? AssetPipeline.getInstance().getAcaciaTreeMesh()
-        : AssetPipeline.getInstance().getPalmTreeMesh();
+    // --- Acacia Trees — perimeter open spaces, not on the avenue ---
+    const acaciaPositions = [
+      { x: -60, z: -10 }, { x: -40, z:  70 }, { x:  50, z: -80 },
+      { x: 110, z:  10 }, { x: -120, z: -40 }, { x: -90, z: 110 },
+      { x:  80, z: -120 }, { x: 130, z: -60 },
+    ];
+    acaciaPositions.forEach(({ x, z }, idx) => {
+      const mesh = pipeline.getAcaciaTreeMesh();
+      mesh.position.set(x, 0, z);
+      mesh.rotation.y = (idx * 1.37) % (Math.PI * 2); // deterministic variation
+      this.scene.add(mesh);
+    });
 
-      treeGroup.position.set(pos.x, 0.3, pos.z);
-      this.scene.add(treeGroup);
+    // --- Bougainvillea Planters — building boundary edges, not blocking footpaths ---
+    // Placed against building facades at X = ±14.5 m between shop entrances
+    const bougainvilleaPositions = [
+      { x:  14.5, z:  -8, ry: 0.0 }, { x:  14.5, z:  12, ry: 0.0 },
+      { x:  14.5, z:  32, ry: 0.0 }, { x:  14.5, z:  48, ry: 0.0 },
+      { x: -14.5, z:  -3, ry: Math.PI }, { x: -14.5, z:  18, ry: Math.PI },
+      { x: -14.5, z:  38, ry: Math.PI },
+    ];
+    bougainvilleaPositions.forEach(({ x, z, ry }) => {
+      const mesh = pipeline.getBougainvilleaPlanterMesh();
+      mesh.position.set(x, 0, z);
+      mesh.rotation.y = ry;
+      this.scene.add(mesh);
     });
 
     // Add Roadside Stalls & Kiosks across major junctions
@@ -229,8 +260,8 @@ export class NairobiDistrictScene {
 
     stallLocations.forEach((loc) => {
       const stallMesh = loc.type === 'mama_mboga'
-        ? AssetPipeline.getInstance().getMamaMbogaStallMesh()
-        : AssetPipeline.getInstance().getMPesaKioskMesh();
+        ? pipeline.getMamaMbogaStallMesh()
+        : pipeline.getMPesaKioskMesh();
 
       stallMesh.position.set(loc.x, 0.3, loc.z);
       this.scene.add(stallMesh);
