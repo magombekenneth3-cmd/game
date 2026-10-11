@@ -34,6 +34,7 @@ export interface IInputState {
   pause: boolean;
   horn?: boolean;
   lights?: boolean;
+  tout?: boolean;
   mouseX: number;
   mouseY: number;
   zoomDelta?: number;

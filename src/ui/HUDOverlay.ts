@@ -1,5 +1,6 @@
 import { PlayerStateMode } from '../player/PlayerTypes';
 import { InteractionPromptState } from '../player/InteractionSystem';
+import { MatatuShiftSession } from '../traffic/MatatuOperatorTypes';
 
 export class HUDOverlay {
   private container: HTMLDivElement;
@@ -12,6 +13,17 @@ export class HUDOverlay {
   private drivingWidget: HTMLDivElement;
   private kphDisplay: HTMLSpanElement;
   private drivingStateBadge: HTMLSpanElement;
+
+  // Matatu Operator HUD Widget
+  private operatorWidget: HTMLDivElement;
+  private operatorSaccoBadge: HTMLSpanElement;
+  private operatorRouteCode: HTMLSpanElement;
+  private operatorNextStage: HTMLSpanElement;
+  private operatorSeats: HTMLSpanElement;
+  private operatorEarnings: HTMLSpanElement;
+  private operatorSatisfaction: HTMLSpanElement;
+  private operatorRushBadge: HTMLSpanElement;
+  private operatorInstruction: HTMLDivElement;
 
   constructor(parent: HTMLElement) {
     this.container = document.createElement('div');
@@ -49,6 +61,38 @@ export class HUDOverlay {
         </div>
       </div>
 
+      <!-- Matatu Operator Shift Dashboard Widget -->
+      <div id="hud-matatu-operator-widget" class="hud-matatu-operator-widget hidden" style="position: absolute; top: 25px; right: 380px; background: rgba(15, 23, 42, 0.92); backdrop-filter: blur(12px); padding: 14px 20px; border-radius: 12px; border: 2px solid #facc15; box-shadow: 0 8px 32px rgba(0,0,0,0.45); color: #fff; font-family: system-ui, -apple-system, sans-serif; display: flex; flex-direction: column; gap: 8px; min-width: 290px;">
+        <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.15); padding-bottom: 6px;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span id="operator-sacco-badge" style="background: #0f2042; border: 1px solid #facc15; color: #facc15; font-size: 11px; font-weight: 800; padding: 2px 7px; border-radius: 4px; text-transform: uppercase;">SUPER METRO</span>
+            <span id="operator-route-code" style="font-size: 12px; font-weight: 700; color: #94a3b8;">ROUTE 105</span>
+          </div>
+          <span id="operator-rush-badge" style="background: #ef4444; color: #fff; font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 4px;">🔥 RUSH HOUR (1.4x)</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; font-size: 13px; font-weight: 600;">
+          <span style="color: #cbd5e1;">Next Stop:</span>
+          <span id="operator-next-stage" style="color: #38bdf8; font-weight: 700;">GPO Stage (42m)</span>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; background: rgba(0,0,0,0.3); padding: 6px 10px; border-radius: 8px;">
+          <div style="text-align: center;">
+            <div style="font-size: 10px; color: #94a3b8; text-transform: uppercase;">Seats</div>
+            <div id="operator-seats" style="font-size: 13px; font-weight: 800; color: #e2e8f0;">0 / 14</div>
+          </div>
+          <div style="text-align: center;">
+            <div style="font-size: 10px; color: #94a3b8; text-transform: uppercase;">Fares</div>
+            <div id="operator-earnings" style="font-size: 13px; font-weight: 800; color: #4ade80;">KES 0</div>
+          </div>
+          <div style="text-align: center;">
+            <div style="font-size: 10px; color: #94a3b8; text-transform: uppercase;">Vibe</div>
+            <div id="operator-satisfaction" style="font-size: 13px; font-weight: 800; color: #facc15;">⭐ 100%</div>
+          </div>
+        </div>
+        <div id="operator-instruction" style="font-size: 11px; color: #facc15; font-weight: 600; text-align: center; background: rgba(250, 204, 21, 0.1); padding: 4px; border-radius: 4px;">
+          [T] Makanga Tout | [Space] Open Doors & Board
+        </div>
+      </div>
+
       <!-- Center Interaction Prompt Card -->
       <div id="hud-interaction-prompt" class="interaction-prompt hidden">
         <span class="key-badge">E</span>
@@ -67,6 +111,16 @@ export class HUDOverlay {
     this.drivingWidget = (this.container.querySelector('#hud-driving-widget') || document.createElement('div')) as HTMLDivElement;
     this.kphDisplay = (this.container.querySelector('#hud-kph') || document.createElement('span')) as HTMLSpanElement;
     this.drivingStateBadge = (this.container.querySelector('#hud-driving-state') || document.createElement('span')) as HTMLSpanElement;
+
+    this.operatorWidget = (this.container.querySelector('#hud-matatu-operator-widget') || document.createElement('div')) as HTMLDivElement;
+    this.operatorSaccoBadge = (this.container.querySelector('#operator-sacco-badge') || document.createElement('span')) as HTMLSpanElement;
+    this.operatorRouteCode = (this.container.querySelector('#operator-route-code') || document.createElement('span')) as HTMLSpanElement;
+    this.operatorNextStage = (this.container.querySelector('#operator-next-stage') || document.createElement('span')) as HTMLSpanElement;
+    this.operatorSeats = (this.container.querySelector('#operator-seats') || document.createElement('span')) as HTMLSpanElement;
+    this.operatorEarnings = (this.container.querySelector('#operator-earnings') || document.createElement('span')) as HTMLSpanElement;
+    this.operatorSatisfaction = (this.container.querySelector('#operator-satisfaction') || document.createElement('span')) as HTMLSpanElement;
+    this.operatorRushBadge = (this.container.querySelector('#operator-rush-badge') || document.createElement('span')) as HTMLSpanElement;
+    this.operatorInstruction = (this.container.querySelector('#operator-instruction') || document.createElement('div')) as HTMLDivElement;
   }
 
   public updatePlayerStats(cash: number, rep: number, mode: PlayerStateMode, stamina: number): void {
@@ -91,6 +145,55 @@ export class HUDOverlay {
         if (this.drivingStateBadge) this.drivingStateBadge.textContent = modeState;
       } else {
         this.drivingWidget.classList.add('hidden');
+      }
+    }
+  }
+
+  public updateMatatuOperatorHUD(session: MatatuShiftSession | undefined): void {
+    if (!this.operatorWidget || !this.operatorWidget.classList) return;
+
+    if (!session) {
+      this.operatorWidget.classList.add('hidden');
+      return;
+    }
+
+    this.operatorWidget.classList.remove('hidden');
+
+    if (this.operatorSaccoBadge) {
+      this.operatorSaccoBadge.textContent = session.saccoId.replace('_', ' ').toUpperCase();
+    }
+    if (this.operatorRouteCode) {
+      this.operatorRouteCode.textContent = session.routeCode;
+    }
+    if (this.operatorNextStage) {
+      const dist = Math.round(session.distanceToTargetCurbMeters);
+      this.operatorNextStage.textContent = `${session.targetStageName} (${dist}m)`;
+    }
+    if (this.operatorSeats) {
+      this.operatorSeats.textContent = `${session.passengers.length} / ${session.maxSeats}`;
+    }
+    if (this.operatorEarnings) {
+      const total = session.earnings.grossFaresKES + session.earnings.tipsEarnedKES;
+      this.operatorEarnings.textContent = `KES ${total.toLocaleString()}`;
+    }
+    if (this.operatorSatisfaction) {
+      this.operatorSatisfaction.textContent = `⭐ ${Math.round(session.telemetry.satisfactionScore)}%`;
+    }
+    if (this.operatorRushBadge) {
+      if (session.isPeakRushHour) {
+        this.operatorRushBadge.style.display = 'inline-block';
+        this.operatorRushBadge.textContent = `🔥 RUSH HOUR (${session.rushHourMultiplier}x)`;
+      } else {
+        this.operatorRushBadge.style.display = 'none';
+      }
+    }
+    if (this.operatorInstruction) {
+      if (session.dockedAtStage) {
+        this.operatorInstruction.textContent = `[T] Makanga: Tout Passengers | [W] Depart Stage`;
+      } else if (session.distanceToTargetCurbMeters <= 6.0) {
+        this.operatorInstruction.textContent = `[Space] Stop & Open Doors to Board`;
+      } else {
+        this.operatorInstruction.textContent = `[T] Makanga Callout | [H] Horn | Pull in at next bay`;
       }
     }
   }
