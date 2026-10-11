@@ -11,7 +11,9 @@ export type TrafficVehicleState =
   | 'PARKING'
   | 'PARKED'
   | 'AVOIDING'
-  | 'BLOCKED';
+  | 'BLOCKED'
+  | 'APPROACHING_STAGE'
+  | 'DEPARTING_STAGE';
 
 export interface TrafficDriver {
   id: string;

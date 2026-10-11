@@ -7,6 +7,7 @@ import { InteractionSystem } from './InteractionSystem';
 import { VehicleManager } from '../vehicles/VehicleManager';
 import { AssetPipeline } from '../assets/AssetPipeline';
 import { CharacterAnimationController } from '../assets/CharacterAnimationController';
+import { MatatuTransitSystem } from '../traffic/MatatuTransitSystem';
 
 export class PlayerController {
   public mesh: THREE.Group;
@@ -115,6 +116,46 @@ export class PlayerController {
       return;
     }
 
+    // Handling Matatu Passenger Riding State
+    if (this.state.getMode() === 'RIDING_AS_PASSENGER' && this.vehicleManager) {
+      this.mesh.visible = false;
+      const transitSystem = MatatuTransitSystem.getInstance();
+      const ride = transitSystem.getCurrentPlayerRide();
+
+      if (inputState.mouseX !== 0 || inputState.mouseY !== 0) {
+        this.vehicleManager.vehicleCamera.handleMouseLook(inputState.mouseX, inputState.mouseY);
+      }
+
+      if (ride) {
+        const matatuVeh = this.vehicleManager.getVehicle(ride.vehicleId);
+        if (matatuVeh) {
+          this.motor.position.copy(matatuVeh.state.position);
+          this.vehicleManager.vehicleCamera.setCameraMode('PASSENGER');
+          this.vehicleManager.vehicleCamera.update(
+            matatuVeh.state.position,
+            matatuVeh.state.rotationY,
+            matatuVeh.state.currentSpeedKph,
+            deltaSeconds,
+            groundMeshes
+          );
+        }
+      }
+
+      // Check if player requests stop / alights (KeyE)
+      if (inputState.interact) {
+        const rideVehicle = ride ? this.vehicleManager.getVehicle(ride.vehicleId) : undefined;
+        const exitPos = transitSystem.alightPlayer(
+          this.state,
+          rideVehicle ? rideVehicle.state.position : this.motor.position,
+          rideVehicle ? rideVehicle.state.rotationY : 0
+        );
+        this.motor.position.copy(exitPos);
+        this.vehicleManager.vehicleCamera.setCameraMode('CHASE');
+        this.mesh.visible = true;
+      }
+      return;
+    }
+
     // ON-FOOT MODE
     this.mesh.visible = true;
 
@@ -149,8 +190,25 @@ export class PlayerController {
     this.cameraManager.update(this.motor.position, deltaSeconds, cameraOccluders || []);
 
 
-    // 7. Check Vehicle Entry Interaction if VehicleManager is attached
+    // 7. Check Vehicle Entry & Matatu Boarding Interaction if VehicleManager is attached
     if (inputState.interact && this.vehicleManager) {
+      // First check if player can board a dwelling matatu as a passenger
+      const transitSystem = MatatuTransitSystem.getInstance();
+      const nearbyVehicles = this.vehicleManager.getNearbyVehicles(this.motor.position, 4.5);
+      const nearbyMatatu = nearbyVehicles.find((v) => v.definition.type === 'matatu');
+
+      if (nearbyMatatu) {
+        const boardCheck = transitSystem.canPlayerBoard(nearbyMatatu.definition.id, this.motor.position, this.state.getCash());
+        if (boardCheck.allowed) {
+          const success = transitSystem.boardPlayer(nearbyMatatu.definition.id, this.state);
+          if (success) {
+            this.mesh.visible = false;
+            this.vehicleManager.vehicleCamera.setCameraMode('PASSENGER');
+            return;
+          }
+        }
+      }
+
       const prompt = this.vehicleManager.checkPlayerInteraction(this.motor.position);
       if (prompt.canEnter && prompt.vehicle) {
         const success = this.vehicleManager.enterVehicle(prompt.vehicle);

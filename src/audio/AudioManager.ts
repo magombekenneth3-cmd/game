@@ -144,6 +144,75 @@ export class AudioManager {
     });
   }
 
+  /**
+   * Authentic Kenyan Matatu quick rhythmic double-honk ("beep-beep!")
+   */
+  public playMatatuDoubleHorn(): void {
+    if (this.isMuted || !this.ctx || this.ctx.state !== 'running') return;
+    const baseNow = this.ctx.currentTime;
+    const pulses = [0, 0.16]; // Two quick staccato pulses
+
+    pulses.forEach((offset) => {
+      [420, 520].forEach((freq) => {
+        const osc = this.ctx!.createOscillator();
+        const gain = this.ctx!.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(freq, baseNow + offset);
+
+        gain.gain.setValueAtTime(0.22, baseNow + offset);
+        gain.gain.exponentialRampToValueAtTime(0.001, baseNow + offset + 0.11);
+
+        osc.connect(gain);
+        gain.connect(this.masterGain!);
+        osc.start(baseNow + offset);
+        osc.stop(baseNow + offset + 0.11);
+      });
+    });
+  }
+
+  /**
+   * Sound effect for matatu pneumatic or sliding passenger door.
+   */
+  public playMatatuDoorChime(): void {
+    if (this.isMuted || !this.ctx || this.ctx.state !== 'running') return;
+    const now = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(587.33, now); // D5
+    osc.frequency.exponentialRampToValueAtTime(880.0, now + 0.15); // A5
+
+    gain.gain.setValueAtTime(0.18, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+
+    osc.connect(gain);
+    gain.connect(this.masterGain!);
+    osc.start(now);
+    osc.stop(now + 0.25);
+  }
+
+  /**
+   * Conductor / Tout calling sound notification.
+   */
+  public playToutCallout(_phrase?: string): void {
+    if (this.isMuted || !this.ctx || this.ctx.state !== 'running') return;
+    const now = this.ctx.currentTime;
+    [659.25, 523.25].forEach((freq, idx) => {
+      const osc = this.ctx!.createOscillator();
+      const gain = this.ctx!.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, now + idx * 0.1);
+
+      gain.gain.setValueAtTime(0.15, now + idx * 0.1);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.1 + 0.12);
+
+      osc.connect(gain);
+      gain.connect(this.masterGain!);
+      osc.start(now + idx * 0.1);
+      osc.stop(now + idx * 0.1 + 0.12);
+    });
+  }
+
   public startEngine(): void {
     if (this.engineOsc || !this.ctx) return;
     try {

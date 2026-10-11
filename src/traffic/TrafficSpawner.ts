@@ -6,6 +6,8 @@ import { TrafficController } from './TrafficController';
 import { TrafficDriver, TransitRoute } from './TrafficTypes';
 import { TrafficDensity } from './TrafficDensity';
 import { SeededRandom } from '../utils/SeededRandom';
+import { MatatuTransitSystem } from './MatatuTransitSystem';
+import { SaccoId } from './MatatuTransitTypes';
 
 export class TrafficSpawner {
   public static spawnDeterministicTrafficFleet(
@@ -20,31 +22,47 @@ export class TrafficSpawner {
     const lanes = laneSystem.getAllLanes();
     if (lanes.length === 0) return { controllers: [], transitRoutes: [] };
 
-    // 1. Create Matatu Transit Routes
-    const transitRoutes: TransitRoute[] = [
-      {
+    const transitSystem = MatatuTransitSystem.getInstance();
+    const saccosOrder: SaccoId[] = ['super_metro', 'city_hoppa', 'ngong_126', 'forward_sacco', 'kbs_transit'];
+
+    // 1. Build Transit Routes synchronized with MatatuTransitSystem
+    const transitRoutes: TransitRoute[] = [];
+    transitSystem.routes.forEach((route) => {
+      const stops = route.stageSequence.map((stageId) => {
+        const stage = transitSystem.stages.get(stageId);
+        return {
+          id: stageId,
+          name: stage ? stage.name : stageId,
+          position: stage ? stage.curbPosition.clone() : new THREE.Vector3(0, 0.3, 0),
+          routeIds: [route.id]
+        };
+      });
+
+      transitRoutes.push({
+        id: route.id,
+        name: route.name,
+        roadSequence: route.roadIds.length > 0 ? route.roadIds : Array.from(roadGraph.edges.keys()).slice(0, 4),
+        stops
+      });
+    });
+
+    // Fallback if no routes defined
+    if (transitRoutes.length === 0) {
+      transitRoutes.push({
         id: 'route_111_ngong',
         name: 'Route 111 — Ngong Road Express',
         roadSequence: Array.from(roadGraph.edges.keys()).slice(0, 4),
         stops: [
-          { id: 'stop_city_hall', name: 'City Hall Stage', position: new THREE.Vector3(0, 0.3, 10), routeIds: ['route_111_ngong'] },
-          { id: 'stop_yaya_ctr', name: 'Yaya Transit Hub', position: new THREE.Vector3(-20, 0.3, -40), routeIds: ['route_111_ngong'] },
-          { id: 'stop_kileleshwa', name: 'Kileleshwa Stage', position: new THREE.Vector3(40, 0.3, 20), routeIds: ['route_111_ngong'] }
+          { id: 'stage_kencom', name: 'Kencom / Ambassador Stage', position: new THREE.Vector3(7.2, 0.25, 72), routeIds: ['route_111_ngong'] },
+          { id: 'stage_gpo', name: 'GPO / Teleposta Stage', position: new THREE.Vector3(-5.5, 0.25, 26), routeIds: ['route_111_ngong'] }
         ]
-      },
-      {
-        id: 'route_46_yaya',
-        name: 'Route 46 — Yaya / Hurlingham Shuttle',
-        roadSequence: Array.from(roadGraph.edges.keys()).slice(2, 6),
-        stops: [
-          { id: 'stop_hurlingham', name: 'Hurlingham Plaza', position: new THREE.Vector3(50, 0.3, -30), routeIds: ['route_46_yaya'] },
-          { id: 'stop_yaya_ctr', name: 'Yaya Transit Hub', position: new THREE.Vector3(-20, 0.3, -40), routeIds: ['route_46_yaya'] }
-        ]
-      }
-    ];
+      });
+    }
 
     // 2. Spawn 30 Deterministic Traffic Drivers & Vehicles
     const count = 30;
+    let matatuCounter = 0;
+
     for (let i = 0; i < count; i++) {
       const isMatatu = i % 5 === 0;
       const type = TrafficDensity.selectVehicleType(rng, isMatatu);
@@ -73,9 +91,18 @@ export class TrafficSpawner {
       };
 
       const routeLanes = [lane];
-      const transitRoute = isMatatu ? transitRoutes[i % transitRoutes.length] : undefined;
+      let assignedTransitRoute: TransitRoute | undefined;
 
-      const controller = new TrafficController(driver, vehicle, routeLanes, transitRoute);
+      if (isMatatu || type === 'matatu') {
+        const assignedRouteObj = transitRoutes[matatuCounter % transitRoutes.length];
+        assignedTransitRoute = assignedRouteObj;
+
+        const saccoId = saccosOrder[matatuCounter % saccosOrder.length];
+        transitSystem.registerMatatuVehicle(vehId, saccoId, assignedRouteObj.id);
+        matatuCounter++;
+      }
+
+      const controller = new TrafficController(driver, vehicle, routeLanes, assignedTransitRoute);
       controllers.push(controller);
     }
 

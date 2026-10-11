@@ -41,6 +41,7 @@ export class CBDAdjacentCommercialBlock {
     this.createCarriagewayRoadSurface();
     this.createStreetWallBuildings();
     this.createStreetFurniture();
+    this.createKencomMatatuStage();
 
     this.scene.add(this.group);
     return { buildings: this.buildings, group: this.group, boundary: this.getBoundary() };
@@ -421,5 +422,38 @@ export class CBDAdjacentCommercialBlock {
     pedestrian2.position.set(11.0, 0.20, 98.0);
     pedestrian2.rotation.y = -0.4;
     this.group.add(pedestrian2);
+  }
+
+  /**
+   * Sets up the iconic Kencom / Ambassador Matatu Stage on East Promenade (Z = 72.0).
+   */
+  private createKencomMatatuStage(): void {
+    // 1. Commuter Shelter on East Sidewalk
+    const shelter = EnvironmentAssetKit.createMatatuStageShelterMesh();
+    shelter.name = 'CBD_Adjacent_Stage_KencomShelter';
+    shelter.position.set(11.5, 0.20, 72.0);
+    shelter.rotation.y = -Math.PI / 2;
+    this.group.add(shelter);
+
+    // 2. Yellow Bus-Stop Painted Marking Box at Curb Bay (X = 5.5, Z = 72.0)
+    const stageBoxGeo = new THREE.BoxGeometry(3.2, 0.02, 14.0);
+    const stageBoxMat = new THREE.MeshStandardMaterial({ color: 0xfacc15, roughness: 0.4 });
+    const stageBox = new THREE.Mesh(stageBoxGeo, stageBoxMat);
+    stageBox.name = 'CBD_Adjacent_Stage_KencomBox';
+    stageBox.position.set(5.5, 0.07, 72.0);
+    stageBox.receiveShadow = true;
+    this.group.add(stageBox);
+
+    // 3. Commuters waiting under the shelter
+    const pipeline = AssetPipeline.getInstance();
+    const commuter1 = pipeline.getCharacterMesh('business_owner');
+    commuter1.position.set(10.2, 0.20, 71.0);
+    commuter1.rotation.y = Math.PI * 0.4;
+    this.group.add(commuter1);
+
+    const commuter2 = pipeline.getCharacterMesh('student');
+    commuter2.position.set(10.5, 0.20, 73.5);
+    commuter2.rotation.y = Math.PI * 0.6;
+    this.group.add(commuter2);
   }
 }

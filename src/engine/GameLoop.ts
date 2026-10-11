@@ -26,6 +26,7 @@ import { MinimapUI } from '../ui/MinimapUI';
 import { SpeedometerUI } from '../ui/SpeedometerUI';
 import { MainMenuUI } from '../ui/MainMenuUI';
 import { ParticleSystem } from './ParticleSystem';
+import { MatatuTransitSystem } from '../traffic/MatatuTransitSystem';
 
 export type BootStage =
   | 'INITIALIZING_RENDERER'
@@ -445,14 +446,46 @@ export class GameLoop {
         worldQueries.groundMeshes
       );
 
-      // Check vehicle proximity interaction prompt
-      const vehPrompt = this.vehicleManager.checkPlayerInteraction(playerPos);
-      if (vehPrompt.canEnter || vehPrompt.canExit) {
+      // Check matatu passenger boarding prompt or vehicle proximity interaction prompt
+      const transitSystem = MatatuTransitSystem.getInstance();
+      if (this.playerController.state.getMode() === 'RIDING_AS_PASSENGER') {
+        const ride = transitSystem.getCurrentPlayerRide();
         this.hudOverlay.updateInteractionPrompt({
           hasTarget: true,
-          displayName: vehPrompt.promptText,
-          distanceMeters: 2.0
+          displayName: `[E] Alight at Stage (${ride ? ride.routeName : 'Matatu'})`,
+          distanceMeters: 0
         });
+      } else {
+        const nearbyVehicles = this.vehicleManager.getNearbyVehicles(playerPos, 4.5);
+        const nearbyMatatu = nearbyVehicles.find((v) => v.definition.type === 'matatu');
+        let matatuPromptShown = false;
+
+        if (nearbyMatatu) {
+          const boardCheck = transitSystem.canPlayerBoard(
+            nearbyMatatu.definition.id,
+            playerPos,
+            this.playerController.state.getCash()
+          );
+          if (boardCheck.allowed && boardCheck.route && boardCheck.sacco) {
+            this.hudOverlay.updateInteractionPrompt({
+              hasTarget: true,
+              displayName: `[E] Board Matatu — ${boardCheck.sacco.name} (${boardCheck.route.code}: KES ${boardCheck.fare})`,
+              distanceMeters: 2.0
+            });
+            matatuPromptShown = true;
+          }
+        }
+
+        if (!matatuPromptShown) {
+          const vehPrompt = this.vehicleManager.checkPlayerInteraction(playerPos);
+          if (vehPrompt.canEnter || vehPrompt.canExit) {
+            this.hudOverlay.updateInteractionPrompt({
+              hasTarget: true,
+              displayName: vehPrompt.promptText,
+              distanceMeters: 2.0
+            });
+          }
+        }
       }
 
       // 7. Update Living NPC Population Simulation

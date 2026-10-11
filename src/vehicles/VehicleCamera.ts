@@ -13,14 +13,24 @@ export class VehicleCamera {
   private raycaster: THREE.Raycaster = new THREE.Raycaster();
   private tempDir: THREE.Vector3 = new THREE.Vector3();
 
+  public cameraMode: 'CHASE' | 'PASSENGER' = 'CHASE';
+
   constructor(camera: THREE.PerspectiveCamera) {
     this.camera = camera;
+  }
+
+  public setCameraMode(mode: 'CHASE' | 'PASSENGER'): void {
+    this.cameraMode = mode;
+    if (mode === 'PASSENGER') {
+      this.pitch = 0.05;
+      this.yaw = 0;
+    }
   }
 
   public handleMouseLook(deltaX: number, deltaY: number, sensitivity: number = 0.0025): void {
     this.yaw -= deltaX * sensitivity;
     this.pitch += deltaY * sensitivity;
-    this.pitch = Math.max(-0.1, Math.min(0.8, this.pitch));
+    this.pitch = Math.max(-0.4, Math.min(0.8, this.pitch));
   }
 
   public update(
@@ -30,6 +40,30 @@ export class VehicleCamera {
     deltaSeconds: number,
     obstacles: THREE.Object3D[] = []
   ): void {
+    if (this.cameraMode === 'PASSENGER') {
+      // Passenger eye position mounted inside matatu cabin at window level
+      const seatOffset = new THREE.Vector3(0.35, 1.35, -0.2);
+      seatOffset.applyAxisAngle(new THREE.Vector3(0, 1, 0), vehicleRotationY);
+      const eyePos = vehiclePos.clone().add(seatOffset);
+
+      const viewYaw = vehicleRotationY + this.yaw;
+      const cosP = Math.cos(this.pitch);
+      const forwardDir = new THREE.Vector3(
+        -Math.sin(viewYaw) * cosP,
+        Math.sin(this.pitch),
+        -Math.cos(viewYaw) * cosP
+      );
+      const targetFocus = eyePos.clone().add(forwardDir.multiplyScalar(15.0));
+
+      const lerpFactor = Math.min(1.0, deltaSeconds * 12.0);
+      this.currentPosition.lerp(eyePos, lerpFactor);
+      this.currentLookAt.lerp(targetFocus, lerpFactor);
+
+      this.camera.position.copy(this.currentPosition);
+      this.camera.lookAt(this.currentLookAt);
+      return;
+    }
+
     const targetFocus = vehiclePos.clone().add(new THREE.Vector3(0, this.heightOffset, 0));
 
     // Dynamic distance expansion based on speed

@@ -4,6 +4,7 @@ import { TrafficDriver, TrafficVehicleState, TransitRoute } from './TrafficTypes
 import { TrafficLane, LaneSystem } from './LaneSystem';
 import { IntersectionController } from './IntersectionController';
 import { TrafficRules, NAIROBI_TRAFFIC_RULES } from './TrafficRules';
+import { MatatuTransitSystem } from './MatatuTransitSystem';
 
 export class TrafficController {
   public driver: TrafficDriver;
@@ -44,22 +45,45 @@ export class TrafficController {
   ): void {
     if (this.aiState === 'PARKED') return;
 
-    // Handle Matatu Dwell Time at Transit Stop
-    if (this.transitRoute && this.dwellTimer > 0) {
-      this.dwellTimer -= fixedDt;
-      this.aiState = 'STOPPED';
-      this.vehicle.state.throttle = 0;
-      this.vehicle.state.handbrake = true;
-      this.vehicle.physics.stepFixed(
-        { throttle: 0, reverse: 0, steer: 0, handbrake: true, exitVehicle: false },
-        fixedDt,
-        environmentMeshes
-      );
-      if (this.dwellTimer <= 0) {
-        this.aiState = 'CRUISING';
-        this.currentStopIndex = (this.currentStopIndex + 1) % this.transitRoute.stops.length;
+    // Check enhanced Matatu Transit System state if this is a registered transit vehicle
+    const matatuState = MatatuTransitSystem.getInstance().getMatatuState(this.vehicle.definition.id);
+    if (matatuState) {
+      if (
+        matatuState.dwellState === 'DWELLING_AT_STAGE' ||
+        matatuState.dwellState === 'BOARDING_ALIGHTING' ||
+        matatuState.dwellState === 'CALLING_PASSENGERS'
+      ) {
+        this.aiState = 'STOPPED';
+        this.vehicle.state.throttle = 0;
+        this.vehicle.state.handbrake = true;
+        this.vehicle.physics.stepFixed(
+          { throttle: 0, reverse: 0, steer: 0, handbrake: true, exitVehicle: false },
+          fixedDt,
+          environmentMeshes
+        );
+        return;
       }
-      return;
+      if (matatuState.dwellState === 'DEPARTING_STAGE') {
+        this.aiState = 'DEPARTING_STAGE';
+      }
+    } else {
+      // Fallback for standard baseline dwell timer
+      if (this.transitRoute && this.dwellTimer > 0) {
+        this.dwellTimer -= fixedDt;
+        this.aiState = 'STOPPED';
+        this.vehicle.state.throttle = 0;
+        this.vehicle.state.handbrake = true;
+        this.vehicle.physics.stepFixed(
+          { throttle: 0, reverse: 0, steer: 0, handbrake: true, exitVehicle: false },
+          fixedDt,
+          environmentMeshes
+        );
+        if (this.dwellTimer <= 0) {
+          this.aiState = 'CRUISING';
+          this.currentStopIndex = (this.currentStopIndex + 1) % this.transitRoute.stops.length;
+        }
+        return;
+      }
     }
 
     // 1. Determine Current Lane
@@ -153,11 +177,25 @@ export class TrafficController {
       const targetStop = this.transitRoute.stops[this.currentStopIndex];
       if (targetStop) {
         const distToStop = vehiclePos.distanceTo(targetStop.position);
-        if (distToStop <= 4.0) {
-          this.dwellTimer = 4.0; // Stop for 4 seconds
-          this.aiState = 'STOPPED';
-        } else if (distToStop <= 25.0) {
-          targetSpeedKph = Math.min(targetSpeedKph, 15.0);
+        if (matatuState) {
+          if (distToStop <= 4.0) {
+            if (matatuState.dwellState === 'EN_ROUTE' || matatuState.dwellState === 'APPROACHING_STAGE') {
+              matatuState.dwellState = 'DWELLING_AT_STAGE';
+              matatuState.dwellTimerSeconds = 0;
+            }
+            this.aiState = 'STOPPED';
+          } else if (distToStop <= 28.0 && matatuState.dwellState !== 'DEPARTING_STAGE') {
+            matatuState.dwellState = 'APPROACHING_STAGE';
+            this.aiState = 'APPROACHING_STAGE';
+            targetSpeedKph = Math.min(targetSpeedKph, 12.0 * Math.max(0.3, distToStop / 28.0));
+          }
+        } else {
+          if (distToStop <= 4.0) {
+            this.dwellTimer = 4.0; // Stop for 4 seconds
+            this.aiState = 'STOPPED';
+          } else if (distToStop <= 25.0) {
+            targetSpeedKph = Math.min(targetSpeedKph, 15.0);
+          }
         }
       }
     }
