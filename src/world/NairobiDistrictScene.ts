@@ -8,6 +8,7 @@ import { TerrainChunkManager } from './TerrainChunkManager';
 import { AssetManager } from '../engine/AssetManager';
 import { AssetPipeline } from '../assets/AssetPipeline';
 import { BuildingData } from './BuildingData';
+import { CBDShowcaseBlock } from './CBDShowcaseBlock';
 
 export interface WorldQueries {
   groundMeshes: THREE.Object3D[];
@@ -80,6 +81,14 @@ export class NairobiDistrictScene {
       this.chunkManager.registerBuildingToChunk(bldData, meshGroup);
     });
 
+    // 4b. Generate Authentic Nairobi CBD Showcase Block along Avenue
+    const cbdBlock = new CBDShowcaseBlock(this.scene, this.assetManager);
+    const { buildings: cbdBuildings, group: cbdGroup } = cbdBlock.generate();
+    this.groundMeshes.push(cbdGroup);
+    cbdBuildings.forEach((bldData) => {
+      this.chunkManager.registerBuildingToChunk(bldData, new THREE.Group());
+    });
+
     // 5. Generate Procedural Secondary Building Infill for Dense Nairobi Experience
     this.generateProceduralInfillBuildings();
 
@@ -104,9 +113,7 @@ export class NairobiDistrictScene {
       height: number;
       category: 'commercial_tower' | 'office_block' | 'apartment_block' | 'residential_house' | 'shop';
     }> = [
-      // Block A: Ngong Corridor Primary Spawn Infill
-      { id: 'bld_infill_start_left', name: 'Ngong Road Plaza & M-Pesa Arcade', x: -28, z: 15, width: 22, depth: 18, floors: 4, height: 15, category: 'shop' },
-      { id: 'bld_infill_start_right', name: 'Kilimani Heights Executive Towers', x: 28, z: 20, width: 26, depth: 22, floors: 9, height: 32, category: 'apartment_block' },
+      // Block A: Upper Hill Horizon North Infill
       { id: 'bld_infill_start_north', name: 'Upper Hill Horizon Skyscraper', x: -36, z: -55, width: 28, depth: 24, floors: 16, height: 58, category: 'commercial_tower' },
 
       // Block A: Ngong Corridor North Infill

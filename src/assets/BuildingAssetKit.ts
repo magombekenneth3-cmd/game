@@ -38,8 +38,18 @@ export class BuildingAssetKit {
     geom.computeVertexNormals();
 
     // 2. Select Hyperrealistic PBR Facade Textures & Materials
-    const facadeStyle = this.getStyleForCategory(bld.buildingCategory);
-    const facadeTexture = TextureGenerator.createFacadePanelTexture(facadeStyle);
+    const isCBD = bld.zone === 'cbd_commercial' || bld.buildingCategory === 'commercial_tower' || bld.buildingCategory === 'office_block';
+    let facadeTexture: THREE.CanvasTexture;
+    if (isCBD) {
+      const cbdStyle = bld.buildingCategory === 'commercial_tower'
+        ? 'curtain_glass'
+        : (bld.height > 30 ? 'brutalist_concrete' : (bld.id.includes('brick') ? 'commercial_brick' : 'modernist_render'));
+      facadeTexture = TextureGenerator.createCBDFacadeTexture(cbdStyle);
+    } else {
+      const facadeStyle = this.getStyleForCategory(bld.buildingCategory);
+      facadeTexture = TextureGenerator.createFacadePanelTexture(facadeStyle);
+    }
+
     const facadeNormalMap = TextureGenerator.createFacadeNormalMap();
     const facadeRoughnessMap = TextureGenerator.createFacadeRoughnessMap();
     const facadeEmissiveMap = TextureGenerator.createEmissiveWindowMap();
@@ -92,32 +102,58 @@ export class BuildingAssetKit {
       glassMesh.castShadow = true;
       group.add(glassMesh);
 
-      // Storefront Signboard Banner
-      const shopName = bld.shopNames && bld.shopNames.length > 0 ? bld.shopNames[0] : bld.name || 'COMMERCIAL CENTER';
-      const signTexture = TextureGenerator.createStorefrontSignTexture(shopName);
-      const signMat = new THREE.MeshStandardMaterial({
-        map: signTexture,
-        roughness: 0.3,
-        emissive: new THREE.Color(0xffffff),
-        emissiveMap: signTexture,
-        emissiveIntensity: 0.25
-      });
-      const signBox = new THREE.BoxGeometry(Math.min(8.0, bld.height > 15 ? 10 : 5), 1.2, 0.3);
-      const signMesh = new THREE.Mesh(signBox, signMat);
-      signMesh.name = `Detail_Signboard_${bld.id}`;
-      signMesh.position.set(0, storefrontHeight + 0.6, (bld.height > 10 ? 3.5 : 2.5));
-      signMesh.castShadow = true;
-      group.add(signMesh);
+      // Determine Frontage Orientation from Entrance
+      let forwardX = 0;
+      let forwardZ = (bld.height > 10 ? 3.5 : 2.5);
+      let angle = 0;
+      if (bld.entrances && bld.entrances.length > 0) {
+        const ent = bld.entrances[0].position;
+        const dx = ent.x - bld.center.x;
+        const dz = ent.z - bld.center.z;
+        const dist = Math.hypot(dx, dz);
+        if (dist > 0.5) {
+          forwardX = (dx / dist) * Math.min(dist, 4.2);
+          forwardZ = (dz / dist) * Math.min(dist, 4.2);
+          angle = Math.atan2(dx, dz);
+        }
+      }
 
-      // Storefront Awning Canopy
-      const canopyMat = new THREE.MeshStandardMaterial({ color: 0xd97706, roughness: 0.5 });
-      const canopyBox = new THREE.BoxGeometry(Math.min(9.0, bld.height > 15 ? 11 : 6), 0.25, 1.4);
-      const canopyMesh = new THREE.Mesh(canopyBox, canopyMat);
-      canopyMesh.name = `Detail_Canopy_${bld.id}`;
-      canopyMesh.position.set(0, storefrontHeight, (bld.height > 10 ? 3.8 : 2.8));
-      canopyMesh.castShadow = true;
-      group.add(canopyMesh);
+      // Storefront Signboard Banners & Striped Awnings
+      const shops = bld.shopNames && bld.shopNames.length > 0 ? bld.shopNames : [bld.name || 'COMMERCIAL CENTER'];
+      shops.forEach((shopName, sIdx) => {
+        const lateralOffset = (sIdx - (shops.length - 1) / 2) * 5.5;
+        const perpX = Math.cos(angle) * lateralOffset;
+        const perpZ = -Math.sin(angle) * lateralOffset;
+
+        const signTexture = TextureGenerator.createStorefrontSignTexture(shopName);
+        const signMat = new THREE.MeshStandardMaterial({
+          map: signTexture,
+          roughness: 0.3,
+          emissive: new THREE.Color(0xffffff),
+          emissiveMap: signTexture,
+          emissiveIntensity: 0.25
+        });
+        const signBox = new THREE.BoxGeometry(4.8, 1.1, 0.25);
+        const signMesh = new THREE.Mesh(signBox, signMat);
+        signMesh.name = `Detail_Signboard_${bld.id}_${sIdx}`;
+        signMesh.rotation.y = angle;
+        signMesh.position.set(forwardX + perpX, storefrontHeight + 0.6, forwardZ + perpZ);
+        signMesh.castShadow = true;
+        group.add(signMesh);
+
+        // Striped Canvas Awning Canopy
+        const awningTex = TextureGenerator.createAwningTexture(sIdx % 2 === 0 ? 'green_white' : 'orange_white');
+        const canopyMat = new THREE.MeshStandardMaterial({ map: awningTex, roughness: 0.6 });
+        const canopyBox = new THREE.BoxGeometry(5.2, 0.2, 1.6);
+        const canopyMesh = new THREE.Mesh(canopyBox, canopyMat);
+        canopyMesh.name = `Detail_Canopy_${bld.id}_${sIdx}`;
+        canopyMesh.rotation.y = angle;
+        canopyMesh.position.set(forwardX + perpX * 1.05, storefrontHeight, forwardZ + perpZ * 1.05);
+        canopyMesh.castShadow = true;
+        group.add(canopyMesh);
+      });
     }
+
 
     // 4. Balconies & Architectural Detailing for Residential/Apartment Blocks
     if (bld.buildingCategory === 'apartment_block' || bld.buildingCategory === 'residential_house') {

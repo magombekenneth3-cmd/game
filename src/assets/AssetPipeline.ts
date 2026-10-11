@@ -289,6 +289,26 @@ export class AssetPipeline {
             values[i + 2] = playerRestHips.z + dz;
           }
           retargetedTracks.push(new THREE.VectorKeyframeTrack('Hips.position', track.times, values));
+        } else if (cleanName === 'Hips.quaternion') {
+          const values = new Float32Array(track.values.length);
+          const qTrack = new THREE.Quaternion();
+          const qTrans = new THREE.Quaternion(0, 0.7071068, 0.7071068, 0);
+          const qTarget = new THREE.Quaternion();
+          for (let i = 0; i < track.values.length; i += 4) {
+            qTrack.set(
+              track.values[i],
+              track.values[i + 1],
+              track.values[i + 2],
+              track.values[i + 3]
+            );
+            // Pre-multiply by coordinate frame transform to align Mixamo parent space to upright world space
+            qTarget.copy(qTrans).multiply(qTrack);
+            values[i] = qTarget.x;
+            values[i + 1] = qTarget.y;
+            values[i + 2] = qTarget.z;
+            values[i + 3] = qTarget.w;
+          }
+          retargetedTracks.push(new THREE.QuaternionKeyframeTrack('Hips.quaternion', track.times, values));
         } else if (cleanName.endsWith('.quaternion')) {
           const clonedTrack = track.clone();
           clonedTrack.name = cleanName;
@@ -481,6 +501,11 @@ export class AssetPipeline {
     if (assetId.includes('mpesa')) return EnvironmentAssetKit.createMPesaKioskMesh();
     if (assetId.includes('mama_mboga')) return EnvironmentAssetKit.createMamaMbogaStallMesh();
     if (assetId.includes('streetlight')) return EnvironmentAssetKit.createStreetlightMesh();
+    if (assetId.includes('traffic_light')) return EnvironmentAssetKit.createTrafficLightMesh();
+    if (assetId.includes('street_sign')) return EnvironmentAssetKit.createStreetSignPostMesh('KENYATTA AVE');
+    if (assetId.includes('tree_paving')) return EnvironmentAssetKit.createTreeInPavingMesh('jacaranda');
+    if (assetId.includes('matatu_shelter')) return EnvironmentAssetKit.createMatatuStageShelterMesh();
+    if (assetId.includes('bollard')) return EnvironmentAssetKit.createStreetBollardMesh();
     if (assetId.includes('barrier')) return EnvironmentAssetKit.createRoadBarrierMesh();
     if (assetId.includes('pole')) return EnvironmentAssetKit.createUtilityPoleMesh();
 
@@ -720,6 +745,26 @@ export class AssetPipeline {
 
   public getMPesaKioskMesh(): THREE.Group {
     return this.getCachedGLB('env_mpesa_kiosk_01');
+  }
+
+  public getTrafficLightMesh(): THREE.Group {
+    return this.getCachedGLB('env_traffic_light_01');
+  }
+
+  public getStreetSignPostMesh(streetName: string = 'KENYATTA AVE', crossStreet: string = 'KIMATHI ST'): THREE.Group {
+    return EnvironmentAssetKit.createStreetSignPostMesh(streetName, crossStreet);
+  }
+
+  public getTreeInPavingMesh(type: 'jacaranda' | 'acacia' | 'palm' = 'jacaranda'): THREE.Group {
+    return EnvironmentAssetKit.createTreeInPavingMesh(type);
+  }
+
+  public getMatatuStageShelterMesh(): THREE.Group {
+    return this.getCachedGLB('env_matatu_shelter_01');
+  }
+
+  public getStreetBollardMesh(): THREE.Group {
+    return this.getCachedGLB('env_bollard_01');
   }
 
   // --- INTERIORS ---

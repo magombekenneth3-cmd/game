@@ -835,40 +835,495 @@ export class TextureGenerator {
    * Generates East African Matatu graphic art decal texture.
    */
   public static createMatatuDecalTexture(): THREE.CanvasTexture {
-    if (this.cache.has('matatu_art')) return this.cache.get('matatu_art')!;
+    return this.createMatatuLiveryTexture('kilimani_rider');
+  }
 
-    const { canvas, ctx } = this.createCanvas(512, 128);
+  /**
+   * Generates authentic Kenyan Cabro concrete paver texture (Herringbone pattern).
+   * Popular on Kenyatta Avenue, Kimathi Street, and modern Nairobi pedestrian corridors.
+   */
+  public static createCabroTexture(pattern: 'herringbone' | 'basketweave' = 'herringbone'): THREE.CanvasTexture {
+    const cacheKey = `cabro_${pattern}`;
+    if (this.cache.has(cacheKey)) return this.cache.get(cacheKey)!;
+
+    const { canvas, ctx } = this.createCanvas(512, 512);
     if (!ctx.fillRect) {
       const tex = this.createFallbackTexture(true);
-      this.cache.set('matatu_art', tex);
+      this.cache.set(cacheKey, tex);
       return tex;
     }
 
-    // Yellow base
-    ctx.fillStyle = '#fbc02d';
-    ctx.fillRect(0, 0, 512, 128);
+    const rng = new SeededRandom(254);
 
-    // Red & black diagonal speed stripes
-    ctx.fillStyle = '#d32f2f';
-    ctx.beginPath();
-    ctx.moveTo(0, 40);
-    ctx.lineTo(512, 40);
-    ctx.lineTo(512, 75);
-    ctx.lineTo(0, 75);
-    ctx.fill();
+    // Dark grey mortar / joint sand base
+    ctx.fillStyle = '#26292e';
+    ctx.fillRect(0, 0, 512, 512);
 
-    ctx.fillStyle = '#111111';
-    ctx.fillRect(0, 75, 512, 15);
+    // Kenyan Cabro Color Palette (laterite red, warm ochre, charcoal grey, buff stone)
+    const palettes = [
+      { r: 184, g: 74, b: 58 },   // Terracotta / red laterite paver
+      { r: 198, g: 85, b: 68 },
+      { r: 165, g: 62, b: 46 },
+      { r: 75, g: 82, b: 92 },    // Charcoal grey paver
+      { r: 60, g: 67, b: 76 },
+      { r: 92, g: 100, b: 112 },
+      { r: 210, g: 165, b: 115 }, // Warm buff / ochre paver
+      { r: 195, g: 148, b: 100 }
+    ];
 
-    // Typography
-    ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 24px sans-serif';
-    ctx.fillText('NAIROBI EXPRESS ★ KILIMANI RIDER', 40, 65);
+    const paverW = 32;
+    const paverL = 64;
+    const gap = 3;
+
+    // Draw interlocking herringbone grid
+    for (let y = -64; y < 512 + 64; y += paverW + gap) {
+      for (let x = -64; x < 512 + 64; x += paverL + gap) {
+        const isRotated = ((Math.floor(x / (paverL + gap)) + Math.floor(y / (paverW + gap))) % 2) === 0;
+        const col = palettes[Math.floor(rng.nextFloat() * palettes.length)];
+
+        // Subtle color jitter per block
+        const jitter = (rng.nextFloat() - 0.5) * 20;
+        const cr = Math.min(255, Math.max(0, Math.floor(col.r + jitter)));
+        const cg = Math.min(255, Math.max(0, Math.floor(col.g + jitter)));
+        const cb = Math.min(255, Math.max(0, Math.floor(col.b + jitter)));
+
+        const bx = x;
+        const by = y;
+        const bw = isRotated ? paverW : paverL;
+        const bh = isRotated ? paverL : paverW;
+
+        ctx.fillStyle = `rgb(${cr},${cg},${cb})`;
+        ctx.fillRect(bx, by, bw, bh);
+
+        // Chamfer bevel highlight on top/left
+        ctx.fillStyle = `rgba(255,255,255,0.18)`;
+        ctx.fillRect(bx, by, bw, 2);
+        ctx.fillRect(bx, by, 2, bh);
+
+        // Chamfer shadow on bottom/right
+        ctx.fillStyle = `rgba(0,0,0,0.25)`;
+        ctx.fillRect(bx, by + bh - 2, bw, 2);
+        ctx.fillRect(bx + bw - 2, by, 2, bh);
+      }
+    }
+
+    // Concrete aggregate speckle & micro-porosity
+    for (let i = 0; i < 8000; i++) {
+      const px = rng.nextFloat() * 512;
+      const py = rng.nextFloat() * 512;
+      const v = rng.nextFloat() > 0.5 ? 240 : 40;
+      ctx.fillStyle = `rgba(${v},${v},${v},0.12)`;
+      ctx.fillRect(px, py, 1, 1);
+    }
+
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.colorSpace = THREE.SRGBColorSpace;
+    texture.wrapS = THREE.RepeatWrapping;
+    texture.wrapT = THREE.RepeatWrapping;
+
+    this.cache.set(cacheKey, texture);
+    return texture;
+  }
+
+  /**
+   * Generates PBR Normal Map for Cabro pavers (recessed mortar joints & edge chamfers).
+   */
+  public static createCabroNormalMap(): THREE.CanvasTexture {
+    if (this.cache.has('cabro_normal')) return this.cache.get('cabro_normal')!;
+
+    const { canvas, ctx } = this.createCanvas(512, 512);
+    if (!ctx.fillRect) {
+      const tex = this.createFallbackTexture(false);
+      this.cache.set('cabro_normal', tex);
+      return tex;
+    }
+
+    // Base flat normal (128, 128, 255)
+    ctx.fillStyle = 'rgb(128, 128, 255)';
+    ctx.fillRect(0, 0, 512, 512);
+
+    const paverW = 32;
+    const paverL = 64;
+    const gap = 3;
+
+    for (let y = -64; y < 512 + 64; y += paverW + gap) {
+      for (let x = -64; x < 512 + 64; x += paverL + gap) {
+        const isRotated = ((Math.floor(x / (paverL + gap)) + Math.floor(y / (paverW + gap))) % 2) === 0;
+        const bw = isRotated ? paverW : paverL;
+        const bh = isRotated ? paverL : paverW;
+
+        // Bevel normal slopes
+        ctx.fillStyle = 'rgb(180, 128, 255)'; // Left (+X slope)
+        ctx.fillRect(x, y, 2, bh);
+        ctx.fillStyle = 'rgb(75, 128, 255)';  // Right (-X slope)
+        ctx.fillRect(x + bw - 2, y, 2, bh);
+        ctx.fillStyle = 'rgb(128, 180, 255)'; // Top (+Y slope)
+        ctx.fillRect(x, y, bw, 2);
+        ctx.fillStyle = 'rgb(128, 75, 255)';  // Bottom (-Y slope)
+        ctx.fillRect(x, y + bh - 2, bw, 2);
+      }
+    }
+
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.wrapS = THREE.RepeatWrapping;
+    texture.wrapT = THREE.RepeatWrapping;
+
+    this.cache.set('cabro_normal', texture);
+    return texture;
+  }
+
+  /**
+   * Generates PBR Roughness Map for Cabro pavers (high roughness concrete & porous sand joints).
+   */
+  public static createCabroRoughnessMap(): THREE.CanvasTexture {
+    if (this.cache.has('cabro_roughness')) return this.cache.get('cabro_roughness')!;
+
+    const { canvas, ctx } = this.createCanvas(512, 512);
+    if (!ctx.fillRect) {
+      const tex = this.createFallbackTexture(false);
+      this.cache.set('cabro_roughness', tex);
+      return tex;
+    }
+
+    // Concrete surface roughness ~ 0.78 (RGB 200)
+    ctx.fillStyle = 'rgb(200, 200, 200)';
+    ctx.fillRect(0, 0, 512, 512);
+
+    const rng = new SeededRandom(254);
+    for (let i = 0; i < 6000; i++) {
+      const px = rng.nextFloat() * 512;
+      const py = rng.nextFloat() * 512;
+      const v = Math.floor(180 + rng.nextFloat() * 50);
+      ctx.fillStyle = `rgb(${v},${v},${v})`;
+      ctx.fillRect(px, py, 2, 2);
+    }
+
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.wrapS = THREE.RepeatWrapping;
+    texture.wrapT = THREE.RepeatWrapping;
+
+    this.cache.set('cabro_roughness', texture);
+    return texture;
+  }
+
+  /**
+   * Generates authentic Nairobi CBD commercial building facades.
+   * Multiple styles: modernist plastered render, brutalist concrete with louvers,
+   * commercial face-brick, and reflective blue/bronze curtain-wall glass.
+   */
+  public static createCBDFacadeTexture(
+    style: 'modernist_render' | 'brutalist_concrete' | 'commercial_brick' | 'curtain_glass' | 'art_deco_ochre'
+  ): THREE.CanvasTexture {
+    const cacheKey = `cbd_facade_${style}`;
+    if (this.cache.has(cacheKey)) return this.cache.get(cacheKey)!;
+
+    const { canvas, ctx } = this.createCanvas(512, 512);
+    if (!ctx.fillRect) {
+      const tex = this.createFallbackTexture(true);
+      this.cache.set(cacheKey, tex);
+      return tex;
+    }
+
+    let wallBase = '#e5e0d8'; // Modernist warm off-white
+    let frameColor = '#2c3338';
+    let glassColor = '#1c2833';
+    let louverColor = '#7a8288';
+
+    if (style === 'brutalist_concrete') {
+      wallBase = '#b0b5b3';
+      frameColor = '#3a3f44';
+      glassColor = '#15202b';
+      louverColor = '#8a9094';
+    } else if (style === 'commercial_brick') {
+      wallBase = '#9c4132'; // Red-orange brick
+      frameColor = '#222222';
+      glassColor = '#1e293b';
+      louverColor = '#e2e8f0'; // White concrete sills
+    } else if (style === 'curtain_glass') {
+      wallBase = '#1a365d'; // Deep steel-blue spandrel
+      frameColor = '#0f172a';
+      glassColor = '#2563eb'; // Reflective blue
+      louverColor = '#38bdf8';
+    } else if (style === 'art_deco_ochre') {
+      wallBase = '#d49b42'; // Nairobi warm ochre
+      frameColor = '#3e2723';
+      glassColor = '#0f172a';
+      louverColor = '#fff8e1';
+    }
+
+    ctx.fillStyle = wallBase;
+    ctx.fillRect(0, 0, 512, 512);
+
+    // Concrete floor bands (horizontal cornices)
+    ctx.fillStyle = 'rgba(0,0,0,0.14)';
+    ctx.fillRect(0, 0, 512, 8);
+    ctx.fillRect(0, 252, 512, 8);
+    ctx.fillStyle = 'rgba(255,255,255,0.18)';
+    ctx.fillRect(0, 8, 512, 4);
+    ctx.fillRect(0, 260, 512, 4);
+
+    // 4 bays per floor, 2 floors in 512x512 tile
+    const numCols = 4;
+    const numRows = 2;
+    const colW = 512 / numCols;
+    const rowH = 512 / numRows;
+
+    for (let r = 0; r < numRows; r++) {
+      for (let c = 0; c < numCols; c++) {
+        const x = c * colW + 16;
+        const y = r * rowH + 28;
+        const w = colW - 32;
+        const h = rowH - 64;
+
+        // Window frame (dark bronze / aluminium)
+        ctx.fillStyle = frameColor;
+        ctx.fillRect(x, y, w, h);
+
+        // Glass pane
+        ctx.fillStyle = glassColor;
+        ctx.fillRect(x + 4, y + 4, w - 8, h - 8);
+
+        // Reflection highlight diagonal
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.12)';
+        ctx.beginPath();
+        ctx.moveTo(x + 4, y + 4);
+        ctx.lineTo(x + w * 0.6, y + 4);
+        ctx.lineTo(x + 4, y + h * 0.8);
+        ctx.closePath();
+        ctx.fill();
+
+        // Horizontal sun louvers (brise-soleil) - quintessential Nairobi CBD feature
+        ctx.fillStyle = louverColor;
+        const louverCount = 4;
+        for (let l = 0; l < louverCount; l++) {
+          const ly = y + 8 + (l * (h * 0.45)) / louverCount;
+          ctx.fillRect(x + 2, ly, w - 4, 3);
+        }
+
+        // Air conditioning unit bracket under window
+        if ((c + r) % 2 === 0) {
+          ctx.fillStyle = '#64748b';
+          ctx.fillRect(x + w * 0.45, y + h + 2, 28, 16);
+          ctx.fillStyle = '#1e293b'; // AC fan grille
+          ctx.fillRect(x + w * 0.45 + 4, y + h + 5, 20, 10);
+        }
+      }
+    }
+
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.colorSpace = THREE.SRGBColorSpace;
+    texture.wrapS = THREE.RepeatWrapping;
+    texture.wrapT = THREE.RepeatWrapping;
+
+    this.cache.set(cacheKey, texture);
+    return texture;
+  }
+
+  /**
+   * Generates striped canvas awning canopy texture (green/white, orange/white, blue/white).
+   * Shading sidewalks and storefronts across Nairobi CBD commercial blocks.
+   */
+  public static createAwningTexture(
+    style: 'green_white' | 'orange_white' | 'blue_white' | 'red_gold' = 'green_white'
+  ): THREE.CanvasTexture {
+    const cacheKey = `awning_${style}`;
+    if (this.cache.has(cacheKey)) return this.cache.get(cacheKey)!;
+
+    const { canvas, ctx } = this.createCanvas(256, 256);
+    if (!ctx.fillRect) {
+      const tex = this.createFallbackTexture(true);
+      this.cache.set(cacheKey, tex);
+      return tex;
+    }
+
+    let primaryColor = '#15803d'; // Green
+    let secondaryColor = '#ffffff'; // White
+
+    if (style === 'orange_white') {
+      primaryColor = '#ea580c';
+    } else if (style === 'blue_white') {
+      primaryColor = '#1d4ed8';
+    } else if (style === 'red_gold') {
+      primaryColor = '#b91c1c';
+      secondaryColor = '#facc15';
+    }
+
+    const stripeWidth = 32;
+    for (let x = 0; x < 256; x += stripeWidth * 2) {
+      ctx.fillStyle = primaryColor;
+      ctx.fillRect(x, 0, stripeWidth, 256);
+      ctx.fillStyle = secondaryColor;
+      ctx.fillRect(x + stripeWidth, 0, stripeWidth, 256);
+    }
+
+    // Fabric weave texture shadow
+    for (let y = 0; y < 256; y += 4) {
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.04)';
+      ctx.fillRect(0, y, 256, 1);
+    }
+
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.colorSpace = THREE.SRGBColorSpace;
+    texture.wrapS = THREE.RepeatWrapping;
+    texture.wrapT = THREE.RepeatWrapping;
+
+    this.cache.set(cacheKey, texture);
+    return texture;
+  }
+
+  /**
+   * Generates authentic East African Matatu Sacco liveries (Super Metro, City Hoppa, Forward Sacco, etc.).
+   */
+  public static createMatatuLiveryTexture(
+    variant: 'super_metro' | 'city_hoppa' | 'forward_sacco' | 'kilimani_rider' = 'super_metro'
+  ): THREE.CanvasTexture {
+    const cacheKey = `matatu_livery_${variant}`;
+    if (this.cache.has(cacheKey)) return this.cache.get(cacheKey)!;
+
+    const { canvas, ctx } = this.createCanvas(512, 256);
+    if (!ctx.fillRect) {
+      const tex = this.createFallbackTexture(true);
+      this.cache.set(cacheKey, tex);
+      return tex;
+    }
+
+    if (variant === 'super_metro') {
+      // Navy Blue body with prominent Yellow Speed Stripes
+      ctx.fillStyle = '#0f224a';
+      ctx.fillRect(0, 0, 512, 256);
+
+      // Bright yellow sweeping stripes
+      ctx.fillStyle = '#facc15';
+      ctx.beginPath();
+      ctx.moveTo(0, 80);
+      ctx.lineTo(512, 50);
+      ctx.lineTo(512, 110);
+      ctx.lineTo(0, 140);
+      ctx.fill();
+
+      // White pinstripe
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 142, 512, 10);
+
+      // Sacco branding typography
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 36px sans-serif';
+      ctx.fillText('SUPER METRO', 24, 70);
+
+      ctx.font = 'bold 18px sans-serif';
+      ctx.fillStyle = '#facc15';
+      ctx.fillText('CBD ★ WAIYAKI WAY ★ KIKUYU', 26, 100);
+
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 26px sans-serif';
+      ctx.fillText('ROUTE 105', 360, 220);
+    } else if (variant === 'city_hoppa') {
+      // Fresh Forest Green body with Sunshine Yellow
+      ctx.fillStyle = '#15803d';
+      ctx.fillRect(0, 0, 512, 256);
+
+      ctx.fillStyle = '#fde047';
+      ctx.fillRect(0, 100, 512, 45);
+
+      ctx.fillStyle = '#15803d';
+      ctx.font = 'bold 32px sans-serif';
+      ctx.fillText('CITY HOPPA', 30, 134);
+
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 18px sans-serif';
+      ctx.fillText('KENYATTA AVE ★ NGONG RD ★ KAWANGWARE', 30, 80);
+      ctx.fillText('ROUTE 46', 380, 220);
+    } else if (variant === 'forward_sacco') {
+      // Black with Metallic Gold & Red Speed Graphics
+      ctx.fillStyle = '#18181b';
+      ctx.fillRect(0, 0, 512, 256);
+
+      ctx.fillStyle = '#d97706';
+      ctx.beginPath();
+      ctx.moveTo(0, 40);
+      ctx.lineTo(340, 130);
+      ctx.lineTo(0, 180);
+      ctx.fill();
+
+      ctx.fillStyle = '#dc2626';
+      ctx.fillRect(0, 120, 512, 18);
+
+      ctx.fillStyle = '#fef08a';
+      ctx.font = 'bold 34px sans-serif';
+      ctx.fillText('FORWARD SACCO', 30, 75);
+
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 18px sans-serif';
+      ctx.fillText('CBD ★ JOGOO ROAD ★ KAYOLE', 30, 110);
+      ctx.fillText('ROUTE 19/60', 360, 220);
+    } else {
+      // Kilimani Rider with Kenya Flag Accents
+      ctx.fillStyle = '#f8fafc';
+      ctx.fillRect(0, 0, 512, 256);
+
+      // Kenyan Flag Stripes: Black, Red, Green
+      ctx.fillStyle = '#000000';
+      ctx.fillRect(0, 85, 512, 14);
+      ctx.fillStyle = '#b91c1c';
+      ctx.fillRect(0, 105, 512, 18);
+      ctx.fillStyle = '#15803d';
+      ctx.fillRect(0, 129, 512, 14);
+
+      ctx.fillStyle = '#0f172a';
+      ctx.font = 'bold 34px sans-serif';
+      ctx.fillText('NAIROBI EXPRESS', 30, 65);
+
+      ctx.fillStyle = '#475569';
+      ctx.font = 'bold 18px sans-serif';
+      ctx.fillText('KILIMANI RIDER ★ UPPER HILL LINK', 30, 175);
+      ctx.fillText('ROUTE 23', 380, 220);
+    }
 
     const texture = new THREE.CanvasTexture(canvas);
     texture.colorSpace = THREE.SRGBColorSpace;
 
-    this.cache.set('matatu_art', texture);
+    this.cache.set(cacheKey, texture);
+    return texture;
+  }
+
+  /**
+   * Generates Nairobi CBD Street Name Plate Texture.
+   */
+  public static createStreetSignTexture(streetName: string, subText: string = 'NAIROBI CBD'): THREE.CanvasTexture {
+    const cacheKey = `street_sign_${streetName}`;
+    if (this.cache.has(cacheKey)) return this.cache.get(cacheKey)!;
+
+    const { canvas, ctx } = this.createCanvas(512, 128);
+    if (!ctx.fillRect) {
+      const tex = this.createFallbackTexture(true);
+      this.cache.set(cacheKey, tex);
+      return tex;
+    }
+
+    // Classic Nairobi dark green enamel plate
+    ctx.fillStyle = '#064e3b';
+    ctx.fillRect(0, 0, 512, 128);
+
+    // Crisp white double border
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 6;
+    ctx.strokeRect(6, 6, 500, 116);
+    ctx.lineWidth = 2;
+    ctx.strokeRect(12, 12, 488, 104);
+
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 32px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(streetName.toUpperCase(), 256, 64);
+
+    ctx.font = 'bold 16px sans-serif';
+    ctx.fillStyle = '#a7f3d0';
+    ctx.fillText(subText.toUpperCase(), 256, 96);
+
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.colorSpace = THREE.SRGBColorSpace;
+
+    this.cache.set(cacheKey, texture);
     return texture;
   }
 }

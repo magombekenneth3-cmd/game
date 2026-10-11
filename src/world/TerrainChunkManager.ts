@@ -11,13 +11,32 @@ export class TerrainChunkManager {
   }
 
   /**
-   * Calculates elevation Y at any world position (X, Z).
-   * Sloping Upper Hill ridge topology formula.
+   * Radius (from the world origin) inside which the ground is held flat. Roads, sidewalks,
+   * buildings, kiosks and street props are all authored near Y=0, and the raw ridge formula
+   * rose several metres across the streamed area, burying them. Nairobi's CBD is also
+   * comparatively level, so relief is blended back in only beyond this radius.
    */
-  public getElevationAt(x: number, z: number): number {
+  public static readonly URBAN_CORE_RADIUS = 700;
+  public static readonly URBAN_CORE_BLEND = 500;
+
+  /**
+   * Raw ridge topology (before urban-core flattening).
+   */
+  public getRawRidgeElevation(x: number, z: number): number {
     const slope = (x * 0.04) + (z * 0.03);
     const noise = Math.sin(x * 0.05) * Math.cos(z * 0.05) * 1.5;
     return Math.max(-2, slope + noise);
+  }
+
+  /**
+   * Calculates elevation Y at any world position (X, Z).
+   * Ridge topology faded to level ground inside the urban core.
+   */
+  public getElevationAt(x: number, z: number): number {
+    const d = Math.hypot(x, z);
+    const t = Math.min(1, Math.max(0, (d - TerrainChunkManager.URBAN_CORE_RADIUS) / TerrainChunkManager.URBAN_CORE_BLEND));
+    const mask = t * t * (3 - 2 * t);
+    return this.getRawRidgeElevation(x, z) * mask;
   }
 
   public createTerrainChunkMesh(chunkX: number, chunkZ: number, resolution: number = 16): THREE.Mesh {

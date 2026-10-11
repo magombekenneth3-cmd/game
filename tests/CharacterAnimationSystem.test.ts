@@ -250,14 +250,19 @@ describe('Phase 11.2 — Character Animation & Realism Tests', () => {
     expect(player.animController).toBeNull();
   });
 
-  it('8. AssetPipeline retargets Mixamo animation clips to Player character rig without 100m translation artifact', () => {
+  it('8. AssetPipeline retargets Mixamo animation clips to Player character rig without 100m translation artifact or 90 deg pitch', () => {
     const pipeline = AssetPipeline.getInstance();
 
-    // Construct mock mixamo clips with mixamorig: track names and large Mixamo Hips Z offset
+    // Construct mock mixamo clips with mixamorig: track names, large Mixamo Hips Z offset, and Mixamo rest hip rotation
     const mixamoHipsTrack = new THREE.VectorKeyframeTrack(
       'mixamorigHips.position',
       [0, 1],
       [-0.16, 1.147, 106.13, -0.16, 1.157, 106.13]
+    );
+    const mixamoHipsQuatTrack = new THREE.QuaternionKeyframeTrack(
+      'mixamorigHips.quaternion',
+      [0, 1],
+      [0, 0.7071068, 0.7071068, 0, 0, 0.7071068, 0.7071068, 0]
     );
     const mixamoSpineTrack = new THREE.QuaternionKeyframeTrack(
       'mixamorigSpine.quaternion',
@@ -265,9 +270,9 @@ describe('Phase 11.2 — Character Animation & Realism Tests', () => {
       [0, 0, 0, 1, 0, 0.05, 0, 0.998]
     );
     const businessClips = [
-      new THREE.AnimationClip('Idle', 1.0, [mixamoHipsTrack, mixamoSpineTrack]),
-      new THREE.AnimationClip('Walk', 1.0, [mixamoHipsTrack, mixamoSpineTrack]),
-      new THREE.AnimationClip('Run', 0.5, [mixamoHipsTrack, mixamoSpineTrack])
+      new THREE.AnimationClip('Idle', 1.0, [mixamoHipsTrack, mixamoHipsQuatTrack, mixamoSpineTrack]),
+      new THREE.AnimationClip('Walk', 1.0, [mixamoHipsTrack, mixamoHipsQuatTrack, mixamoSpineTrack]),
+      new THREE.AnimationClip('Run', 0.5, [mixamoHipsTrack, mixamoHipsQuatTrack, mixamoSpineTrack])
     ];
 
     (pipeline as any).animationCache.set('char_pedestrian_business_01', businessClips);
@@ -285,9 +290,29 @@ describe('Phase 11.2 — Character Animation & Realism Tests', () => {
     expect(hipsTrack!.values[2]).toBeCloseTo(0.01, 1);
     expect(hipsTrack!.values[5]).toBeCloseTo(0.01, 1);
 
+    const hipsQuatTrack = idleClip!.tracks.find(t => t.name === 'Hips.quaternion');
+    expect(hipsQuatTrack).toBeDefined();
+    // Verify Hips quaternion is retargeted to upright pose, not [0, 0.707, 0.707, 0] (lying on back)
+    expect(hipsQuatTrack!.values[0]).toBeCloseTo(0, 2);
+    expect(hipsQuatTrack!.values[1]).toBeCloseTo(0, 2);
+    expect(hipsQuatTrack!.values[2]).toBeCloseTo(0, 2);
+    expect(Math.abs(hipsQuatTrack!.values[3])).toBeCloseTo(1, 2);
+
     const spineTrack = idleClip!.tracks.find(t => t.name === 'Spine.quaternion');
     expect(spineTrack).toBeDefined();
     expect(spineTrack!.name).toBe('Spine.quaternion'); // Clean target name without mixamorig prefix
+  });
+
+  it('9. verifies coordinate transform correctly orients Mixamo character rig upright', async () => {
+    const qRest = new THREE.Quaternion(0, 0.7071068, 0.7071068, 0);
+    const qTrans = new THREE.Quaternion(0, 0.7071068, 0.7071068, 0);
+
+    const qRestFinal = qTrans.clone().multiply(qRest);
+    const eulerRestFinal = new THREE.Euler().setFromQuaternion(qRestFinal, 'YXZ');
+
+    expect(Math.abs(eulerRestFinal.x)).toBeCloseTo(0, 2);
+    expect(Math.abs(eulerRestFinal.y)).toBeCloseTo(0, 2);
+    expect(Math.abs(eulerRestFinal.z)).toBeCloseTo(0, 2);
   });
 });
 

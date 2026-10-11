@@ -105,8 +105,12 @@ export class ProceduralRoadGenerator {
     }
 
     // --- 2. SEPARATE CURBS & SIDEWALKS ---
+    // --- 2. SEPARATE CURBS & SIDEWALKS ---
     if (road.hasSidewalks) {
-      const sidewalkMat = this.assetManager.getMaterial('sidewalk_concrete');
+      const isUrbanAvenue = road.width >= 10 || road.category === 'highway' || road.category === 'arterial';
+      const sidewalkMat = isUrbanAvenue
+        ? (this.assetManager.getMaterial('sidewalk_cabro') || this.assetManager.getMaterial('sidewalk_concrete'))
+        : this.assetManager.getMaterial('sidewalk_concrete');
       const curbMat = new THREE.MeshStandardMaterial({ color: 0x64748b, roughness: 0.6 });
       const sidewalkWidth = 3.0;
 
@@ -185,13 +189,56 @@ export class ProceduralRoadGenerator {
     if (intersection.type !== 'roundabout' || !intersection.radius) return group;
 
     const r = intersection.radius;
-    // Central Green Island
-    const islandGeo = new THREE.CylinderGeometry(r - 4, r - 4, 0.4, 32);
-    const islandMat = this.assetManager.getMaterial('foliage_green');
+    const islandRadius = r - 4;
+
+    // Raised Outer Curb Ring for Roundabout Island
+    const curbMat = new THREE.MeshStandardMaterial({ color: 0x64748b, roughness: 0.6 });
+    const curbGeo = new THREE.RingGeometry(islandRadius, islandRadius + 0.4, 32);
+    const curbRing = new THREE.Mesh(curbGeo, curbMat);
+    curbRing.rotation.x = -Math.PI / 2;
+    curbRing.position.set(intersection.position.x, 0.28, intersection.position.z);
+    curbRing.receiveShadow = true;
+    group.add(curbRing);
+
+    // Central Landscaped Lawn Island
+    const islandGeo = new THREE.CylinderGeometry(islandRadius, islandRadius, 0.35, 32);
+    const islandMat = this.assetManager.getMaterial('foliage_green') || new THREE.MeshStandardMaterial({ color: 0x1e5e2e, roughness: 0.85 });
     const island = new THREE.Mesh(islandGeo, islandMat);
     island.position.set(intersection.position.x, 0.2, intersection.position.z);
     island.receiveShadow = true;
     group.add(island);
+
+    // Decorative inner flowerbed circle
+    const flowerbedGeo = new THREE.CylinderGeometry(islandRadius * 0.55, islandRadius * 0.55, 0.42, 24);
+    const flowerbedMat = this.assetManager.getMaterial('ground_earth') || new THREE.MeshStandardMaterial({ color: 0x8b3a2b, roughness: 0.9 });
+    const flowerbed = new THREE.Mesh(flowerbedGeo, flowerbedMat);
+    flowerbed.position.set(intersection.position.x, 0.25, intersection.position.z);
+    flowerbed.receiveShadow = true;
+    group.add(flowerbed);
+
+    // Central Palm Tree centerpiece for Nairobi roundabout
+    const palmMat = new THREE.MeshStandardMaterial({ color: 0x4a3728, roughness: 0.9 });
+    const trunkGeo = new THREE.CylinderGeometry(0.25, 0.35, 5.5, 8);
+    const trunk = new THREE.Mesh(trunkGeo, palmMat);
+    trunk.position.set(intersection.position.x, 2.8, intersection.position.z);
+    trunk.castShadow = true;
+    group.add(trunk);
+
+    const frondMat = new THREE.MeshStandardMaterial({ color: 0x166534, roughness: 0.6, side: THREE.DoubleSide });
+    for (let f = 0; f < 8; f++) {
+      const angle = (f * Math.PI) / 4;
+      const frondGeo = new THREE.BoxGeometry(0.45, 0.04, 3.2);
+      const frond = new THREE.Mesh(frondGeo, frondMat);
+      frond.rotation.y = angle;
+      frond.rotation.x = 0.35;
+      frond.position.set(
+        intersection.position.x + Math.cos(angle) * 1.2,
+        5.4,
+        intersection.position.z + Math.sin(angle) * 1.2
+      );
+      frond.castShadow = true;
+      group.add(frond);
+    }
 
     // Asphalt Ring Road
     const ringGeo = new THREE.RingGeometry(r - 4, r + 4, 32);
@@ -201,6 +248,7 @@ export class ProceduralRoadGenerator {
     ring.position.set(intersection.position.x, 0.06, intersection.position.z);
     ring.receiveShadow = true;
     group.add(ring);
+
 
     // Outer Shoulder Transition Collar (r + 4 to r + 6.5)
     const collarSegments = 32;

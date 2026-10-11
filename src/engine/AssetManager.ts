@@ -101,6 +101,32 @@ export class AssetManager {
     });
     this.materials.set('sidewalk_concrete', sidewalkMat);
 
+    // 3b. Authentic Kenyan Cabro Paving Material (Herringbone PBR)
+    const cabroTexture = TextureGenerator.createCabroTexture();
+    cabroTexture.wrapS = THREE.RepeatWrapping;
+    cabroTexture.wrapT = THREE.RepeatWrapping;
+    cabroTexture.repeat.set(3, 15);
+
+    const cabroNormal = TextureGenerator.createCabroNormalMap();
+    cabroNormal.wrapS = THREE.RepeatWrapping;
+    cabroNormal.wrapT = THREE.RepeatWrapping;
+    cabroNormal.repeat.set(3, 15);
+
+    const cabroRoughness = TextureGenerator.createCabroRoughnessMap();
+    cabroRoughness.wrapS = THREE.RepeatWrapping;
+    cabroRoughness.wrapT = THREE.RepeatWrapping;
+    cabroRoughness.repeat.set(3, 15);
+
+    const cabroMat = new THREE.MeshStandardMaterial({
+      map: cabroTexture,
+      normalMap: cabroNormal,
+      normalScale: new THREE.Vector2(0.7, 0.7),
+      roughnessMap: cabroRoughness,
+      roughness: 0.82,
+      metalness: 0.02
+    });
+    this.materials.set('sidewalk_cabro', cabroMat);
+
     // 4. Glass Window Material (Dielectric Architectural Glass)
     const glassMat = new THREE.MeshPhysicalMaterial({
       color: 0x94a3b8,
