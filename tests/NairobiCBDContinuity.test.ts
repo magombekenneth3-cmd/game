@@ -165,5 +165,34 @@ describe('Phase 11.5 — Nairobi CBD District Continuity Tests', () => {
       const bldResults = queryResults.filter((item) => item.type === 'building');
       expect(bldResults.length).toBeGreaterThanOrEqual(4);
     });
+
+    it('supports accurate ground height raycasting and collision queries throughout adjacent block', () => {
+      const districtScene = new NairobiDistrictScene(scene, assetManager);
+      districtScene.generate();
+      scene.updateMatrixWorld(true);
+
+      const groundMeshes = districtScene.getGroundMeshes();
+      expect(groundMeshes.length).toBeGreaterThan(0);
+
+      const raycaster = new THREE.Raycaster();
+
+      // Test 1: Roadway height at Z = 75 in adjacent block (cast from player height Y = 1.5)
+      raycaster.set(new THREE.Vector3(0, 1.5, 75), new THREE.Vector3(0, -1, 0));
+      const roadHits = raycaster.intersectObjects(groundMeshes, true);
+      expect(roadHits.length).toBeGreaterThan(0);
+      expect(roadHits[0].point.y).toBeCloseTo(0.05, 2);
+
+      // Test 2: West Cabro promenade height at X = -12, Z = 80 (cast from player height Y = 1.5 below tree canopies)
+      raycaster.set(new THREE.Vector3(-12, 1.5, 80), new THREE.Vector3(0, -1, 0));
+      const westSidewalkHits = raycaster.intersectObjects(groundMeshes, true);
+      expect(westSidewalkHits.length).toBeGreaterThan(0);
+      expect(westSidewalkHits[0].point.y).toBeCloseTo(0.20, 2);
+
+      // Test 3: East Cabro promenade height at X = 12, Z = 110 (cast from player height Y = 1.5)
+      raycaster.set(new THREE.Vector3(12, 1.5, 110), new THREE.Vector3(0, -1, 0));
+      const eastSidewalkHits = raycaster.intersectObjects(groundMeshes, true);
+      expect(eastSidewalkHits.length).toBeGreaterThan(0);
+      expect(eastSidewalkHits[0].point.y).toBeCloseTo(0.20, 2);
+    });
   });
 });
