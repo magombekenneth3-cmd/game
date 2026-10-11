@@ -7,6 +7,8 @@ import { TerrainChunkManager } from '../src/world/TerrainChunkManager';
 import { CBDShowcaseBlock } from '../src/world/CBDShowcaseBlock';
 import { BuildingAssetKit } from '../src/assets/BuildingAssetKit';
 import { BuildingData } from '../src/world/BuildingData';
+import { GeoJSONIngestionEngine } from '../src/gis/GeoJSONIngestionEngine';
+import { NAIROBI_REAL_GEOJSON } from '../src/gis/data/nairobi_kilimani_real';
 
 describe('Phase 11.4 — Nairobi CBD & Streetscape Realism Tests', () => {
   let assetManager: AssetManager;
@@ -174,6 +176,12 @@ describe('Phase 11.4 — Nairobi CBD & Streetscape Realism Tests', () => {
 
       const matatuStage = group.getObjectByName('MatatuStageShelter');
       expect(matatuStage).toBeDefined();
+    });
+
+    it('inspects district roads around the urban core', () => {
+      const engine = new GeoJSONIngestionEngine();
+      const { district } = engine.ingestGeoJSON(NAIROBI_REAL_GEOJSON);
+      expect(district.roads.length).toBeGreaterThan(0);
     });
   });
 });

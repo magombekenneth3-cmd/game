@@ -90,4 +90,40 @@ describe('Phase 2 Player Controller Unit Tests', () => {
 
     expect(prompt.hasTarget).toBe(false);
   });
+
+  it('moves character relative to camera yaw for W, S, A, D keys', () => {
+    const motor = new CharacterMotor();
+    const dt = 0.1;
+
+    // With cameraYaw = 0 (camera looking toward -Z):
+    // W should move toward -Z (forward)
+    motor.position.set(0, 0, 0);
+    motor.update({ forward: true, backward: false, left: false, right: false, sprint: false, jump: false, interact: false, pause: false, mouseX: 0, mouseY: 0 }, 0, dt);
+    expect(motor.position.z).toBeLessThan(0);
+    expect(Math.abs(motor.position.x)).toBeCloseTo(0, 2);
+
+    // S should move toward +Z (backward)
+    motor.position.set(0, 0, 0);
+    motor.update({ forward: false, backward: true, left: false, right: false, sprint: false, jump: false, interact: false, pause: false, mouseX: 0, mouseY: 0 }, 0, dt);
+    expect(motor.position.z).toBeGreaterThan(0);
+    expect(Math.abs(motor.position.x)).toBeCloseTo(0, 2);
+
+    // D should move toward +X (right)
+    motor.position.set(0, 0, 0);
+    motor.update({ forward: false, backward: false, left: false, right: true, sprint: false, jump: false, interact: false, pause: false, mouseX: 0, mouseY: 0 }, 0, dt);
+    expect(motor.position.x).toBeGreaterThan(0);
+    expect(Math.abs(motor.position.z)).toBeCloseTo(0, 2);
+
+    // A should move toward -X (left)
+    motor.position.set(0, 0, 0);
+    motor.update({ forward: false, backward: false, left: true, right: false, sprint: false, jump: false, interact: false, pause: false, mouseX: 0, mouseY: 0 }, 0, dt);
+    expect(motor.position.x).toBeLessThan(0);
+    expect(Math.abs(motor.position.z)).toBeCloseTo(0, 2);
+
+    // With cameraYaw = PI/2 (camera looking toward -X):
+    // W should move toward -X
+    motor.position.set(0, 0, 0);
+    motor.update({ forward: true, backward: false, left: false, right: false, sprint: false, jump: false, interact: false, pause: false, mouseX: 0, mouseY: 0 }, Math.PI / 2, dt);
+    expect(motor.position.x).toBeLessThan(0);
+  });
 });

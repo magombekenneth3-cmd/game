@@ -35,6 +35,7 @@ export interface IInputState {
   lights?: boolean;
   mouseX: number;
   mouseY: number;
+  zoomDelta?: number;
 }
 
 export interface PlayerConfig {

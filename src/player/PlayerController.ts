@@ -118,9 +118,12 @@ export class PlayerController {
     // ON-FOOT MODE
     this.mesh.visible = true;
 
-    // 1. Camera Mouse Look
+    // 1. Camera Mouse Look & Zoom
     if (inputState.mouseX !== 0 || inputState.mouseY !== 0) {
       this.cameraManager.handleMouseInput(inputState.mouseX, inputState.mouseY);
+    }
+    if (inputState.zoomDelta && inputState.zoomDelta !== 0) {
+      this.cameraManager.handleZoom(inputState.zoomDelta);
     }
 
     // 2. Character Motor Movement (terrain ground raycasts strictly against groundMeshes)
