@@ -213,6 +213,107 @@ export class AudioManager {
     });
   }
 
+  /**
+   * Conductor / Makanga metal panel or roof slap ("kpa! kpa!") signaling driver.
+   */
+  public playConductorPanelSlap(): void {
+    if (this.isMuted || !this.ctx || this.ctx.state !== 'running') return;
+    const now = this.ctx.currentTime;
+    // Double percussive slap
+    [0.0, 0.12].forEach((offset) => {
+      const slapNow = now + offset;
+      const bufferSize = Math.floor(this.ctx!.sampleRate * 0.05);
+      const buffer = this.ctx!.createBuffer(1, bufferSize, this.ctx!.sampleRate);
+      const data = buffer.getChannelData(0);
+      for (let i = 0; i < bufferSize; i++) {
+        data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (bufferSize * 0.15));
+      }
+
+      const noise = this.ctx!.createBufferSource();
+      noise.buffer = buffer;
+
+      const filter = this.ctx!.createBiquadFilter();
+      filter.type = 'bandpass';
+      filter.frequency.setValueAtTime(1400, slapNow);
+      filter.Q.setValueAtTime(3.0, slapNow);
+
+      const gain = this.ctx!.createGain();
+      gain.gain.setValueAtTime(0.4, slapNow);
+      gain.gain.exponentialRampToValueAtTime(0.001, slapNow + 0.05);
+
+      noise.connect(filter);
+      filter.connect(gain);
+      gain.connect(this.masterGain!);
+
+      noise.start(slapNow);
+    });
+  }
+
+  /**
+   * Commuter gasp / screech when vehicle encounters sudden collision or curb mount.
+   */
+  public playPassengerGasp(): void {
+    if (this.isMuted || !this.ctx || this.ctx.state !== 'running') return;
+    const now = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(350, now);
+    osc.frequency.exponentialRampToValueAtTime(750, now + 0.12);
+    osc.frequency.exponentialRampToValueAtTime(280, now + 0.25);
+
+    gain.gain.setValueAtTime(0.22, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+
+    osc.connect(gain);
+    gain.connect(this.masterGain!);
+    osc.start(now);
+    osc.stop(now + 0.25);
+  }
+
+  /**
+   * Sacco specific horn style (double tap, musical 3-tone melody, or standard blast).
+   */
+  public playSaccoHorn(style: 'double_tap' | 'musical' | 'standard' = 'double_tap'): void {
+    if (this.isMuted || !this.ctx || this.ctx.state !== 'running') return;
+    const now = this.ctx.currentTime;
+
+    if (style === 'musical') {
+      // Ngong 126 Manyanga melodic triple chime
+      const tones = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6
+      tones.forEach((freq, idx) => {
+        const osc = this.ctx!.createOscillator();
+        const gain = this.ctx!.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(freq, now + idx * 0.09);
+
+        gain.gain.setValueAtTime(0.2, now + idx * 0.09);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.09 + 0.14);
+
+        osc.connect(gain);
+        gain.connect(this.masterGain!);
+        osc.start(now + idx * 0.09);
+        osc.stop(now + idx * 0.09 + 0.14);
+      });
+    } else if (style === 'double_tap') {
+      this.playMatatuDoubleHorn();
+    } else {
+      // Standard heavy city bus horn
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(320, now);
+
+      gain.gain.setValueAtTime(0.25, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+
+      osc.connect(gain);
+      gain.connect(this.masterGain!);
+      osc.start(now);
+      osc.stop(now + 0.35);
+    }
+  }
+
   public startEngine(): void {
     if (this.engineOsc || !this.ctx) return;
     try {

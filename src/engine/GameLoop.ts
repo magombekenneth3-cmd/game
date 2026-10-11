@@ -27,6 +27,7 @@ import { SpeedometerUI } from '../ui/SpeedometerUI';
 import { MainMenuUI } from '../ui/MainMenuUI';
 import { ParticleSystem } from './ParticleSystem';
 import { MatatuTransitSystem } from '../traffic/MatatuTransitSystem';
+import { MatatuOperatorSystem } from '../traffic/MatatuOperatorSystem';
 
 export type BootStage =
   | 'INITIALIZING_RENDERER'
@@ -448,7 +449,30 @@ export class GameLoop {
 
       // Check matatu passenger boarding prompt or vehicle proximity interaction prompt
       const transitSystem = MatatuTransitSystem.getInstance();
-      if (this.playerController.state.getMode() === 'RIDING_AS_PASSENGER') {
+      const operatorSystem = MatatuOperatorSystem.getInstance();
+      const operatorSession = operatorSystem.getActiveSession();
+
+      if (this.vehicleManager.driving && operatorSession) {
+        if (operatorSession.dockedAtStage) {
+          this.hudOverlay.updateInteractionPrompt({
+            hasTarget: true,
+            displayName: `Docked at ${operatorSession.targetStageName} — [T] Makanga Tout | [W] Depart`,
+            distanceMeters: 0
+          });
+        } else if (operatorSession.distanceToTargetCurbMeters <= 6.0) {
+          this.hudOverlay.updateInteractionPrompt({
+            hasTarget: true,
+            displayName: `[Space] Stop & Open Doors to Board (${operatorSession.targetStageName})`,
+            distanceMeters: Math.round(operatorSession.distanceToTargetCurbMeters)
+          });
+        } else {
+          this.hudOverlay.updateInteractionPrompt({
+            hasTarget: true,
+            displayName: `Next: ${operatorSession.targetStageName} (${Math.round(operatorSession.distanceToTargetCurbMeters)}m) | [T] Makanga Tout`,
+            distanceMeters: Math.round(operatorSession.distanceToTargetCurbMeters)
+          });
+        }
+      } else if (this.playerController.state.getMode() === 'RIDING_AS_PASSENGER') {
         const ride = transitSystem.getCurrentPlayerRide();
         this.hudOverlay.updateInteractionPrompt({
           hasTarget: true,
@@ -505,6 +529,21 @@ export class GameLoop {
         vehTelemetry.drivingState,
         this.vehicleManager.driving
       );
+
+      // Update Matatu Operator Shift Dashboard
+      if (this.vehicleManager.driving && this.vehicleManager.activeVehicle?.definition.type === 'matatu') {
+        const activeVeh = this.vehicleManager.activeVehicle;
+        operatorSystem.update(
+          deltaSeconds,
+          activeVeh.state.position,
+          activeVeh.state.currentSpeedKph,
+          activeVeh.state.handbrake,
+          todConfig.hours
+        );
+        this.hudOverlay.updateMatatuOperatorHUD(operatorSystem.getActiveSession());
+      } else {
+        this.hudOverlay.updateMatatuOperatorHUD(undefined);
+      }
 
       // Update Minimap UI
       const activeVehiclesList = Array.from(this.vehicleManager.vehicles.values()).map(v => ({

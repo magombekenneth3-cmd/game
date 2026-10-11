@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { VehicleDefinition, VehicleRuntimeState } from './VehicleTypes';
 import { IVehicleInputState } from './VehicleInput';
+import { MatatuOperatorSystem } from '../traffic/MatatuOperatorSystem';
 
 export class VehiclePhysics {
   private def: VehicleDefinition;
@@ -105,7 +106,12 @@ export class VehiclePhysics {
 
         if (box.containsPoint(this.state.position)) {
           // Push vehicle out and stop velocity
+          const impactSpeed = this.state.currentSpeedKph;
           this.state.velocity.set(0, 0, 0);
+
+          if (this.def.type === 'matatu' && impactSpeed > 5.0) {
+            MatatuOperatorSystem.getInstance().reportCollision(impactSpeed);
+          }
 
           const dxMin = Math.abs(this.state.position.x - box.min.x);
           const dxMax = Math.abs(this.state.position.x - box.max.x);

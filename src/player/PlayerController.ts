@@ -8,6 +8,7 @@ import { VehicleManager } from '../vehicles/VehicleManager';
 import { AssetPipeline } from '../assets/AssetPipeline';
 import { CharacterAnimationController } from '../assets/CharacterAnimationController';
 import { MatatuTransitSystem } from '../traffic/MatatuTransitSystem';
+import { MatatuOperatorSystem } from '../traffic/MatatuOperatorSystem';
 
 export class PlayerController {
   public mesh: THREE.Group;
@@ -89,6 +90,40 @@ export class PlayerController {
         this.vehicleManager.vehicleCamera.handleMouseLook(inputState.mouseX, inputState.mouseY);
       }
 
+      const activeVeh = this.vehicleManager.activeVehicle;
+
+      // Operator Controls if driving a Matatu
+      if (activeVeh && activeVeh.definition.type === 'matatu') {
+        const operatorSystem = MatatuOperatorSystem.getInstance();
+        let session = operatorSystem.getActiveSession();
+        if (!session) {
+          session = operatorSystem.startShift(activeVeh.definition.id, 'super_metro', 'route_105_supermetro');
+        }
+
+        // Conductor tout action (KeyT)
+        if (inputState.tout) {
+          operatorSystem.triggerMakangaCallout();
+        }
+
+        // Horn action (KeyH)
+        if (inputState.horn) {
+          operatorSystem.triggerSaccoHorn();
+        }
+
+        // Docking and passenger exchange (Space when stopped near stage curb)
+        if (inputState.jump && !session.dockedAtStage) {
+          const dockCheck = operatorSystem.canDockAtStage(activeVeh.state.position, activeVeh.state.currentSpeedKph, true);
+          if (dockCheck.canDock) {
+            operatorSystem.dockAndExchangePassengers();
+          }
+        }
+
+        // Departure from stage (W / forward when docked)
+        if (session.dockedAtStage && inputState.forward) {
+          operatorSystem.departStage();
+        }
+      }
+
       // Driving input forward to vehicle controller
       this.vehicleManager.vehicleController.updateDrivingInput(
         inputState.forward,
@@ -100,12 +135,15 @@ export class PlayerController {
       );
 
       // Sync motor position to vehicle position for chunk streaming & camera tracking
-      if (this.vehicleManager.activeVehicle) {
-        this.motor.position.copy(this.vehicleManager.activeVehicle.state.position);
+      if (activeVeh) {
+        this.motor.position.copy(activeVeh.state.position);
       }
 
       // Check if player wants to exit vehicle (KeyE)
       if (inputState.interact) {
+        if (activeVeh && activeVeh.definition.type === 'matatu') {
+          MatatuOperatorSystem.getInstance().endShift(this.state);
+        }
         const exitPos = this.vehicleManager.exitVehicle(groundMeshes);
         if (exitPos) {
           this.motor.position.copy(exitPos);

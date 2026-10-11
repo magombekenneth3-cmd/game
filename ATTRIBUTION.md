@@ -95,3 +95,14 @@ This document provides formal legal attribution, provenance records, and license
   - **Commuter Stage Infrastructure**: Kencom / Ambassador Stage (Moi Ave), GPO / Teleposta Stage (Kenyatta Ave), Railways Bus Terminus (Haile Selassie Ave), City Hall Stage (City Hall Way), Hurlingham Plaza Stage, Yaya Transit Hub, Valley Arcade Stage.
   - **Stage Approach & Dwell State Machine**: Smooth curb deceleration curve, turn indicators, hazard blinkers, passenger door actuation, commuter boarding/alighting, tout vocal callouts, and double-honk departure.
   - **Passenger Ride Experience**: Dynamic rush-hour fares (50 KES off-peak vs 70–80 KES peak), passenger interior cabin camera perspective, onboard matatu radio audio system, and safe curbside alighting.
+
+### I. KINGMAKER Phase 11.8 — Matatu Operator & Transit Economy
+- **Copyright**: © 2026 KINGMAKER Studio Team
+- **License**: Creative Commons Attribution 4.0 International (CC-BY 4.0)
+- **Features**:
+  - **Sacco Driver Ranking & Progression**: Squaddi (Novice), Senior Dere (Experienced), Metro Captain (Route Leader), and Manyanga Legend (Master Driver) with unlocked Ngong 126 Manyanga custom specs and neon underglow.
+  - **Matatu Shift Lifecycle**: Route waypoint tracking, stage bay docking verification (< 6m, < 5 km/h), passenger door actuation, and transactional shift settlement.
+  - **Conductor ("Makanga") Audio & Mechanics**: Authentic synthesized metallic roof/panel double-slap signals (`playConductorPanelSlap`), vocal tout callouts (`playToutCallout`), commuter rush queue boarding with 14-seat capacity limits.
+  - **Dynamic Transit Economics & Rush Hour Scoring**: Morning (07:00–09:30) and evening (16:30–19:30) peak fare multipliers (1.4x), commuter satisfaction tip bonuses (10%–20%), Sacco management fee deductions (15%), and fuel consumption costs.
+  - **Driving Telemetry & Commuter Satisfaction**: Real-time satisfaction scoring (0–100%), collision detection penalties with passenger audio gasps (`playPassengerGasp`), speed violation monitoring, and smooth cruising satisfaction recovery.
+  - **Matatu Operator Shift Dashboard**: Interactive glassmorphism HUD displaying Sacco badge, route code, next stage distance meter, seat occupancy counter, live shift revenue, and commuter satisfaction meter.
