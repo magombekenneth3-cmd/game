@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { RoadSegment, IntersectionNode } from './GISDataTypes';
 import { AssetManager } from '../engine/AssetManager';
+import { EnvironmentAssetKit } from '../assets/EnvironmentAssetKit';
 
 export interface ElevationProvider {
   getElevationAt(x: number, z: number): number;
@@ -216,28 +217,26 @@ export class ProceduralRoadGenerator {
     flowerbed.receiveShadow = true;
     group.add(flowerbed);
 
-    // Central Palm Tree centerpiece for Nairobi roundabout
-    const palmMat = new THREE.MeshStandardMaterial({ color: 0x4a3728, roughness: 0.9 });
-    const trunkGeo = new THREE.CylinderGeometry(0.25, 0.35, 5.5, 8);
-    const trunk = new THREE.Mesh(trunkGeo, palmMat);
-    trunk.position.set(intersection.position.x, 2.8, intersection.position.z);
-    trunk.castShadow = true;
-    group.add(trunk);
+    // Central Acacia tree centerpiece — replaces low-poly box-frond palm
+    const centralTree = EnvironmentAssetKit.createAcaciaTreeMesh();
+    centralTree.position.set(intersection.position.x, 0, intersection.position.z);
+    centralTree.castShadow = true;
+    group.add(centralTree);
 
-    const frondMat = new THREE.MeshStandardMaterial({ color: 0x166534, roughness: 0.6, side: THREE.DoubleSide });
-    for (let f = 0; f < 8; f++) {
-      const angle = (f * Math.PI) / 4;
-      const frondGeo = new THREE.BoxGeometry(0.45, 0.04, 3.2);
-      const frond = new THREE.Mesh(frondGeo, frondMat);
-      frond.rotation.y = angle;
-      frond.rotation.x = 0.35;
-      frond.position.set(
-        intersection.position.x + Math.cos(angle) * 1.2,
-        5.4,
-        intersection.position.z + Math.sin(angle) * 1.2
+    // Ring of 6 Bougainvillea shrubs around the inner flowerbed
+    const shrubCount = 6;
+    const shrubRadius = islandRadius * 0.72;
+    for (let s = 0; s < shrubCount; s++) {
+      const angle = (s / shrubCount) * Math.PI * 2;
+      const shrub = EnvironmentAssetKit.createBougainvilleaShrub(s % 2 === 0 ? 'magenta' : 'red');
+      shrub.position.set(
+        intersection.position.x + Math.cos(angle) * shrubRadius,
+        0,
+        intersection.position.z + Math.sin(angle) * shrubRadius
       );
-      frond.castShadow = true;
-      group.add(frond);
+      shrub.rotation.y = angle;
+      shrub.castShadow = true;
+      group.add(shrub);
     }
 
     // Asphalt Ring Road

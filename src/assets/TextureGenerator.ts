@@ -1326,4 +1326,216 @@ export class TextureGenerator {
     this.cache.set(cacheKey, texture);
     return texture;
   }
+
+  /**
+   * Generates organic tree bark texture with vertical fissures, fissures, and authentic melanin/lichen tones.
+   */
+  public static createBarkTexture(type: 'jacaranda' | 'acacia' | 'palm' = 'jacaranda'): THREE.CanvasTexture {
+    const cacheKey = `bark_${type}`;
+    if (this.cache.has(cacheKey)) return this.cache.get(cacheKey)!;
+
+    const { canvas, ctx } = this.createCanvas(512, 512);
+    if (!ctx.fillRect) {
+      const tex = this.createFallbackTexture(true);
+      this.cache.set(cacheKey, tex);
+      return tex;
+    }
+
+    const rng = new SeededRandom(type === 'jacaranda' ? 777 : type === 'acacia' ? 888 : 999);
+
+    if (type === 'jacaranda') {
+      // Charcoal-brown bark with ash grey crevices
+      ctx.fillStyle = '#3a2e26';
+      ctx.fillRect(0, 0, 512, 512);
+
+      // Deep vertical fissures
+      for (let x = 0; x < 512; x += 8) {
+        const furrowW = 2 + rng.nextFloat() * 4;
+        const shade = Math.floor(28 + rng.nextFloat() * 15);
+        ctx.fillStyle = `rgb(${shade + 8},${shade},${shade - 4})`;
+        ctx.fillRect(x + (rng.nextFloat() - 0.5) * 6, 0, furrowW, 512);
+      }
+
+      // Lichen specks & pale grey bark flakes
+      for (let i = 0; i < 200; i++) {
+        const px = rng.nextFloat() * 512;
+        const py = rng.nextFloat() * 512;
+        const pr = 1 + rng.nextFloat() * 3;
+        ctx.fillStyle = 'rgba(120, 115, 105, 0.4)';
+        ctx.beginPath();
+        ctx.arc(px, py, pr, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    } else if (type === 'acacia') {
+      // Rough reddish-brown fibrous umber bark
+      ctx.fillStyle = '#422c1d';
+      ctx.fillRect(0, 0, 512, 512);
+
+      for (let x = 0; x < 512; x += 10) {
+        const furrowW = 3 + rng.nextFloat() * 5;
+        const shade = Math.floor(20 + rng.nextFloat() * 18);
+        ctx.fillStyle = `rgb(${shade + 18},${shade + 8},${shade})`;
+        ctx.fillRect(x + (rng.nextFloat() - 0.5) * 8, 0, furrowW, 512);
+      }
+    } else {
+      // Ringed palm fibrous trunk
+      ctx.fillStyle = '#5c4033';
+      ctx.fillRect(0, 0, 512, 512);
+      for (let y = 0; y < 512; y += 16) {
+        ctx.fillStyle = 'rgba(35, 25, 20, 0.7)';
+        ctx.fillRect(0, y, 512, 4);
+      }
+    }
+
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.colorSpace = THREE.SRGBColorSpace;
+    texture.wrapS = THREE.RepeatWrapping;
+    texture.wrapT = THREE.RepeatWrapping;
+    texture.repeat.set(1, 3);
+
+    this.cache.set(cacheKey, texture);
+    return texture;
+  }
+
+  /**
+   * Generates bark normal map for relief.
+   */
+  public static createBarkNormalMap(type: 'jacaranda' | 'acacia' = 'jacaranda'): THREE.CanvasTexture {
+    const cacheKey = `bark_norm_${type}`;
+    if (this.cache.has(cacheKey)) return this.cache.get(cacheKey)!;
+
+    const { canvas, ctx } = this.createCanvas(256, 256);
+    if (!ctx.fillRect) {
+      const tex = this.createFallbackTexture(false);
+      this.cache.set(cacheKey, tex);
+      return tex;
+    }
+
+    // Flat normal base (128, 128, 255)
+    ctx.fillStyle = 'rgb(128, 128, 255)';
+    ctx.fillRect(0, 0, 256, 256);
+
+    const rng = new SeededRandom(101);
+    for (let x = 0; x < 256; x += 8) {
+      const w = 2 + rng.nextFloat() * 4;
+      const slope = rng.nextFloat() > 0.5 ? 90 : 165;
+      ctx.fillStyle = `rgb(${slope}, 128, 235)`;
+      ctx.fillRect(x, 0, w, 256);
+    }
+
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.wrapS = THREE.RepeatWrapping;
+    texture.wrapT = THREE.RepeatWrapping;
+    texture.repeat.set(1, 3);
+
+    this.cache.set(cacheKey, texture);
+    return texture;
+  }
+
+  /**
+   * Generates rich organic foliage textures for Jacaranda, Acacia, and Bougainvillea.
+   */
+  public static createFoliageTexture(
+    type: 'jacaranda_blossom' | 'jacaranda_leaf' | 'acacia_umbrella' | 'bougainvillea_magenta' = 'jacaranda_blossom'
+  ): THREE.CanvasTexture {
+    const cacheKey = `foliage_${type}`;
+    if (this.cache.has(cacheKey)) return this.cache.get(cacheKey)!;
+
+    const { canvas, ctx } = this.createCanvas(512, 512);
+    if (!ctx.fillRect) {
+      const tex = this.createFallbackTexture(true);
+      this.cache.set(cacheKey, tex);
+      return tex;
+    }
+
+    const rng = new SeededRandom(type.length * 42);
+
+    if (type === 'jacaranda_blossom') {
+      // Dense violet/purple blooming flowers with soft depth
+      ctx.fillStyle = '#6d28d9';
+      ctx.fillRect(0, 0, 512, 512);
+
+      // Clusters of lavender tubular florets
+      for (let i = 0; i < 600; i++) {
+        const x = rng.nextFloat() * 512;
+        const y = rng.nextFloat() * 512;
+        const rad = 4 + rng.nextFloat() * 8;
+        const roll = rng.nextFloat();
+        ctx.fillStyle = roll < 0.4 ? '#8b5cf6' : roll < 0.75 ? '#a78bfa' : '#5b21b6';
+        ctx.beginPath();
+        ctx.ellipse(x, y, rad, rad * 0.7, rng.nextFloat() * Math.PI, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // Sporadic green leaflets peeking through
+      for (let i = 0; i < 80; i++) {
+        const x = rng.nextFloat() * 512;
+        const y = rng.nextFloat() * 512;
+        ctx.fillStyle = '#15803d';
+        ctx.beginPath();
+        ctx.ellipse(x, y, 5, 2.5, rng.nextFloat() * Math.PI, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    } else if (type === 'jacaranda_leaf') {
+      // Emerald green bipinnate fern leaflets
+      ctx.fillStyle = '#14532d';
+      ctx.fillRect(0, 0, 512, 512);
+
+      for (let i = 0; i < 800; i++) {
+        const x = rng.nextFloat() * 512;
+        const y = rng.nextFloat() * 512;
+        const roll = rng.nextFloat();
+        ctx.fillStyle = roll < 0.5 ? '#16a34a' : roll < 0.85 ? '#22c55e' : '#15803d';
+        ctx.beginPath();
+        ctx.ellipse(x, y, 6, 2.5, rng.nextFloat() * Math.PI, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    } else if (type === 'acacia_umbrella') {
+      // Layered horizontal bipinnate savanna acacia foliage
+      ctx.fillStyle = '#1b5e20';
+      ctx.fillRect(0, 0, 512, 512);
+
+      for (let i = 0; i < 900; i++) {
+        const x = rng.nextFloat() * 512;
+        const y = rng.nextFloat() * 512;
+        const roll = rng.nextFloat();
+        ctx.fillStyle = roll < 0.45 ? '#2e7d32' : roll < 0.8 ? '#388e3c' : '#14532d';
+        ctx.beginPath();
+        ctx.ellipse(x, y, 7, 2, rng.nextFloat() * 0.4 - 0.2, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    } else {
+      // Bougainvillea vibrant magenta/fuchsia bracts
+      ctx.fillStyle = '#831843';
+      ctx.fillRect(0, 0, 512, 512);
+
+      for (let i = 0; i < 700; i++) {
+        const x = rng.nextFloat() * 512;
+        const y = rng.nextFloat() * 512;
+        const rad = 4 + rng.nextFloat() * 7;
+        const roll = rng.nextFloat();
+        ctx.fillStyle = roll < 0.45 ? '#d946ef' : roll < 0.75 ? '#c026d3' : '#a21caf';
+        ctx.beginPath();
+        ctx.ellipse(x, y, rad, rad * 0.8, rng.nextFloat() * Math.PI, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      for (let i = 0; i < 150; i++) {
+        const x = rng.nextFloat() * 512;
+        const y = rng.nextFloat() * 512;
+        ctx.fillStyle = '#14532d';
+        ctx.beginPath();
+        ctx.ellipse(x, y, 5, 3, rng.nextFloat() * Math.PI, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.colorSpace = THREE.SRGBColorSpace;
+    texture.wrapS = THREE.RepeatWrapping;
+    texture.wrapT = THREE.RepeatWrapping;
+
+    this.cache.set(cacheKey, texture);
+    return texture;
+  }
 }

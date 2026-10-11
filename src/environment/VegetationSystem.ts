@@ -97,14 +97,31 @@ export class VegetationSystem {
 
     instances.forEach((inst) => {
       const pipeline = AssetPipeline.getInstance();
-      const tree = (inst.category === 'palms')
-        ? pipeline.getPalmTreeMesh()
-        : pipeline.getAcaciaTreeMesh();
+      let mesh: THREE.Group;
 
-      tree.position.copy(inst.position);
-      tree.rotation.y = inst.rotationY;
-      tree.scale.multiply(inst.scale);
-      group.add(tree);
+      switch (inst.category) {
+        case 'ornamental_street':
+          // Jacaranda street trees — flowering, placed selectively along avenues
+          mesh = pipeline.getJacarandaTreeMesh();
+          break;
+        case 'shrubs':
+        case 'hedges':
+          // Bougainvillea planters along building perimeters and landscaped edges
+          mesh = pipeline.getBougainvilleaPlanterMesh();
+          break;
+        case 'palms':
+          mesh = pipeline.getPalmTreeMesh();
+          break;
+        case 'acacia':
+        default:
+          mesh = pipeline.getAcaciaTreeMesh();
+          break;
+      }
+
+      mesh.position.copy(inst.position);
+      mesh.rotation.y = inst.rotationY;
+      mesh.scale.multiply(inst.scale);
+      group.add(mesh);
     });
 
     return group;

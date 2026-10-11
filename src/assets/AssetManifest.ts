@@ -383,18 +383,42 @@ export const ASSET_MANIFEST: Record<string, AssetManifestEntry> = {
     fallbackAssetId: 'fallback_char_humanoid'
   },
 
-  // --- 4. ENVIRONMENT PROPS (10 Props) ---
+  // --- 4. ENVIRONMENT PROPS ---
+  'env_jacaranda_tree_01': {
+    id: 'env_jacaranda_tree_01',
+    category: 'environment',
+    sourceFile: '/assets/models/environment/env_jacaranda_tree_01.glb',
+    variantFamily: 'jacaranda_tree',
+    intendedScale: new THREE.Vector3(1.0, 1.0, 1.0),
+    lodLevels: [0, 80, 200, 450],
+    boundingDimensions: { width: 6.0, height: 6.8, depth: 6.0 },
+    license: 'CC-BY 4.0 (Creative Commons Attribution 4.0 International)',
+    author: 'KINGMAKER Authored Original Art',
+    fallbackAssetId: 'fallback_env_jacaranda'
+  },
   'env_acacia_tree_01': {
     id: 'env_acacia_tree_01',
     category: 'environment',
     sourceFile: '/assets/models/environment/env_acacia_tree_01.glb',
     variantFamily: 'acacia_tree',
-    intendedScale: new THREE.Vector3(5.0, 4.5, 5.0),
+    intendedScale: new THREE.Vector3(1.0, 1.0, 1.0),
     lodLevels: [0, 80, 200, 450],
-    boundingDimensions: { width: 5.0, height: 6.0, depth: 5.0 },
+    boundingDimensions: { width: 8.2, height: 6.2, depth: 8.2 },
     license: 'CC-BY 4.0 (Creative Commons Attribution 4.0 International)',
-    author: 'Khronos Group / Google / Cesium / Wayfair / Microsoft',
+    author: 'KINGMAKER Authored Original Art',
     fallbackAssetId: 'fallback_env_acacia'
+  },
+  'env_bougainvillea_planter_01': {
+    id: 'env_bougainvillea_planter_01',
+    category: 'environment',
+    sourceFile: '/assets/models/environment/env_bougainvillea_planter_01.glb',
+    variantFamily: 'bougainvillea_planter',
+    intendedScale: new THREE.Vector3(1.0, 1.0, 1.0),
+    lodLevels: [0, 80, 200, 450],
+    boundingDimensions: { width: 2.4, height: 1.2, depth: 0.9 },
+    license: 'CC-BY 4.0 (Creative Commons Attribution 4.0 International)',
+    author: 'KINGMAKER Authored Original Art',
+    fallbackAssetId: 'fallback_env_bougainvillea'
   },
   'env_palm_tree_01': {
     id: 'env_palm_tree_01',
