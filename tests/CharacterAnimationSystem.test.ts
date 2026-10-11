@@ -314,5 +314,105 @@ describe('Phase 11.2 — Character Animation & Realism Tests', () => {
     expect(Math.abs(eulerRestFinal.y)).toBeCloseTo(0, 2);
     expect(Math.abs(eulerRestFinal.z)).toBeCloseTo(0, 2);
   });
+
+  it('10. validates real production character GLB assets, skinning, and bone counts', async () => {
+    const fs = await import('fs');
+    const path = await import('path');
+
+    const charDir = path.resolve(process.cwd(), 'public/assets/models/characters');
+    const requiredModels = [
+      { id: 'char_player_01.glb', minTriangles: 15000, expectedBones: 67 },
+      { id: 'char_pedestrian_business_01.glb', minTriangles: 15000, expectedBones: 67 },
+      { id: 'char_pedestrian_student_01.glb', minTriangles: 25000, expectedBones: 65 },
+      { id: 'char_humanoid_animations.glb', minTriangles: 10000, expectedBones: 49 }
+    ];
+
+    for (const item of requiredModels) {
+      const fullPath = path.join(charDir, item.id);
+      expect(fs.existsSync(fullPath)).toBe(true);
+
+      const buf = fs.readFileSync(fullPath);
+      expect(buf.length).toBeGreaterThan(100000); // Must be a real production asset (>100KB)
+
+      const jsonLen = buf.readUInt32LE(12);
+      const gltf = JSON.parse(buf.toString('utf8', 20, 20 + jsonLen));
+
+      // Must be a skinned model with a valid skeleton
+      expect(gltf.skins).toBeDefined();
+      expect(gltf.skins.length).toBeGreaterThan(0);
+      expect(gltf.skins[0].joints.length).toBe(item.expectedBones);
+
+      // Verify geometry density
+      let triangleCount = 0;
+      if (gltf.meshes) {
+        for (const mesh of gltf.meshes) {
+          for (const prim of mesh.primitives) {
+            if (prim.indices !== undefined) {
+              const acc = gltf.accessors[prim.indices];
+              triangleCount += Math.floor(acc.count / 3);
+            }
+          }
+        }
+      }
+      expect(triangleCount).toBeGreaterThanOrEqual(item.minTriangles);
+    }
+  });
+
+  it('11. validates animation contract on real character animation library', async () => {
+    const fs = await import('fs');
+    const path = await import('path');
+
+    const animPath = path.resolve(process.cwd(), 'public/assets/models/characters/char_humanoid_animations.glb');
+    const buf = fs.readFileSync(animPath);
+    const jsonLen = buf.readUInt32LE(12);
+    const gltf = JSON.parse(buf.toString('utf8', 20, 20 + jsonLen));
+
+    const animNames = gltf.animations.map((a: any) => a.name);
+    expect(animNames).toContain('Idle');
+    expect(animNames).toContain('Walk');
+    expect(animNames).toContain('Run');
+
+    // Create a mock controller and test validateAnimationContract with real clip names
+    const clips = animNames.map((name: string) => new THREE.AnimationClip(name, 1.0, []));
+    const testGroup = new THREE.Group();
+    const controller = new CharacterAnimationController(testGroup, clips);
+
+    const validation = controller.validateAnimationContract();
+    expect(validation.hasIdle).toBe(true);
+    expect(validation.hasWalk).toBe(true);
+    expect(validation.hasRun).toBe(true);
+    expect(validation.isFullyAnimationReady).toBe(true);
+    expect(validation.missingStates.length).toBe(0);
+  });
+
+  it('12. validates character AssetManifest entries have 1:1 scale and verified licenses', async () => {
+    const { ASSET_MANIFEST } = await import('../src/assets/AssetManifest');
+
+    const playerEntry = ASSET_MANIFEST['char_player_01'];
+    expect(playerEntry).toBeDefined();
+    expect(playerEntry.intendedScale.x).toBe(1);
+    expect(playerEntry.intendedScale.y).toBe(1);
+    expect(playerEntry.intendedScale.z).toBe(1);
+    expect(playerEntry.boundingDimensions.height).toBeGreaterThan(1.7);
+    expect(playerEntry.license).toContain('CC-BY 4.0');
+
+    const businessEntry = ASSET_MANIFEST['char_pedestrian_business_01'];
+    expect(businessEntry).toBeDefined();
+    expect(businessEntry.intendedScale.x).toBe(1);
+    expect(businessEntry.intendedScale.y).toBe(1);
+    expect(businessEntry.intendedScale.z).toBe(1);
+    expect(businessEntry.boundingDimensions.height).toBeGreaterThan(1.7);
+    expect(businessEntry.license).toContain('CC-BY 4.0');
+
+    const studentEntry = ASSET_MANIFEST['char_pedestrian_student_01'];
+    expect(studentEntry).toBeDefined();
+    expect(studentEntry.intendedScale.y).toBeCloseTo(1.05, 2);
+    expect(studentEntry.boundingDimensions.height).toBeGreaterThan(1.6);
+    expect(studentEntry.license).toContain('CC-BY 4.0');
+
+    const animEntry = ASSET_MANIFEST['char_humanoid_animations'];
+    expect(animEntry).toBeDefined();
+    expect(animEntry.license).toContain('CC-BY 4.0');
+  });
 });
 

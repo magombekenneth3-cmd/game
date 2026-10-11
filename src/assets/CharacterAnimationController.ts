@@ -1,6 +1,17 @@
 import * as THREE from 'three';
 
-export type CharacterAnimationState = 'idle' | 'walk' | 'run';
+export type CharacterAnimationState = 'idle' | 'walk' | 'run' | 'talk' | 'sit' | 'dance';
+
+export interface CharacterAnimationValidation {
+  hasIdle: boolean;
+  hasWalk: boolean;
+  hasRun: boolean;
+  hasTalk: boolean;
+  hasSit: boolean;
+  hasDance: boolean;
+  isFullyAnimationReady: boolean;
+  missingStates: CharacterAnimationState[];
+}
 
 export class CharacterAnimationController {
   public mixer: THREE.AnimationMixer;
@@ -27,6 +38,12 @@ export class CharacterAnimationController {
         state = 'walk';
       } else if (nameLower.includes('run') || nameLower.includes('sprint') || nameLower.includes('jog')) {
         state = 'run';
+      } else if (nameLower.includes('talk') || nameLower.includes('speak') || nameLower.includes('convo') || nameLower.includes('gesture')) {
+        state = 'talk';
+      } else if (nameLower.includes('sit') || nameLower.includes('seated') || nameLower.includes('chair')) {
+        state = 'sit';
+      } else if (nameLower.includes('dance') || nameLower.includes('samba') || nameLower.includes('party')) {
+        state = 'dance';
       }
 
       if (state && !this.actions.has(state)) {
@@ -35,31 +52,27 @@ export class CharacterAnimationController {
         this.actions.set(state, action);
       }
     });
+  }
 
-    // Fallback mapping if specific state names are not explicitly matched
-    if (!this.actions.has('idle') && animations.length > 0) {
-      const fallbackClip = animations.find((c) => {
-        const n = c.name.toLowerCase();
-        return !n.includes('tpose') && !n.includes('t-pose') && !n.includes('t_pose');
-      }) || animations[0];
-      const action = this.mixer.clipAction(fallbackClip);
-      action.loop = THREE.LoopRepeat;
-      this.actions.set('idle', action);
-    }
-
-    if (!this.actions.has('walk') && this.actions.has('idle')) {
-      this.actions.set('walk', this.actions.get('idle')!);
-    }
-
-    if (!this.actions.has('run') && this.actions.has('walk')) {
-      this.actions.set('run', this.actions.get('walk')!);
-    }
+  public validateAnimationContract(): CharacterAnimationValidation {
+    const required: CharacterAnimationState[] = ['idle', 'walk', 'run'];
+    const missing = required.filter(st => !this.actions.has(st));
+    return {
+      hasIdle: this.actions.has('idle'),
+      hasWalk: this.actions.has('walk'),
+      hasRun: this.actions.has('run'),
+      hasTalk: this.actions.has('talk'),
+      hasSit: this.actions.has('sit'),
+      hasDance: this.actions.has('dance'),
+      isFullyAnimationReady: missing.length === 0,
+      missingStates: missing
+    };
   }
 
   public setState(newState: CharacterAnimationState, fadeDuration: number = 0.25): void {
     if (this.currentState === newState) return;
 
-    const targetAction = this.actions.get(newState) || this.actions.get('idle');
+    const targetAction = this.actions.get(newState);
     if (!targetAction) return;
 
     const currentAction = this.currentState ? this.actions.get(this.currentState) : null;

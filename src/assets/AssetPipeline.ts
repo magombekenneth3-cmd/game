@@ -76,7 +76,8 @@ export class AssetPipeline {
   }
 
   public async preloadCoreAssets(): Promise<void> {
-    // Preload pedestrian business model first so its animations are available for player retargeting
+    // Preload humanoid animation library first so locomotion clips are cached for player and NPCs
+    await this.ensureAssetLoaded('char_humanoid_animations').catch(() => {});
     await this.ensureAssetLoaded('char_pedestrian_business_01').catch(() => {});
 
     const coreAssetIds = [
@@ -228,24 +229,47 @@ export class AssetPipeline {
       return template.userData.animations;
     }
 
-    // Retarget fallback: if char_player_01 has 0 baked clips, share retargeted Mixamo clips from char_pedestrian_business_01
-    if (assetId === 'char_player_01') {
-      const sourceClips = this.getAnimations('char_pedestrian_business_01');
-      if (sourceClips.length > 0) {
-        const retargetedClips = this.retargetMixamoClipsToPlayer(sourceClips);
+    // Retrieve shared locomotion library from char_humanoid_animations or fallback source
+    const animLibrary =
+      this.animationCache.get('char_humanoid_animations') ||
+      this.glbCache.get('char_humanoid_animations')?.userData?.animations ||
+      this.animationCache.get('char_pedestrian_business_01') ||
+      [];
+
+    // Ready Player Me characters without baked animations (player, business, driver, guard):
+    // Retarget Mixamo tracks: strip mixamorig prefix, scale Hips translation to meters, and align upright.
+    if (
+      assetId === 'char_player_01' ||
+      assetId === 'char_pedestrian_business_01' ||
+      assetId === 'char_driver_01' ||
+      assetId === 'char_guard_security_01'
+    ) {
+      if (animLibrary.length > 0) {
+        const retargetedClips = this.retargetMixamoClipsToPlayer(animLibrary);
         this.animationCache.set(assetId, retargetedClips);
         return retargetedClips;
       }
     }
 
-    // Mixamo humanoid models that only contain dance/tpose (student/casual/worker) share walking & idle from business pedestrian
+    // Mixamo humanoid models (student, casual, worker):
+    // Mixamo characters have mixamorig: bone names and use library clips directly,
+    // combined with any model-specific clips (like SambaDance).
     if (
       assetId === 'char_pedestrian_student_01' ||
       assetId === 'char_pedestrian_casual_01' ||
       assetId === 'char_worker_street_01'
     ) {
-      const businessClips = this.getAnimations('char_pedestrian_business_01');
-      if (businessClips.length > 0) return businessClips;
+      const modelClips: THREE.AnimationClip[] = template?.userData?.animations || [];
+      const combined = [...animLibrary];
+      modelClips.forEach((c: THREE.AnimationClip) => {
+        if (!combined.some((existing) => existing.name.toLowerCase() === c.name.toLowerCase())) {
+          combined.push(c);
+        }
+      });
+      if (combined.length > 0) {
+        this.animationCache.set(assetId, combined);
+        return combined;
+      }
     }
 
     return [];

@@ -308,7 +308,7 @@ export const ASSET_MANIFEST: Record<string, AssetManifestEntry> = {
     fallbackAssetId: 'fallback_veh_matatu'
   },
 
-  // --- 3. CHARACTERS (3 Archetypes) ---
+  // --- 3. CHARACTERS (Protagonist, NPCs & Animation Library) ---
   'char_player_01': {
     id: 'char_player_01',
     category: 'character',
@@ -319,7 +319,7 @@ export const ASSET_MANIFEST: Record<string, AssetManifestEntry> = {
     boundingDimensions: { width: 0.7, height: 1.88, depth: 0.4 },
     attachmentPoints: { head: { x: 0, y: 1.65, z: 0 }, root: { x: 0, y: 0, z: 0 } },
     license: 'CC-BY 4.0 (Creative Commons Attribution 4.0 International)',
-    author: 'Ready Player Me / Three.js',
+    author: 'Ready Player Me / KINGMAKER Studio Art (East African Urban Protagonist)',
     fallbackAssetId: 'fallback_char_humanoid'
   },
   'char_pedestrian_business_01': {
@@ -327,11 +327,11 @@ export const ASSET_MANIFEST: Record<string, AssetManifestEntry> = {
     category: 'character',
     sourceFile: '/assets/models/characters/char_pedestrian_business_01.glb',
     variantFamily: 'humanoid_npc',
-    intendedScale: new THREE.Vector3(0.0102, 0.0102, 0.0102),
+    intendedScale: new THREE.Vector3(1, 1, 1),
     lodLevels: [0, 80, 200],
-    boundingDimensions: { width: 0.7, height: 1.85, depth: 0.4 },
+    boundingDimensions: { width: 0.7, height: 1.88, depth: 0.4 },
     license: 'CC-BY 4.0 (Creative Commons Attribution 4.0 International)',
-    author: 'Mixamo / Three.js',
+    author: 'Ready Player Me / KINGMAKER Studio Art (Nairobi CBD Corporate Professional)',
     fallbackAssetId: 'fallback_char_humanoid'
   },
   'char_pedestrian_student_01': {
@@ -343,7 +343,7 @@ export const ASSET_MANIFEST: Record<string, AssetManifestEntry> = {
     lodLevels: [0, 80, 200],
     boundingDimensions: { width: 0.6, height: 1.75, depth: 0.4 },
     license: 'CC-BY 4.0 (Creative Commons Attribution 4.0 International)',
-    author: 'Mixamo / Three.js',
+    author: 'Adobe Mixamo / Khronos Group (University Student Michelle)',
     fallbackAssetId: 'fallback_char_humanoid'
   },
   'char_driver_01': {
@@ -351,11 +351,11 @@ export const ASSET_MANIFEST: Record<string, AssetManifestEntry> = {
     category: 'character',
     sourceFile: '/assets/models/characters/char_driver_01.glb',
     variantFamily: 'humanoid_npc',
-    intendedScale: new THREE.Vector3(0.0102, 0.0102, 0.0102),
+    intendedScale: new THREE.Vector3(1, 1, 1),
     lodLevels: [0, 80, 200],
-    boundingDimensions: { width: 0.7, height: 1.85, depth: 0.4 },
+    boundingDimensions: { width: 0.7, height: 1.88, depth: 0.4 },
     license: 'CC-BY 4.0 (Creative Commons Attribution 4.0 International)',
-    author: 'Mixamo / Three.js',
+    author: 'Ready Player Me / KINGMAKER Studio Art (Urban Matatu Driver)',
     fallbackAssetId: 'fallback_char_humanoid'
   },
   'char_guard_security_01': {
@@ -363,11 +363,23 @@ export const ASSET_MANIFEST: Record<string, AssetManifestEntry> = {
     category: 'character',
     sourceFile: '/assets/models/characters/char_guard_security_01.glb',
     variantFamily: 'humanoid_npc',
-    intendedScale: new THREE.Vector3(0.0102, 0.0102, 0.0102),
+    intendedScale: new THREE.Vector3(1, 1, 1),
     lodLevels: [0, 80, 200],
-    boundingDimensions: { width: 0.7, height: 1.85, depth: 0.4 },
+    boundingDimensions: { width: 0.7, height: 1.88, depth: 0.4 },
     license: 'CC-BY 4.0 (Creative Commons Attribution 4.0 International)',
-    author: 'Mixamo / Three.js',
+    author: 'Ready Player Me / KINGMAKER Studio Art (Commercial Security Guard)',
+    fallbackAssetId: 'fallback_char_humanoid'
+  },
+  'char_humanoid_animations': {
+    id: 'char_humanoid_animations',
+    category: 'character',
+    sourceFile: '/assets/models/characters/char_humanoid_animations.glb',
+    variantFamily: 'humanoid_animation_library',
+    intendedScale: new THREE.Vector3(1, 1, 1),
+    lodLevels: [0],
+    boundingDimensions: { width: 1.0, height: 1.8, depth: 1.0 },
+    license: 'CC-BY 4.0 / Mixamo Animation Standard',
+    author: 'Adobe Mixamo / Khronos Group (Humanoid Motion Clips)',
     fallbackAssetId: 'fallback_char_humanoid'
   },
 
