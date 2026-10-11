@@ -47,6 +47,14 @@ export class PlayerState {
     this.cash += amount;
   }
 
+  public deductCash(amount: number): boolean {
+    if (this.cash >= amount) {
+      this.cash -= amount;
+      return true;
+    }
+    return false;
+  }
+
   public getReputation(): number {
     return this.reputation;
   }

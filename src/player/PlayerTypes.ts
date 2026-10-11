@@ -8,9 +8,10 @@ export type PlayerStateMode =
   | 'AIRBORNE'
   | 'INTERACTING'
   | 'ENTERING_VEHICLE'
-  | 'IN_VEHICLE';
+  | 'IN_VEHICLE'
+  | 'RIDING_AS_PASSENGER';
 
-export type InteractionType = 'shop' | 'property' | 'vehicle' | 'npc' | 'door';
+export type InteractionType = 'shop' | 'property' | 'vehicle' | 'npc' | 'door' | 'matatu_stage' | 'matatu_passenger';
 
 export interface IInteractable {
   id: string;

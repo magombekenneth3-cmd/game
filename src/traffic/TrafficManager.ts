@@ -12,6 +12,7 @@ import { TrafficSpawner } from './TrafficSpawner';
 import { TrafficDensity } from './TrafficDensity';
 import { TrafficLODManager } from './TrafficLOD';
 import { TransitRoute } from './TrafficTypes';
+import { MatatuTransitSystem } from './MatatuTransitSystem';
 
 export class TrafficManager {
   public laneSystem: LaneSystem;
@@ -69,8 +70,9 @@ export class TrafficManager {
     // 1. Update Intersections & Signals
     this.intersectionController.update(fixedDt);
 
-    // 2. Update Incidents
+    // 2. Update Incidents & Public Transit System
     this.incidentManager.update(fixedDt);
+    MatatuTransitSystem.getInstance().update(fixedDt, hours);
 
     // 3. Calculate Time-of-Day Density Factor
     const densityFactor = TrafficDensity.getDensityFactorForTime(hours);

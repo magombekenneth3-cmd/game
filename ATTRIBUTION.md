@@ -86,3 +86,12 @@ This document provides formal legal attribution, provenance records, and license
 | `env_jacaranda_tree_01` | `public/assets/models/environment/env_jacaranda_tree_01.glb` | 26 | 5 | 153.6 KB | *Jacaranda mimosifolia* street tree — curved sculptural trunk with root flare, 4 primary spreading limbs, 5 secondary sub-branches, 14 volumetric organic purple blossom canopy clusters. Materials: bark, violet blossom, deep purple highlight, lavender accent, green leaf. |
 | `env_acacia_tree_01` | `public/assets/models/environment/env_acacia_tree_01.glb` | 19 | 4 | 61.7 KB | *Vachellia tortilis* (Umbrella Acacia) — organic tapered trunk with root flare, 6 radial umbrella branch arms, 3 tiered flat-topped canopy shelves. Materials: bark, shaded, deep, and sunlit savanna acacia foliage. |
 | `env_bougainvillea_planter_01` | `public/assets/models/environment/env_bougainvillea_planter_01.glb` | 14 | 5 | 105.6 KB | Precast concrete sidewalk planter (2.4 m × 0.9 m × 0.45 m) with laterite soil and cascading magenta/fuchsia bract clusters. Materials: concrete box, laterite soil, magenta bracts, deep magenta bracts, glossy leaves. |
+
+### H. KINGMAKER Phase 11.7 — Dynamic Matatu & Public Transport Simulation
+- **Copyright**: © 2026 KINGMAKER Studio Team
+- **License**: Creative Commons Attribution 4.0 International (CC-BY 4.0)
+- **Features**:
+  - **Nairobi Sacco Network**: Super Metro, City Hoppa, Ngong 126 Electric Express, Forward Sacco, and Kenya Bus Service (KBS).
+  - **Commuter Stage Infrastructure**: Kencom / Ambassador Stage (Moi Ave), GPO / Teleposta Stage (Kenyatta Ave), Railways Bus Terminus (Haile Selassie Ave), City Hall Stage (City Hall Way), Hurlingham Plaza Stage, Yaya Transit Hub, Valley Arcade Stage.
+  - **Stage Approach & Dwell State Machine**: Smooth curb deceleration curve, turn indicators, hazard blinkers, passenger door actuation, commuter boarding/alighting, tout vocal callouts, and double-honk departure.
+  - **Passenger Ride Experience**: Dynamic rush-hour fares (50 KES off-peak vs 70–80 KES peak), passenger interior cabin camera perspective, onboard matatu radio audio system, and safe curbside alighting.
