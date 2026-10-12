@@ -90,6 +90,10 @@ html, body {
 .badge.state-sprinting { background: rgba(245, 158, 11, 0.2); color: #fbbf24; }
 .badge.state-interacting { background: rgba(168, 85, 247, 0.2); color: #c084fc; }
 
+.hidden {
+  display: none !important;
+}
+
 .debug-stats { font-size: 13px; line-height: 1.6; }
 .stat-row { display: flex; justify-content: space-between; margin-bottom: 4px; }
 .stat-row .label { color: #94a3b8; }
@@ -201,4 +205,403 @@ html, body {
   font-size: 14px;
   font-weight: 600;
   color: #f8fafc;
+}
+
+/* --- Phase 12.0 Super-Realism Master Plan Additions --- */
+
+/* Top-Left Objective / Quest Tracker */
+.hud-quest-tracker {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  z-index: 1000;
+  background: rgba(15, 23, 42, 0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(250, 204, 21, 0.35);
+  border-radius: 12px;
+  padding: 12px 18px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), 0 0 15px rgba(250, 204, 21, 0.15);
+  max-width: 340px;
+}
+
+.quest-badge {
+  background: #facc15;
+  color: #0f172a;
+  font-weight: 900;
+  font-size: 16px;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 0 12px rgba(250, 204, 21, 0.6);
+}
+
+.quest-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.quest-title {
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 700;
+  font-size: 14px;
+  color: #facc15;
+  letter-spacing: 0.3px;
+}
+
+.quest-subtext {
+  font-size: 12px;
+  color: #cbd5e1;
+  font-weight: 500;
+}
+
+/* Adjust Player Stats Widget position so it sits cleanly on Top Right */
+.hud-player-widget {
+  top: 16px;
+  right: 16px;
+  left: auto;
+  min-width: 260px;
+}
+
+.hud-avatar-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.hud-avatar-frame {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  box-shadow: 0 0 14px rgba(2, 132, 199, 0.45);
+  flex-shrink: 0;
+}
+
+.hud-avatar-img {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.hud-avatar-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+
+.hud-level-xp-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.hud-level-badge {
+  background: rgba(59, 130, 246, 0.25);
+  border: 1px solid rgba(59, 130, 246, 0.6);
+  color: #60a5fa;
+  font-size: 11px;
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: 6px;
+  letter-spacing: 0.5px;
+}
+
+.hud-xp-track {
+  flex: 1;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.hud-xp-fill {
+  height: 100%;
+  width: 72%;
+  background: linear-gradient(90deg, #0284c7, #38bdf8);
+  box-shadow: 0 0 8px #38bdf8;
+}
+
+.hud-currency-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.hud-cash-icon {
+  font-size: 14px;
+}
+
+.hud-secondary-stats {
+  display: flex;
+  align-items: center;
+  font-size: 11px;
+  color: #94a3b8;
+  margin-top: 2px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  padding-top: 6px;
+}
+
+/* Bottom Right Quick Action Bar & Actions Dock (Visual Standard) */
+.hud-bottom-right-dock {
+  position: absolute;
+  bottom: 25px;
+  right: 25px;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 10px;
+}
+
+.hud-quick-actions {
+  position: static;
+  background: rgba(15, 23, 42, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  padding: 8px 16px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+.action-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #cbd5e1;
+}
+
+.key-hint {
+  background: #334155;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #f8fafc;
+  font-weight: 800;
+  font-size: 11px;
+  padding: 2px 7px;
+  border-radius: 4px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+.hud-action-buttons {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.action-btn {
+  background: rgba(15, 23, 42, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 10px;
+  padding: 6px 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #e2e8f0;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+}
+
+.action-btn:hover {
+  background: rgba(30, 41, 59, 0.95);
+  border-color: #38bdf8;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(56, 189, 248, 0.25);
+}
+
+.action-btn-icon {
+  font-size: 15px;
+}
+
+.action-btn-text {
+  font-size: 12px;
+  font-weight: 700;
+  color: #cbd5e1;
+}
+
+/* Minimap Location Pill */
+.minimap-location-pill {
+  background: rgba(15, 23, 42, 0.90);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 20px;
+  padding: 4px 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5);
+  margin-top: 8px;
+}
+
+.loc-pin {
+  font-size: 14px;
+}
+
+.loc-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.15;
+}
+
+.loc-primary {
+  font-size: 12px;
+  font-weight: 700;
+  color: #f8fafc;
+}
+
+.loc-secondary {
+  font-size: 10px;
+  font-weight: 500;
+  color: #94a3b8;
+}
+
+#hud-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 1000;
+}
+
+#hud-overlay > * {
+  pointer-events: auto;
+}
+
+/* Street Economy Interactive Modal */
+.hud-street-modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 3000;
+  background: rgba(15, 23, 42, 0.95);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 2px solid #10b981;
+  border-radius: 16px;
+  padding: 24px;
+  min-width: 400px;
+  max-width: 480px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8), 0 0 30px rgba(16, 185, 129, 0.35);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  color: #fff;
+}
+
+.hud-street-modal.hidden {
+  display: none !important;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+  padding-bottom: 10px;
+}
+
+.modal-title {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 18px;
+  font-weight: 700;
+  color: #4ade80;
+}
+
+.modal-subtitle {
+  font-size: 12px;
+  color: #94a3b8;
+  margin-top: 2px;
+}
+
+.modal-items-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.modal-item-btn {
+  background: rgba(30, 41, 59, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  color: #f1f5f9;
+  font-size: 13px;
+  font-weight: 600;
+  transition: all 0.15s ease;
+}
+
+.modal-item-btn:hover {
+  background: rgba(16, 185, 129, 0.25);
+  border-color: #10b981;
+  transform: translateX(4px);
+}
+
+.modal-item-key {
+  background: #facc15;
+  color: #0f172a;
+  font-weight: 800;
+  font-size: 11px;
+  padding: 2px 7px;
+  border-radius: 4px;
+  margin-right: 8px;
+}
+
+.modal-item-price {
+  color: #4ade80;
+  font-weight: 700;
+}
+
+.modal-status-msg {
+  font-size: 12px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.3);
+  color: #facc15;
+  text-align: center;
+  min-height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-close-btn {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #94a3b8;
+  padding: 8px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: center;
+  transition: background 0.15s;
+}
+
+.modal-close-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
 }

@@ -118,6 +118,8 @@ export class InputManager {
       this.inputState.jump = true;
     } else if (code === 'KeyE' || key === 'e') {
       this.inputState.interact = true;
+    } else if (code === 'KeyF' || key === 'f') {
+      this.inputState.shop = true;
     } else if (code === 'KeyT' || key === 't') {
       this.inputState.tout = true;
     } else if (code === 'KeyH' || key === 'h') {
@@ -150,6 +152,8 @@ export class InputManager {
       this.inputState.jump = false;
     } else if (code === 'KeyE' || key === 'e') {
       this.inputState.interact = false;
+    } else if (code === 'KeyF' || key === 'f') {
+      this.inputState.shop = false;
     } else if (code === 'KeyT' || key === 't') {
       this.inputState.tout = false;
     } else if (code === 'KeyH' || key === 'h') {
@@ -167,6 +171,7 @@ export class InputManager {
     this.inputState.sprint = false;
     this.inputState.jump = false;
     this.inputState.interact = false;
+    this.inputState.shop = false;
     this.inputState.tout = false;
     this.inputState.horn = false;
     this.inputState.mouseX = 0;

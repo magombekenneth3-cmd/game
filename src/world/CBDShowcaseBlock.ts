@@ -4,7 +4,7 @@ import { AssetPipeline } from '../assets/AssetPipeline';
 import { BuildingData } from './BuildingData';
 import { BuildingAssetKit } from '../assets/BuildingAssetKit';
 import { EnvironmentAssetKit } from '../assets/EnvironmentAssetKit';
-
+import { TextureGenerator } from '../assets/TextureGenerator';
 import { DistrictBlockBoundary } from './UrbanLayout';
 
 export class CBDShowcaseBlock {
@@ -261,14 +261,18 @@ export class CBDShowcaseBlock {
     signPost1.position.set(-8.6, 0.2, -2.0);
     this.group.add(signPost1);
 
+    // Prominent Kenyatta Ave / Kimathi St signpost near pedestrian crossing
+    const signPostCrossing = EnvironmentAssetKit.createStreetSignPostMesh('KENYATTA AVE', 'KIMATHI ST');
+    signPostCrossing.position.set(8.6, 0.2, 10.0);
+    this.group.add(signPostCrossing);
+
     const signPost2 = EnvironmentAssetKit.createStreetSignPostMesh('KENYATTA AVE', 'MOI AVE');
     signPost2.position.set(8.6, 0.2, -2.0);
     signPost2.rotation.y = Math.PI;
     this.group.add(signPost2);
 
-    // 4. Protective Curb Bollards along Crossing & Walkway
-    const bollardZ = [-2, 0, 10.5, 13.5, 20, 22];
-    bollardZ.forEach((z) => {
+    // 4. Protective Curb Bollards along Crossing & Walkway (regular spacing along curbs)
+    for (let z = -24; z <= 48; z += 4.0) {
       const bWest = EnvironmentAssetKit.createStreetBollardMesh();
       bWest.position.set(-7.5, 0.2, z);
       this.group.add(bWest);
@@ -276,6 +280,92 @@ export class CBDShowcaseBlock {
       const bEast = EnvironmentAssetKit.createStreetBollardMesh();
       bEast.position.set(7.5, 0.2, z);
       this.group.add(bEast);
+    }
+
+    // 5. Branded Commercial Storefront Arcade (Safaricom & M-PESA, Java House, Equity Bank)
+    const brandedArcade = EnvironmentAssetKit.createBrandedCommercialArcadeMesh();
+    brandedArcade.name = 'CBD_Showcase_BrandedArcade';
+    brandedArcade.position.set(14.5, 0.2, 16.0);
+    brandedArcade.rotation.y = -Math.PI / 2;
+    this.group.add(brandedArcade);
+
+    // 6. High-Fidelity Mama Mboga Fresh Produce Sidewalk Stall
+    const mamaMbogaStall = EnvironmentAssetKit.createHighFidelityMamaMbogaStallMesh();
+    mamaMbogaStall.name = 'CBD_Showcase_MamaMbogaStall';
+    mamaMbogaStall.position.set(11.2, 0.2, 11.0);
+    mamaMbogaStall.rotation.y = -Math.PI * 0.4;
+    this.group.add(mamaMbogaStall);
+
+    // Mama Mboga Vendor character (Mary Wanjiku)
+    const pipeline = AssetPipeline.getInstance();
+    const vendorMary = pipeline.getCharacterMesh('business_owner');
+    vendorMary.name = 'Vendor_MamaMary';
+    vendorMary.position.set(11.6, 0.2, 11.8);
+    vendorMary.rotation.y = -Math.PI * 0.9;
+    this.group.add(vendorMary);
+
+    // 7. Boda Boda Passenger Stage (Motorcycle & Rider)
+    const bodaBoda = pipeline.getVehicleMesh('motorcycle');
+    bodaBoda.name = 'CBD_Showcase_BodaBoda';
+    bodaBoda.position.set(7.2, 0.2, 7.5);
+    bodaBoda.rotation.y = 0.15;
+    this.group.add(bodaBoda);
+
+    const bodaRider = pipeline.getCharacterMesh('young_professional');
+    bodaRider.name = 'Rider_BrianMwangi';
+    bodaRider.position.set(8.2, 0.2, 7.5);
+    bodaRider.rotation.y = -Math.PI * 0.5;
+    this.group.add(bodaRider);
+
+    // 8. Distant Skyline Landmark Vista: Kenyatta International Convention Centre (KICC)
+    const kiccTower = EnvironmentAssetKit.createKICCTowerVistaMesh();
+    kiccTower.name = 'CBD_Showcase_KICCTower';
+    kiccTower.position.set(45.0, 0.0, 160.0);
+    this.group.add(kiccTower);
+
+    // 9. Prominent Facade Billboard: Kenya National Pride & Slogan
+    const billboardTex = TextureGenerator.createKenyaBillboardTexture();
+    const billboardMat = new THREE.MeshStandardMaterial({
+      map: billboardTex,
+      roughness: 0.25,
+      metalness: 0.1,
+      emissive: 0xffffff,
+      emissiveMap: billboardTex,
+      emissiveIntensity: 0.18
+    });
+    const billboardFrame = new THREE.Mesh(
+      new THREE.BoxGeometry(0.3, 5.0, 9.4),
+      new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.8, roughness: 0.3 })
+    );
+    billboardFrame.name = 'CBD_Facade_Billboard_Frame';
+    billboardFrame.position.set(13.85, 13.5, 16.0);
+    this.group.add(billboardFrame);
+
+    const billboardPlane = new THREE.Mesh(
+      new THREE.PlaneGeometry(9.0, 4.6),
+      billboardMat
+    );
+    billboardPlane.name = 'CBD_Facade_Billboard_Display';
+    billboardPlane.position.set(13.68, 13.5, 16.0);
+    billboardPlane.rotation.y = -Math.PI / 2; // Facing west towards Kenyatta Avenue
+    this.group.add(billboardPlane);
+
+    // Overhead floodlight lamps illuminating the billboard
+    [-3.2, 0, 3.2].forEach((offsetZ) => {
+      const lampArm = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.04, 0.04, 1.2, 8),
+        new THREE.MeshStandardMaterial({ color: 0x0f172a, metalness: 0.9 })
+      );
+      lampArm.position.set(13.2, 16.2, 16.0 + offsetZ);
+      lampArm.rotation.z = Math.PI / 3;
+      this.group.add(lampArm);
+
+      const lampHead = new THREE.Mesh(
+        new THREE.BoxGeometry(0.25, 0.15, 0.4),
+        new THREE.MeshStandardMaterial({ color: 0xfef08a, emissive: 0xfef08a, emissiveIntensity: 0.6 })
+      );
+      lampHead.position.set(12.7, 15.9, 16.0 + offsetZ);
+      this.group.add(lampHead);
     });
   }
 

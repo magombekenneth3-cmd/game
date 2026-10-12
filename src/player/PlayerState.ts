@@ -55,6 +55,45 @@ export class PlayerState {
     return false;
   }
 
+  // --- M-PESA Mobile Money Wallet ---
+  private mpesaBalance: number = 10000; // Starting M-PESA account balance (KSh)
+
+  public getMpesaBalance(): number {
+    return this.mpesaBalance;
+  }
+
+  public depositToMpesa(amount: number): boolean {
+    if (amount <= 0 || this.cash < amount) return false;
+    this.cash -= amount;
+    this.mpesaBalance += amount;
+    return true;
+  }
+
+  public withdrawFromMpesa(amount: number, fee: number = 0): boolean {
+    const totalRequired = amount + fee;
+    if (amount <= 0 || this.mpesaBalance < totalRequired) return false;
+    this.mpesaBalance -= totalRequired;
+    this.cash += amount;
+    return true;
+  }
+
+  public deductMpesa(amount: number): boolean {
+    if (amount <= 0 || this.mpesaBalance < amount) return false;
+    this.mpesaBalance -= amount;
+    return true;
+  }
+
+  public addMpesa(amount: number): void {
+    if (amount > 0) {
+      this.mpesaBalance += amount;
+    }
+  }
+
+  public consumeFood(healthRestore: number, staminaRestore: number): void {
+    this.health = Math.min(100, this.health + healthRestore);
+    this.stamina = Math.min(this.maxStamina, this.stamina + staminaRestore);
+  }
+
   public getReputation(): number {
     return this.reputation;
   }

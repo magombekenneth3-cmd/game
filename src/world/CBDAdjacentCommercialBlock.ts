@@ -383,9 +383,8 @@ export class CBDAdjacentCommercialBlock {
     signPostSouthEast.rotation.y = Math.PI;
     this.group.add(signPostSouthEast);
 
-    // 4. Protective Curb Bollards along Crossings
-    const bollardZ = [56.0, 59.0, 93.5, 96.5, 115.0, 135.0];
-    bollardZ.forEach((z) => {
+    // 4. Protective Curb Bollards along Crossings & Sidewalk Margins
+    for (let z = 56.0; z <= 138.0; z += 4.0) {
       const bWest = EnvironmentAssetKit.createStreetBollardMesh();
       bWest.position.set(-7.5, 0.2, z);
       this.group.add(bWest);
@@ -393,7 +392,7 @@ export class CBDAdjacentCommercialBlock {
       const bEast = EnvironmentAssetKit.createStreetBollardMesh();
       bEast.position.set(7.5, 0.2, z);
       this.group.add(bEast);
-    });
+    }
 
     // 5. Commercial Street Kiosks along Wide Promenades
     const pipeline = AssetPipeline.getInstance();

@@ -89,7 +89,7 @@ export class AssetPipeline {
       'env_mpesa_kiosk_01', 'env_streetlight_01', 'env_mama_mboga_stall_01',
       'interior_sofa_01', 'interior_table_01', 'interior_chair_01', 'interior_dj_booth_rig_01',
       // Additional Secondary Core Assets
-      'bld_mixed_use_01', 'bld_office_block_01', 'bld_residential_villa_01', 'bld_nightclub_01', 'bld_industrial_warehouse_01', 'bld_informal_kiosk_01',
+      'bld_bungalow_01', 'bld_mixed_use_01', 'bld_office_block_01', 'bld_residential_villa_01', 'bld_nightclub_01', 'bld_industrial_warehouse_01', 'bld_informal_kiosk_01',
       'veh_boda_boda_01', 'veh_truck_01', 'char_pedestrian_student_01', 'env_palm_tree_01', 'interior_vip_lounge_sofa_01'
     ];
     // Preload warms the template cache and does not allocate gameplay instances
@@ -144,7 +144,68 @@ export class AssetPipeline {
     const resolvedUrl = this.resolveAssetUrl(entry.sourceFile);
     this.assetStatuses.set(assetId, { state: 'loading', url: resolvedUrl });
 
-    const isNodeTest = typeof process !== 'undefined' && process.env?.NODE_ENV === 'test';
+    const isNodeTest = typeof process !== 'undefined' && (process.env?.NODE_ENV === 'test' || typeof window === 'undefined');
+    const nodeFs = isNodeTest
+      ? (typeof (process as any).getBuiltinModule === 'function'
+          ? (process as any).getBuiltinModule('fs')
+          : (globalThis as any).require?.('fs'))
+      : null;
+    const nodePath = isNodeTest
+      ? (typeof (process as any).getBuiltinModule === 'function'
+          ? (process as any).getBuiltinModule('path')
+          : (globalThis as any).require?.('path'))
+      : null;
+
+    if (nodeFs && nodePath) {
+      const diskPath = nodePath.resolve(process.cwd(), 'public', entry.sourceFile.replace(/^\//, ''));
+      if (nodeFs.existsSync(diskPath)) {
+        try {
+          const buffer = nodeFs.readFileSync(diskPath);
+          const arrayBuffer = buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength);
+          const parsePromise = new Promise<THREE.Group>((resolve) => {
+            this.gltfLoader.parse(
+              arrayBuffer,
+              '',
+              (gltf) => {
+                const loadedGroup = gltf.scene || new THREE.Group();
+                loadedGroup.name = `GLB_${assetId}`;
+                loadedGroup.scale.copy(entry.intendedScale);
+
+                const anims = gltf.animations || [];
+                loadedGroup.userData.animations = anims;
+                this.animationCache.set(assetId, anims);
+
+                this.calibrateModelMaterials(loadedGroup, assetId);
+
+                let meshCount = 0;
+                loadedGroup.traverse((child) => {
+                  if ((child as THREE.Mesh).isMesh) meshCount++;
+                });
+
+                this.assetStatuses.set(assetId, { state: 'loaded', url: resolvedUrl, meshCount });
+                this.glbCache.set(assetId, loadedGroup);
+                this.loadingPromises.delete(assetId);
+                resolve(loadedGroup);
+              },
+              (err) => {
+                const reason = err instanceof Error ? err.message : String(err || 'Parse error');
+                console.warn(`[AssetPipeline] Node GLB parse error for '${assetId}': ${reason}. Using procedural fallback.`);
+                this.assetStatuses.set(assetId, { state: 'fallback', url: resolvedUrl, reason });
+                const fallback = this.createFallbackMesh(assetId);
+                this.glbCache.set(assetId, fallback);
+                this.loadingPromises.delete(assetId);
+                resolve(fallback);
+              }
+            );
+          });
+          this.loadingPromises.set(assetId, parsePromise);
+          return await parsePromise;
+        } catch (_readErr) {
+          // If disk reading fails, fall through to default loader
+        }
+      }
+    }
+
     const timeoutDuration = isNodeTest ? 50 : 15000;
 
     const loadPromise = new Promise<THREE.Group>((resolve) => {
@@ -360,8 +421,14 @@ export class AssetPipeline {
     instance.traverse((child) => {
       const mesh = child as THREE.Mesh;
       if (mesh.isMesh) {
-        mesh.castShadow = true;
-        mesh.receiveShadow = true;
+        if (child.name.startsWith('Col_') || child.name.toLowerCase().includes('collision')) {
+          mesh.visible = false;
+          mesh.castShadow = false;
+          mesh.receiveShadow = false;
+        } else {
+          mesh.castShadow = true;
+          mesh.receiveShadow = true;
+        }
       }
     });
 
@@ -465,6 +532,52 @@ export class AssetPipeline {
         }
       });
     });
+
+    // 2. Process LOD & Collision node conventions
+    group.traverse((child) => {
+      // Collision meshes (named Col_* or containing 'collision') must never be rendered in visual passes
+      if (child.name.startsWith('Col_') || child.name.toLowerCase().includes('collision')) {
+        child.visible = false;
+        if ((child as THREE.Mesh).isMesh) {
+          (child as THREE.Mesh).castShadow = false;
+          (child as THREE.Mesh).receiveShadow = false;
+        }
+      }
+    });
+
+    // 3. Initialize Level-Of-Detail states if model provides Geo_LOD0 and Geo_LOD1
+    const lod0 = group.getObjectByName('Geo_LOD0');
+    const lod1 = group.getObjectByName('Geo_LOD1');
+    if (lod0 && lod1) {
+      lod0.visible = true;
+      lod1.visible = false;
+      group.userData.hasLODs = true;
+    }
+  }
+
+  /**
+   * Explicit Level-Of-Detail controller for models containing Geo_LOD0 and Geo_LOD1.
+   * Switches high-detail and silhouette meshes based on distance tier while keeping Col_* collision nodes invisible.
+   */
+  public setInstanceLOD(instance: THREE.Object3D, lod: 'LOD0' | 'LOD1' | 'LOD2' | 'UNLOADED'): void {
+    const lod0 = instance.getObjectByName('Geo_LOD0');
+    const lod1 = instance.getObjectByName('Geo_LOD1');
+    if (lod0 && lod1) {
+      if (lod === 'LOD0') {
+        lod0.visible = true;
+        lod1.visible = false;
+      } else {
+        lod0.visible = false;
+        lod1.visible = true;
+      }
+    }
+
+    // Always ensure physics collision proxies remain invisible
+    instance.traverse((child) => {
+      if (child.name.startsWith('Col_') || child.name.toLowerCase().includes('collision')) {
+        child.visible = false;
+      }
+    });
   }
 
   /**
@@ -542,24 +655,30 @@ export class AssetPipeline {
     if (assetId.includes('interior_table')) return InteriorAssetKit.createDJBoothRig();
     if (assetId.includes('interior_chair')) return InteriorAssetKit.createVIPLoungeMesh();
 
-    if (assetId.includes('bld_')) {
+    if (assetId.includes('bld_') || assetId.includes('bungalow')) {
+      const isResidential = assetId.includes('bungalow') || assetId.includes('villa') || assetId.includes('residential');
       const dummyBld: BuildingData = {
         id: `fallback_${assetId}`,
-        name: 'Fallback Building',
-        footprintPolygon: [
+        name: isResidential ? 'Fallback Kenyan Bungalow' : 'Fallback Building',
+        footprintPolygon: isResidential ? [
+          { x: -6, z: -7 },
+          { x: 6, z: -7 },
+          { x: 6, z: 7 },
+          { x: -6, z: 7 }
+        ] : [
           { x: -5, z: -5 },
           { x: 5, z: -5 },
           { x: 5, z: 5 },
           { x: -5, z: 5 }
         ],
         center: new THREE.Vector3(0, 0, 0),
-        height: 10,
-        floors: 3,
-        zone: 'commercial_corridor',
+        height: isResidential ? 6.2 : 10,
+        floors: isResidential ? 1 : 3,
+        zone: isResidential ? 'residential_estate' : 'commercial_corridor',
         districtId: 'district_nairobi',
-        buildingCategory: assetId.includes('tower') ? 'commercial_tower' : (assetId.includes('mixed') ? 'mixed_use' : 'shop'),
-        entrances: [{ id: 'ent1', position: new THREE.Vector3(0, 0, 5), type: 'main' }],
-        hasGroundFloorShops: true,
+        buildingCategory: isResidential ? 'residential_house' : (assetId.includes('tower') ? 'commercial_tower' : (assetId.includes('mixed') ? 'mixed_use' : 'shop')),
+        entrances: [{ id: 'ent1', position: new THREE.Vector3(0, 0, isResidential ? 7 : 5), type: 'main' }],
+        hasGroundFloorShops: !isResidential,
         rooftopEquipment: ['water_tank']
       };
       return BuildingAssetKit.createBuildingGroup(dummyBld);
@@ -601,7 +720,7 @@ export class AssetPipeline {
         candidateIds = ['bld_commercial_tower_01'];
         break;
       case 'residential_house':
-        candidateIds = ['bld_residential_villa_01'];
+        candidateIds = ['bld_bungalow_01'];
         break;
       case 'warehouse':
         candidateIds = ['bld_industrial_warehouse_01'];
@@ -664,6 +783,22 @@ export class AssetPipeline {
       ];
 
       for (const orient of orientations) {
+        // For residential bungalows: strictly preserve true proportions (never stretch non-uniformly)
+        if (candId === 'bld_bungalow_01') {
+          // If parcel accommodates the bungalow, use exact 1:1 metric scale
+          // If slightly smaller or larger within residential plot range, clamp uniform scale to [0.85, 1.15]
+          const uniformS = (orient.targetW >= nativeW && orient.targetD >= nativeD)
+            ? 1.0
+            : Math.min(1.15, Math.max(0.85, Math.min(orient.targetW / nativeW, orient.targetD / nativeD)));
+
+          bestCandidate = candId;
+          bestScale = new THREE.Vector3(uniformS, uniformS, uniformS);
+          bestRotation = orient.rot;
+          fitsFootprint = true;
+          bestDistortion = 1.0;
+          break;
+        }
+
         const sx = orient.targetW / nativeW;
         const sz = orient.targetD / nativeD;
         const sy = targetHeight / nativeH;
@@ -712,6 +847,15 @@ export class AssetPipeline {
     // Apply footprint-fitted scale
     glbMesh.scale.copy(fit.scale);
     wrapper.add(glbMesh);
+
+    // For residential bungalows with larger parcel footprints, add surrounding compound perimeter wall & gate
+    if (bld.buildingCategory === 'residential_house' && bld.footprintPolygon && bld.footprintPolygon.length >= 3) {
+      const compound = BuildingAssetKit.createCompoundPerimeter(bld);
+      if (compound && compound.children.length > 0) {
+        wrapper.add(compound);
+      }
+    }
+
     return wrapper;
   }
 

@@ -648,16 +648,22 @@ export class EnvironmentAssetKit {
   /**
    * Nairobi CBD Street Name Signpost (e.g., "KENYATTA AVE / KIMATHI ST").
    */
-  public static createStreetSignPostMesh(streetName: string, crossStreet: string = 'KIMATHI ST'): THREE.Group {
+  public static createStreetSignPostMesh(streetName: string = 'KENYATTA AVE', crossStreet: string = 'KIMATHI ST'): THREE.Group {
     const group = new THREE.Group();
-    group.name = `StreetSign_${streetName}`;
+    group.name = `StreetSign_${streetName}_${crossStreet}`;
 
-    const poleMat = new THREE.MeshStandardMaterial({ color: 0x334155, metalness: 0.75, roughness: 0.35 });
-    const poleGeo = new THREE.CylinderGeometry(0.06, 0.08, 3.8, 8);
+    const poleMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.85, roughness: 0.25 });
+    const poleGeo = new THREE.CylinderGeometry(0.06, 0.08, 3.8, 10);
     const pole = new THREE.Mesh(poleGeo, poleMat);
     pole.position.y = 1.9;
     pole.castShadow = true;
     group.add(pole);
+
+    // Decorative pole collar
+    const collarGeo = new THREE.CylinderGeometry(0.10, 0.12, 0.15, 10);
+    const collar = new THREE.Mesh(collarGeo, poleMat);
+    collar.position.y = 0.4;
+    group.add(collar);
 
     // Primary Street Plate
     const signTex1 = TextureGenerator.createStreetSignTexture(streetName, 'NAIROBI CBD');
@@ -802,6 +808,307 @@ export class EnvironmentAssetKit {
     const band = new THREE.Mesh(bandGeo, yellowMat);
     band.position.y = 0.7;
     group.add(band);
+
+    return group;
+  }
+
+
+  /**
+   * High-Fidelity Mama Mboga Fresh Produce Sidewalk Stall.
+   * Features stacked vegetable bins, tomatoes, cabbages, bananas, umbrella, and chalkboard slate sign.
+   */
+  public static createHighFidelityMamaMbogaStallMesh(): THREE.Group {
+    const group = new THREE.Group();
+    group.name = 'HighFidelityMamaMbogaStall';
+
+    const woodRusticMat = new THREE.MeshStandardMaterial({ color: 0x78350f, roughness: 0.85 });
+    const greenUmbrellaMat = new THREE.MeshStandardMaterial({ color: 0x15803d, roughness: 0.45 });
+    const slateSignMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.9 });
+    const frameMat = new THREE.MeshStandardMaterial({ color: 0xb45309, roughness: 0.7 });
+
+    // 1. Heavy wooden market display table
+    const tableTopGeo = new THREE.BoxGeometry(2.4, 0.12, 1.3);
+    const tableTop = new THREE.Mesh(tableTopGeo, woodRusticMat);
+    tableTop.position.set(0, 0.82, 0);
+    tableTop.castShadow = true;
+    tableTop.receiveShadow = true;
+    group.add(tableTop);
+
+    // 4 Sturdy wooden legs
+    [[-1.0, -0.5], [1.0, -0.5], [-1.0, 0.5], [1.0, 0.5]].forEach(([lx, lz]) => {
+      const legGeo = new THREE.BoxGeometry(0.10, 0.82, 0.10);
+      const leg = new THREE.Mesh(legGeo, woodRusticMat);
+      leg.position.set(lx, 0.41, lz);
+      leg.castShadow = true;
+      group.add(leg);
+    });
+
+    // 2. Multi-tier wooden crates on table
+    const crateMat = new THREE.MeshStandardMaterial({ color: 0x92400e, roughness: 0.8 });
+    const tomatoMat = new THREE.MeshStandardMaterial({ color: 0xdc2626, roughness: 0.35 }); // Ripe red
+    const cabbageMat = new THREE.MeshStandardMaterial({ color: 0x16a34a, roughness: 0.6 }); // Green sukuma
+    const bananaMat = new THREE.MeshStandardMaterial({ color: 0xfacc15, roughness: 0.4 }); // Yellow
+    const avocadoMat = new THREE.MeshStandardMaterial({ color: 0x14532d, roughness: 0.5 }); // Deep green
+
+    // Produce Crates with heaped vegetables
+    const cratePositions = [
+      { x: -0.75, z: -0.2, mat: tomatoMat, name: 'Tomatoes' },
+      { x: 0.0, z: -0.2, mat: cabbageMat, name: 'Cabbages' },
+      { x: 0.75, z: -0.2, mat: bananaMat, name: 'Bananas' },
+      { x: -0.4, z: 0.3, mat: avocadoMat, name: 'Avocados' },
+      { x: 0.4, z: 0.3, mat: tomatoMat, name: 'FreshTomatoes' }
+    ];
+
+    cratePositions.forEach((cp, idx) => {
+      const cBox = new THREE.Mesh(new THREE.BoxGeometry(0.65, 0.18, 0.45), crateMat);
+      cBox.position.set(cp.x, 0.95, cp.z);
+      cBox.castShadow = true;
+      group.add(cBox);
+
+      // Heaped produce mound inside crate
+      const mound = new THREE.Mesh(new THREE.DodecahedronGeometry(0.24), cp.mat);
+      mound.name = `Produce_${cp.name}_${idx}`;
+      mound.position.set(cp.x, 1.10, cp.z);
+      mound.castShadow = true;
+      group.add(mound);
+    });
+
+    // 3. Large Market Umbrella Canopy
+    const poleGeo = new THREE.CylinderGeometry(0.04, 0.04, 2.6, 8);
+    const pole = new THREE.Mesh(poleGeo, woodRusticMat);
+    pole.position.set(0, 1.3, 0);
+    pole.castShadow = true;
+    group.add(pole);
+
+    const umbrellaCanopy = new THREE.Mesh(new THREE.ConeGeometry(1.6, 0.65, 10), greenUmbrellaMat);
+    umbrellaCanopy.position.set(0, 2.55, 0);
+    umbrellaCanopy.castShadow = true;
+    group.add(umbrellaCanopy);
+
+    // 4. Chalkboard Stand Sign ("FRESH PRODUCE — Matunda, Mboga, Fresh Daily")
+    const signGroup = new THREE.Group();
+    signGroup.name = 'MamaMboga_ChalkboardSign';
+
+    const slate = new THREE.Mesh(new THREE.BoxGeometry(0.65, 0.85, 0.04), slateSignMat);
+    slate.position.set(0, 0.65, 0);
+    signGroup.add(slate);
+
+    const chalkboardTex = TextureGenerator.createMamaMbogaChalkboardTexture();
+    const chalkboardMat = new THREE.MeshStandardMaterial({ map: chalkboardTex, roughness: 0.85 });
+    const chalkFaceFront = new THREE.Mesh(new THREE.PlaneGeometry(0.62, 0.82), chalkboardMat);
+    chalkFaceFront.position.set(0, 0.65, 0.022);
+    signGroup.add(chalkFaceFront);
+
+    const chalkFaceBack = new THREE.Mesh(new THREE.PlaneGeometry(0.62, 0.82), chalkboardMat);
+    chalkFaceBack.position.set(0, 0.65, -0.022);
+    chalkFaceBack.rotation.y = Math.PI;
+    signGroup.add(chalkFaceBack);
+
+    const frame = new THREE.Mesh(new THREE.BoxGeometry(0.72, 0.92, 0.03), frameMat);
+    frame.position.set(0, 0.65, 0);
+    signGroup.add(frame);
+
+    // A-Frame stand legs
+    const standLeg1 = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.65, 0.05), frameMat);
+    standLeg1.position.set(-0.3, 0.3, -0.15);
+    standLeg1.rotation.x = -0.2;
+    signGroup.add(standLeg1);
+
+    const standLeg2 = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.65, 0.05), frameMat);
+    standLeg2.position.set(0.3, 0.3, -0.15);
+    standLeg2.rotation.x = -0.2;
+    signGroup.add(standLeg2);
+
+    signGroup.position.set(1.4, 0, 0.4);
+    signGroup.rotation.y = -Math.PI * 0.15;
+    group.add(signGroup);
+
+    return group;
+  }
+
+  /**
+   * Kenyatta International Convention Centre (KICC) Iconic Tower Vista Model.
+   * Prominent 28-story cylindrical tower with terracotta vertical sun-shading fins
+   * and circular rooftop saucer disc / revolving restaurant helipad.
+   */
+  public static createKICCTowerVistaMesh(): THREE.Group {
+    const group = new THREE.Group();
+    group.name = 'KICCTower_LandmarkVista';
+
+    const terraCottaMat = new THREE.MeshStandardMaterial({ color: 0x9a3412, roughness: 0.75 }); // Nairobi terracotta
+    const glassMat = new THREE.MeshStandardMaterial({ color: 0x0284c7, roughness: 0.2, metalness: 0.5 });
+    const concreteMat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, roughness: 0.65 });
+
+    // 1. Broad stepped podium base (height 12m)
+    const podiumGeo = new THREE.CylinderGeometry(22, 28, 12, 24);
+    const podium = new THREE.Mesh(podiumGeo, concreteMat);
+    podium.position.y = 6;
+    group.add(podium);
+
+    // 2. Main Cylindrical 28-story Tower Body (height 80m, radius 14m)
+    const towerCoreGeo = new THREE.CylinderGeometry(14, 14, 80, 24);
+    const towerCore = new THREE.Mesh(towerCoreGeo, glassMat);
+    towerCore.position.y = 52;
+    group.add(towerCore);
+
+    // 16 Vertical Terracotta Fins along tower circumference
+    for (let i = 0; i < 16; i++) {
+      const angle = (i / 16) * Math.PI * 2;
+      const fin = new THREE.Mesh(new THREE.BoxGeometry(0.8, 80, 2.5), terraCottaMat);
+      fin.position.set(Math.cos(angle) * 14.5, 52, Math.sin(angle) * 14.5);
+      fin.rotation.y = -angle;
+      group.add(fin);
+    }
+
+    // 3. Iconic Rooftop Revolving Restaurant & Helipad Saucer Disc
+    const saucerGeo = new THREE.CylinderGeometry(20, 15, 6, 24);
+    const saucer = new THREE.Mesh(saucerGeo, concreteMat);
+    saucer.position.y = 95;
+    group.add(saucer);
+
+    const helipadCap = new THREE.Mesh(new THREE.CylinderGeometry(18, 18, 1.5, 24), terraCottaMat);
+    helipadCap.position.y = 98.5;
+    group.add(helipadCap);
+
+    // 4. Central Antenna Spire (height 12m)
+    const spire = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.8, 14, 8), concreteMat);
+    spire.position.y = 106;
+    group.add(spire);
+
+    return group;
+  }
+
+  /**
+   * Commercial Storefront Arcade with Authentic Nairobi Brands (Safaricom M-PESA, Java House, Equity Bank).
+   */
+  public static createBrandedCommercialArcadeMesh(): THREE.Group {
+    const group = new THREE.Group();
+    group.name = 'BrandedCommercialArcade';
+
+    const stonePillarMat = new THREE.MeshStandardMaterial({ color: 0xd4d4d8, roughness: 0.6 });
+    const safaricomGreenMat = new THREE.MeshStandardMaterial({ color: 0x16a34a, roughness: 0.35, emissive: 0x15803d, emissiveIntensity: 0.2 });
+    const javaRedMat = new THREE.MeshStandardMaterial({ color: 0x991b1b, roughness: 0.4 });
+    const equityBrownMat = new THREE.MeshStandardMaterial({ color: 0x78350f, roughness: 0.4 });
+    const glassMat = new THREE.MeshStandardMaterial({ color: 0x38bdf8, roughness: 0.1, metalness: 0.8, transparent: true, opacity: 0.85 });
+
+    // Arcade Canopy Overhang
+    const canopyGeo = new THREE.BoxGeometry(24.0, 0.8, 3.5);
+    const canopy = new THREE.Mesh(canopyGeo, stonePillarMat);
+    canopy.position.set(0, 4.4, 1.75);
+    canopy.castShadow = true;
+    group.add(canopy);
+
+    // Colonnade Pillars
+    [-11.0, -5.5, 0, 5.5, 11.0].forEach((px) => {
+      const pillarGeo = new THREE.BoxGeometry(0.8, 4.4, 0.8);
+      const pillar = new THREE.Mesh(pillarGeo, stonePillarMat);
+      pillar.position.set(px, 2.2, 3.1);
+      pillar.castShadow = true;
+      group.add(pillar);
+    });
+
+    // --- Shop 1: Safaricom & M-PESA Center (-8.25m) ---
+    const safaricomBacking = new THREE.Mesh(new THREE.BoxGeometry(5.2, 0.9, 0.15), safaricomGreenMat);
+    safaricomBacking.position.set(-8.25, 3.8, 0.2);
+    group.add(safaricomBacking);
+
+    const safaricomTex = TextureGenerator.createSafaricomSignTexture();
+    const safaricomSignMat = new THREE.MeshStandardMaterial({
+      map: safaricomTex,
+      roughness: 0.35,
+      emissive: 0x00a651,
+      emissiveMap: safaricomTex,
+      emissiveIntensity: 0.25
+    });
+    const safaricomSignFace = new THREE.Mesh(new THREE.PlaneGeometry(5.16, 0.86), safaricomSignMat);
+    safaricomSignFace.position.set(-8.25, 3.8, 0.28);
+    group.add(safaricomSignFace);
+
+    // Projecting double-sided M-PESA illuminated blade sign on pillar
+    const mpesaTex = TextureGenerator.createMPesaSignTexture();
+    const mpesaBladeMat = new THREE.MeshStandardMaterial({
+      map: mpesaTex,
+      roughness: 0.3,
+      emissive: 0x00a651,
+      emissiveMap: mpesaTex,
+      emissiveIntensity: 0.2
+    });
+    const mpesaBladeGeo = new THREE.BoxGeometry(0.06, 0.7, 0.9);
+    const mpesaBladeSign = new THREE.Mesh(mpesaBladeGeo, mpesaBladeMat);
+    mpesaBladeSign.position.set(-5.6, 3.2, 1.2);
+    group.add(mpesaBladeSign);
+
+    const safaricomGlass = new THREE.Mesh(new THREE.BoxGeometry(5.0, 3.0, 0.05), glassMat);
+    safaricomGlass.position.set(-8.25, 1.6, 0.1);
+    group.add(safaricomGlass);
+
+    // --- Shop 2: Java House Coffee (0m) ---
+    const javaBacking = new THREE.Mesh(new THREE.BoxGeometry(5.2, 0.9, 0.15), javaRedMat);
+    javaBacking.position.set(0, 3.8, 0.2);
+    group.add(javaBacking);
+
+    const javaTex = TextureGenerator.createJavaHouseSignTexture();
+    const javaSignMat = new THREE.MeshStandardMaterial({
+      map: javaTex,
+      roughness: 0.4,
+      emissive: 0x7c1d1d,
+      emissiveMap: javaTex,
+      emissiveIntensity: 0.2
+    });
+    const javaSignFace = new THREE.Mesh(new THREE.PlaneGeometry(5.16, 0.86), javaSignMat);
+    javaSignFace.position.set(0, 3.8, 0.28);
+    group.add(javaSignFace);
+
+    // Java House gold trim moulding
+    const goldMouldingMat = new THREE.MeshStandardMaterial({ color: 0xd97706, metalness: 0.7, roughness: 0.3 });
+    const javaTrimTop = new THREE.Mesh(new THREE.BoxGeometry(5.26, 0.06, 0.18), goldMouldingMat);
+    javaTrimTop.position.set(0, 4.28, 0.22);
+    group.add(javaTrimTop);
+    const javaTrimBottom = new THREE.Mesh(new THREE.BoxGeometry(5.26, 0.06, 0.18), goldMouldingMat);
+    javaTrimBottom.position.set(0, 3.32, 0.22);
+    group.add(javaTrimBottom);
+
+    const javaGlass = new THREE.Mesh(new THREE.BoxGeometry(5.0, 3.0, 0.05), glassMat);
+    javaGlass.position.set(0, 1.6, 0.1);
+    group.add(javaGlass);
+
+    // Outdoor cafe table under arcade
+    const tableMat = new THREE.MeshStandardMaterial({ color: 0x451a03, roughness: 0.6 });
+    const table = new THREE.Mesh(new THREE.CylinderGeometry(0.45, 0.45, 0.75, 12), tableMat);
+    table.position.set(0.0, 0.4, 1.8);
+    group.add(table);
+
+    // --- Shop 3: Equity Bank Branch (8.25m) ---
+    const equityBacking = new THREE.Mesh(new THREE.BoxGeometry(5.2, 0.9, 0.15), equityBrownMat);
+    equityBacking.position.set(8.25, 3.8, 0.2);
+    group.add(equityBacking);
+
+    const equityTex = TextureGenerator.createEquityBankSignTexture();
+    const equitySignMat = new THREE.MeshStandardMaterial({
+      map: equityTex,
+      roughness: 0.4,
+      emissive: 0x451a03,
+      emissiveMap: equityTex,
+      emissiveIntensity: 0.15
+    });
+    const equitySignFace = new THREE.Mesh(new THREE.PlaneGeometry(5.16, 0.86), equitySignMat);
+    equitySignFace.position.set(8.25, 3.8, 0.28);
+    group.add(equitySignFace);
+
+    const equityGlass = new THREE.Mesh(new THREE.BoxGeometry(5.0, 3.0, 0.05), glassMat);
+    equityGlass.position.set(8.25, 1.6, 0.1);
+    group.add(equityGlass);
+
+    // Equity 24/7 ATM Vestibule Kiosk inside window
+    const atmKioskMat = new THREE.MeshStandardMaterial({ color: 0x78350f, roughness: 0.5 });
+    const atmKiosk = new THREE.Mesh(new THREE.BoxGeometry(0.9, 1.6, 0.6), atmKioskMat);
+    atmKiosk.position.set(9.6, 0.8, -0.2);
+    group.add(atmKiosk);
+
+    const atmScreenMat = new THREE.MeshStandardMaterial({ color: 0x0284c7, emissive: 0x0284c7, emissiveIntensity: 0.6 });
+    const atmScreen = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.3, 0.02), atmScreenMat);
+    atmScreen.position.set(9.6, 1.1, 0.11);
+    group.add(atmScreen);
 
     return group;
   }

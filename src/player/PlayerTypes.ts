@@ -31,6 +31,7 @@ export interface IInputState {
   sprint: boolean;
   jump: boolean;
   interact: boolean;
+  shop?: boolean;
   pause: boolean;
   horn?: boolean;
   lights?: boolean;

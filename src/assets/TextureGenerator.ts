@@ -835,7 +835,7 @@ export class TextureGenerator {
    * Generates East African Matatu graphic art decal texture.
    */
   public static createMatatuDecalTexture(): THREE.CanvasTexture {
-    return this.createMatatuLiveryTexture('kilimani_rider');
+    return this.createMatatuLiveryTexture('super_metro');
   }
 
   /**
@@ -1535,6 +1535,380 @@ export class TextureGenerator {
     texture.wrapS = THREE.RepeatWrapping;
     texture.wrapT = THREE.RepeatWrapping;
 
+    this.cache.set(cacheKey, texture);
+    return texture;
+  }
+
+  /**
+   * Generates authentic Safaricom Storefront Signboard Texture.
+   */
+  public static createSafaricomSignTexture(): THREE.CanvasTexture {
+    const cacheKey = 'sign_safaricom';
+    if (this.cache.has(cacheKey)) return this.cache.get(cacheKey)!;
+
+    const { canvas, ctx } = this.createCanvas(512, 128);
+    if (!ctx.fillRect) {
+      const tex = this.createFallbackTexture(true);
+      this.cache.set(cacheKey, tex);
+      return tex;
+    }
+
+    // Safaricom Green base
+    ctx.fillStyle = '#00a651';
+    ctx.fillRect(0, 0, 512, 128);
+
+    // Subtle white glow border
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 4;
+    ctx.strokeRect(4, 4, 504, 120);
+
+    // Iconic Safaricom green arc emblem
+    ctx.beginPath();
+    ctx.arc(80, 64, 38, -Math.PI * 0.7, Math.PI * 0.7);
+    ctx.lineWidth = 10;
+    ctx.strokeStyle = '#ffffff';
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.arc(80, 64, 20, -Math.PI * 0.6, Math.PI * 0.6);
+    ctx.lineWidth = 6;
+    ctx.strokeStyle = '#facc15';
+    ctx.stroke();
+
+    // Bold Safaricom Typography
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 44px sans-serif';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('Safaricom', 140, 64);
+
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.colorSpace = THREE.SRGBColorSpace;
+    this.cache.set(cacheKey, texture);
+    return texture;
+  }
+
+  /**
+   * Generates authentic M-PESA Storefront Signboard Texture.
+   */
+  public static createMPesaSignTexture(): THREE.CanvasTexture {
+    const cacheKey = 'sign_mpesa';
+    if (this.cache.has(cacheKey)) return this.cache.get(cacheKey)!;
+
+    const { canvas, ctx } = this.createCanvas(512, 128);
+    if (!ctx.fillRect) {
+      const tex = this.createFallbackTexture(true);
+      this.cache.set(cacheKey, tex);
+      return tex;
+    }
+
+    // M-PESA Vivid Green base
+    ctx.fillStyle = '#00a651';
+    ctx.fillRect(0, 0, 512, 128);
+
+    // Clean white inner container
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 6;
+    ctx.strokeRect(8, 8, 496, 112);
+
+    // M-PESA Typography
+    ctx.fillStyle = '#ffffff';
+    ctx.font = '900 52px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('M-PESA', 256, 64);
+
+    // Small red dot accent
+    ctx.fillStyle = '#dc2626';
+    ctx.beginPath();
+    ctx.arc(388, 48, 8, 0, Math.PI * 2);
+    ctx.fill();
+
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.colorSpace = THREE.SRGBColorSpace;
+    this.cache.set(cacheKey, texture);
+    return texture;
+  }
+
+  /**
+   * Generates authentic Java House Signboard Texture.
+   */
+  public static createJavaHouseSignTexture(): THREE.CanvasTexture {
+    const cacheKey = 'sign_java_house';
+    if (this.cache.has(cacheKey)) return this.cache.get(cacheKey)!;
+
+    const { canvas, ctx } = this.createCanvas(512, 128);
+    if (!ctx.fillRect) {
+      const tex = this.createFallbackTexture(true);
+      this.cache.set(cacheKey, tex);
+      return tex;
+    }
+
+    // Java House Crimson base
+    ctx.fillStyle = '#7c1d1d';
+    ctx.fillRect(0, 0, 512, 128);
+
+    // Gold trim border
+    ctx.strokeStyle = '#f59e0b';
+    ctx.lineWidth = 4;
+    ctx.strokeRect(6, 6, 500, 116);
+
+    // White Java House cursive / serif typography
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'italic 700 42px serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('Java House', 256, 64);
+
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.colorSpace = THREE.SRGBColorSpace;
+    this.cache.set(cacheKey, texture);
+    return texture;
+  }
+
+  /**
+   * Generates authentic Equity Bank Signboard Texture.
+   */
+  public static createEquityBankSignTexture(): THREE.CanvasTexture {
+    const cacheKey = 'sign_equity_bank';
+    if (this.cache.has(cacheKey)) return this.cache.get(cacheKey)!;
+
+    const { canvas, ctx } = this.createCanvas(512, 128);
+    if (!ctx.fillRect) {
+      const tex = this.createFallbackTexture(true);
+      this.cache.set(cacheKey, tex);
+      return tex;
+    }
+
+    // Clean white panel
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, 512, 128);
+
+    // Terracotta brown frame
+    ctx.strokeStyle = '#78350f';
+    ctx.lineWidth = 4;
+    ctx.strokeRect(6, 6, 500, 116);
+
+    // Equity roof emblem
+    ctx.fillStyle = '#991b1b';
+    ctx.beginPath();
+    ctx.moveTo(90, 80);
+    ctx.lineTo(130, 42);
+    ctx.lineTo(170, 80);
+    ctx.closePath();
+    ctx.fill();
+
+    // Bold brown EQUITY lettering
+    ctx.fillStyle = '#78350f';
+    ctx.font = '900 46px sans-serif';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('EQUITY', 200, 64);
+
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.colorSpace = THREE.SRGBColorSpace;
+    this.cache.set(cacheKey, texture);
+    return texture;
+  }
+
+  /**
+   * Generates Mama Mboga A-Frame Chalkboard Sign Texture.
+   */
+  public static createMamaMbogaChalkboardTexture(): THREE.CanvasTexture {
+    const cacheKey = 'chalkboard_mama_mboga';
+    if (this.cache.has(cacheKey)) return this.cache.get(cacheKey)!;
+
+    const { canvas, ctx } = this.createCanvas(256, 384);
+    if (!ctx.fillRect) {
+      const tex = this.createFallbackTexture(true);
+      this.cache.set(cacheKey, tex);
+      return tex;
+    }
+
+    // Dark slate chalkboard base
+    ctx.fillStyle = '#0f172a';
+    ctx.fillRect(0, 0, 256, 384);
+
+    // Weathered chalk dust
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.04)';
+    for (let i = 0; i < 20; i++) {
+      ctx.fillRect(0, i * 20, 256, 8);
+    }
+
+    // White / yellow chalk lettering
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#fef08a'; // Pale chalk yellow
+    ctx.font = 'bold 20px sans-serif';
+    ctx.fillText('FRESH PRODUCE', 128, 48);
+
+    ctx.strokeStyle = '#facc15';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(40, 64);
+    ctx.lineTo(216, 64);
+    ctx.stroke();
+
+    ctx.fillStyle = '#ffffff'; // White chalk
+    ctx.font = 'bold 24px sans-serif';
+    ctx.fillText('Matunda', 128, 120);
+
+    ctx.fillStyle = '#86efac'; // Green chalk for mboga
+    ctx.font = 'bold 24px sans-serif';
+    ctx.fillText('Mboga', 128, 175);
+
+    ctx.fillStyle = '#fde047';
+    ctx.font = 'italic bold 22px serif';
+    ctx.fillText('Fresh Daily', 128, 240);
+
+    // Decorative chalk swirl
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.arc(128, 290, 30, 0.2, Math.PI - 0.2);
+    ctx.stroke();
+
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.colorSpace = THREE.SRGBColorSpace;
+    this.cache.set(cacheKey, texture);
+    return texture;
+  }
+
+  /**
+   * Generates Kenya National Skyline Billboard Texture ("Kenya: Proud • United • Stronger").
+   */
+  public static createKenyaBillboardTexture(): THREE.CanvasTexture {
+    const cacheKey = 'billboard_kenya_national';
+    if (this.cache.has(cacheKey)) return this.cache.get(cacheKey)!;
+
+    const { canvas, ctx } = this.createCanvas(512, 256);
+    if (!ctx.fillRect) {
+      const tex = this.createFallbackTexture(true);
+      this.cache.set(cacheKey, tex);
+      return tex;
+    }
+
+    // Kenyan Flag 3 primary horizontal bands (Black, Red, Green) with white fimbriations
+    // Black band (top)
+    ctx.fillStyle = '#000000';
+    ctx.fillRect(0, 0, 512, 72);
+
+    // White upper stripe
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 72, 512, 16);
+
+    // Red middle band (Kenyan blood red)
+    ctx.fillStyle = '#bb0000';
+    ctx.fillRect(0, 88, 512, 80);
+
+    // White lower stripe
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 168, 512, 16);
+
+    // Green bottom band
+    ctx.fillStyle = '#006600';
+    ctx.fillRect(0, 184, 512, 72);
+
+    // Maasai Shield in center
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.ellipse(100, 128, 26, 48, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = '#000000';
+    ctx.beginPath();
+    ctx.ellipse(100, 128, 22, 44, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = '#bb0000';
+    ctx.beginPath();
+    ctx.ellipse(100, 128, 12, 40, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Motivational Billboard Typography
+    ctx.fillStyle = '#ffffff';
+    ctx.font = '900 48px sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText('Kenya', 170, 110);
+
+    ctx.font = 'bold 20px sans-serif';
+    ctx.fillStyle = '#fde047';
+    ctx.fillText('Proud • United • Stronger', 170, 145);
+
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.colorSpace = THREE.SRGBColorSpace;
+    this.cache.set(cacheKey, texture);
+    return texture;
+  }
+
+  /**
+   * Generates authentic Super Metro Matatu Minibus Rear Decal Texture.
+   */
+  public static createSuperMetroRearTexture(): THREE.CanvasTexture {
+    const cacheKey = 'matatu_super_metro_rear';
+    if (this.cache.has(cacheKey)) return this.cache.get(cacheKey)!;
+
+    const { canvas, ctx } = this.createCanvas(512, 512);
+    if (!ctx.fillRect) {
+      const tex = this.createFallbackTexture(true);
+      this.cache.set(cacheKey, tex);
+      return tex;
+    }
+
+    // Super Metro Royal Blue base
+    ctx.fillStyle = '#1d4ed8';
+    ctx.fillRect(0, 0, 512, 512);
+
+    // 1. Rear Tinted Window (Top half)
+    ctx.fillStyle = '#0f172a';
+    ctx.fillRect(32, 24, 448, 180);
+
+    // Window white route header: NAIROBI • KIBERA • LANGATA
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 22px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('NAIROBI • KIBERA • LANGATA', 256, 75);
+
+    // 2. Yellow Brand Stripe across middle
+    ctx.fillStyle = '#facc15';
+    ctx.fillRect(0, 220, 512, 90);
+
+    // Bold "SUPER METRO" brand typography
+    ctx.fillStyle = '#1e3a8a';
+    ctx.font = '900 44px sans-serif';
+    ctx.fillText('SUPER METRO', 256, 280);
+
+    // 3. Lower Blue Boot with reflective chevrons
+    ctx.fillStyle = '#1e40af';
+    ctx.fillRect(0, 310, 512, 202);
+
+    // Red & yellow reflective safety chevrons
+    for (let c = 0; c < 512; c += 40) {
+      ctx.fillStyle = (c / 40) % 2 === 0 ? '#ef4444' : '#facc15';
+      ctx.fillRect(c, 440, 36, 18);
+    }
+
+    // 4. Kenyan Yellow Registration License Plate: KDG 842P
+    ctx.fillStyle = '#facc15';
+    ctx.fillRect(176, 350, 160, 44);
+    ctx.strokeStyle = '#000000';
+    ctx.lineWidth = 3;
+    ctx.strokeRect(176, 350, 160, 44);
+
+    ctx.fillStyle = '#000000';
+    ctx.font = 'bold 26px monospace';
+    ctx.fillText('KDG 842P', 256, 381);
+
+    // 5. Taillights
+    ctx.fillStyle = '#dc2626';
+    ctx.fillRect(16, 260, 32, 70);
+    ctx.fillRect(464, 260, 32, 70);
+
+    ctx.fillStyle = '#f59e0b';
+    ctx.fillRect(16, 335, 32, 35);
+    ctx.fillRect(464, 335, 32, 35);
+
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.colorSpace = THREE.SRGBColorSpace;
     this.cache.set(cacheKey, texture);
     return texture;
   }

@@ -95,8 +95,20 @@ export class WorldChunkManager {
     chunk.buildingMeshes.push(meshGroup);
     chunk.visualGroup.add(meshGroup);
 
-    // Create Collision Proxy Box
-    const box = new THREE.Box3().setFromObject(meshGroup);
+    // Create Collision Proxy Box from explicit Col_* collision mesh or visual hierarchy
+    let colMesh: THREE.Object3D | null = null;
+    meshGroup.traverse((c) => {
+      if (c.name.startsWith('Col_') || c.name.toLowerCase().includes('collision')) {
+        colMesh = c;
+      }
+    });
+
+    const box = new THREE.Box3();
+    if (colMesh) {
+      box.setFromObject(colMesh);
+    } else {
+      box.setFromObject(meshGroup);
+    }
     if (box.isEmpty() && bldData.footprintPolygon && bldData.footprintPolygon.length > 0) {
       bldData.footprintPolygon.forEach((p) => {
         box.expandByPoint(new THREE.Vector3(p.x, 0, p.z));

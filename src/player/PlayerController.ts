@@ -48,8 +48,10 @@ export class PlayerController {
     this.createPlaceholderHumanoid();
     this.scene.add(this.mesh);
 
-    // Initial Spawn Position on Ngong Road Corridor (X = 0, Z = 15)
+    // Initial Spawn Position on Kenyatta Avenue Corridor (X = 0, Z = 15)
     this.motor.position.set(0, 0.5, 15);
+    this.motor.rotationY = 0;
+    this.cameraManager.setOrbit(Math.PI, 0.12, 3.5);
     this.cameraManager.snapToTarget(this.motor.position);
   }
 

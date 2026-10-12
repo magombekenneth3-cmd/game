@@ -6,6 +6,8 @@ import { EnvironmentAssetKit } from '../src/assets/EnvironmentAssetKit';
 import { TerrainChunkManager } from '../src/world/TerrainChunkManager';
 import { CBDShowcaseBlock } from '../src/world/CBDShowcaseBlock';
 import { BuildingAssetKit } from '../src/assets/BuildingAssetKit';
+import { VehicleAssetKit } from '../src/assets/VehicleAssetKit';
+import { CharacterAssetKit } from '../src/assets/CharacterAssetKit';
 import { BuildingData } from '../src/world/BuildingData';
 import { GeoJSONIngestionEngine } from '../src/gis/GeoJSONIngestionEngine';
 import { NAIROBI_REAL_GEOJSON } from '../src/gis/data/nairobi_kilimani_real';
@@ -176,6 +178,35 @@ describe('Phase 11.4 — Nairobi CBD & Streetscape Realism Tests', () => {
 
       const matatuStage = group.getObjectByName('MatatuStageShelter');
       expect(matatuStage).toBeDefined();
+
+      const kiccTower = group.getObjectByName('CBD_Showcase_KICCTower');
+      expect(kiccTower).toBeDefined();
+
+      const brandedArcade = group.getObjectByName('CBD_Showcase_BrandedArcade');
+      expect(brandedArcade).toBeDefined();
+
+      const mamaMboga = group.getObjectByName('CBD_Showcase_MamaMbogaStall');
+      expect(mamaMboga).toBeDefined();
+
+      const billboard = group.getObjectByName('CBD_Facade_Billboard_Display');
+      expect(billboard).toBeDefined();
+
+      const parkedMatatu = group.getObjectByName('CBD_Stage_SuperMetroMatatu');
+      expect(parkedMatatu).toBeDefined();
+    });
+
+    it('verifies Super Metro Matatu livery and authentic African player streetwear', () => {
+      const matatuMesh = VehicleAssetKit.createVehicleMesh('matatu');
+      const rearLivery = matatuMesh.getObjectByName('SuperMetro_RearLivery');
+      expect(rearLivery).toBeDefined();
+
+      const playerMesh = CharacterAssetKit.createHumanoidMesh('player');
+      const backpack = playerMesh.getObjectByName('Backpack');
+      expect(backpack).toBeDefined();
+
+      const leftLeg = playerMesh.getObjectByName('LeftLeg');
+      expect(leftLeg).toBeDefined();
+      expect(leftLeg?.children.length).toBeGreaterThan(0);
     });
 
     it('inspects district roads around the urban core', () => {

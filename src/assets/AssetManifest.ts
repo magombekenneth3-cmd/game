@@ -97,17 +97,37 @@ export const ASSET_MANIFEST: Record<string, AssetManifestEntry> = {
     author: 'Kenney (Kenney.nl)',
     fallbackAssetId: 'fallback_bld_apartment'
   },
+  'bld_bungalow_01': {
+    id: 'bld_bungalow_01',
+    category: 'building',
+    sourceFile: '/assets/models/buildings/bld_bungalow_01.glb',
+    variantFamily: 'kenyan_bungalow',
+    intendedScale: new THREE.Vector3(1.0, 1.0, 1.0),
+    lodLevels: [0, 80, 200, 450],
+    boundingDimensions: { width: 12.0, height: 6.2, depth: 14.0 },
+    attachmentPoints: {
+      entrance: { x: 0, y: 0.25, z: 5.0 },
+      porch: { x: 0, y: 0.0, z: 7.35 }
+    },
+    license: 'CC-BY 4.0 (Creative Commons Attribution 4.0 International)',
+    author: 'KINGMAKER Authored Original Art (Kenyan Architecture Team)',
+    fallbackAssetId: 'fallback_bld_bungalow'
+  },
   'bld_residential_villa_01': {
     id: 'bld_residential_villa_01',
     category: 'building',
-    sourceFile: '/assets/models/buildings/bld_residential_villa_01.glb',
+    sourceFile: '/assets/models/buildings/bld_bungalow_01.glb',
     variantFamily: 'residential_villa',
-    intendedScale: new THREE.Vector3(5.5, 3.0, 5.5),
+    intendedScale: new THREE.Vector3(1.0, 1.0, 1.0),
     lodLevels: [0, 80, 200, 450],
-    boundingDimensions: { width: 11, height: 7, depth: 11 },
-    license: 'CC0 1.0 Universal (Public Domain)',
-    author: 'Kenney (Kenney.nl)',
-    fallbackAssetId: 'fallback_bld_villa'
+    boundingDimensions: { width: 12.0, height: 6.2, depth: 14.0 },
+    attachmentPoints: {
+      entrance: { x: 0, y: 0.25, z: 5.0 },
+      porch: { x: 0, y: 0.0, z: 7.35 }
+    },
+    license: 'CC-BY 4.0 (Creative Commons Attribution 4.0 International)',
+    author: 'KINGMAKER Authored Original Art (Kenyan Architecture Team)',
+    fallbackAssetId: 'fallback_bld_bungalow'
   },
   'bld_office_block_01': {
     id: 'bld_office_block_01',

@@ -28,6 +28,7 @@ import { MainMenuUI } from '../ui/MainMenuUI';
 import { ParticleSystem } from './ParticleSystem';
 import { MatatuTransitSystem } from '../traffic/MatatuTransitSystem';
 import { MatatuOperatorSystem } from '../traffic/MatatuOperatorSystem';
+import { StreetEconomySystem } from '../economy/StreetEconomySystem';
 
 export type BootStage =
   | 'INITIALIZING_RENDERER'
@@ -68,7 +69,7 @@ export class GameLoop {
   public interactionManager!: InteractionManager;
   private conversationUI!: ConversationUI;
   private debugOverlay!: DebugOverlay;
-  private hudOverlay!: HUDOverlay;
+  public hudOverlay!: HUDOverlay;
 
   private minimapUI!: MinimapUI;
   private speedometerUI!: SpeedometerUI;
@@ -250,6 +251,7 @@ export class GameLoop {
       if (typeof window !== 'undefined') {
         (window as any).THREE = THREE;
         (window as any).__KINGMAKER_GAME__ = this;
+        (window as any).__KINGMAKER_HUD__ = this.hudOverlay;
         (window as any).__KINGMAKER_DEBUG__ = {
           scene: this.scene,
           camera: this.cameraManager.camera,
@@ -262,6 +264,7 @@ export class GameLoop {
           assetPipeline: AssetPipeline.getInstance(),
           chunkManager: this.sceneGenerator.chunkManager,
           interiorManager: this.interiorManager,
+          hudOverlay: this.hudOverlay,
           perfMonitor: this.perfMonitor
         };
       }
@@ -500,7 +503,190 @@ export class GameLoop {
           }
         }
 
-        if (!matatuPromptShown) {
+        // Check street economy proximity (Mama Mboga stalls, M-PESA kiosks, Boda Boda stages)
+        const streetEcon = StreetEconomySystem.getInstance();
+        streetEcon.update(deltaSeconds);
+        let streetPromptShown = false;
+
+        // 1. Check Mama Mboga produce stalls
+        for (const [stallId, stall] of streetEcon.mamaMbogaStalls) {
+          const dist = playerPos.distanceTo(stall.position);
+          if (dist <= 4.0) {
+            this.hudOverlay.updateInteractionPrompt({
+              hasTarget: true,
+              displayName: `[F] Buy Fresh Produce (${stall.name})`,
+              distanceMeters: Math.round(dist)
+            });
+            streetPromptShown = true;
+            if (inputState.shop || (inputState.interact && !matatuPromptShown)) {
+              this.hudOverlay.showStreetEconomyModal(
+                stall.name,
+                stall.chalkboardSignText,
+                [
+                  {
+                    key: '1',
+                    label: 'Sweet Bananas (Ndizi) +25 Stamina',
+                    priceText: 'KSh 50',
+                    onSelect: () => {
+                      const res = streetEcon.purchaseProduce(stallId, 'item_bananas', this.playerController.state);
+                      return res.message;
+                    }
+                  },
+                  {
+                    key: '2',
+                    label: 'Sukuma Wiki (Collard Greens) +20 Health',
+                    priceText: 'KSh 30',
+                    onSelect: () => {
+                      const res = streetEcon.purchaseProduce(stallId, 'item_sukuma', this.playerController.state);
+                      return res.message;
+                    }
+                  },
+                  {
+                    key: '3',
+                    label: 'Ripe Field Tomatoes (Nyanya) +15 Health',
+                    priceText: 'KSh 50',
+                    onSelect: () => {
+                      const res = streetEcon.purchaseProduce(stallId, 'item_tomatoes', this.playerController.state);
+                      return res.message;
+                    }
+                  },
+                  {
+                    key: '4',
+                    label: 'Hass Avocado (Parachichi) +30 Health',
+                    priceText: 'KSh 60',
+                    onSelect: () => {
+                      const res = streetEcon.purchaseProduce(stallId, 'item_avocado', this.playerController.state);
+                      return res.message;
+                    }
+                  }
+                ]
+              );
+            }
+            break;
+          }
+        }
+
+        // 2. Check M-PESA Agent Kiosks
+        if (!streetPromptShown) {
+          for (const [kioskId, kiosk] of streetEcon.mpesaKiosks) {
+            const dist = playerPos.distanceTo(kiosk.position);
+            if (dist <= 4.0) {
+              this.hudOverlay.updateInteractionPrompt({
+                hasTarget: true,
+                displayName: `[F] M-PESA Deposit / Withdraw (${kiosk.agentName})`,
+                distanceMeters: Math.round(dist)
+              });
+              streetPromptShown = true;
+              if (inputState.shop || (inputState.interact && !matatuPromptShown)) {
+                this.hudOverlay.showStreetEconomyModal(
+                  kiosk.agentName,
+                  `Till: ${kiosk.tillNumber} — ${kiosk.locationName}`,
+                  [
+                    {
+                      key: '1',
+                      label: 'Deposit KSh 500 to M-PESA (Tariff: FREE)',
+                      priceText: 'Free Fee',
+                      onSelect: () => {
+                        const tx = streetEcon.depositCash(kioskId, 500, this.playerController.state);
+                        return tx.smsReceiptMessage;
+                      }
+                    },
+                    {
+                      key: '2',
+                      label: 'Deposit KSh 2,000 to M-PESA (Tariff: FREE)',
+                      priceText: 'Free Fee',
+                      onSelect: () => {
+                        const tx = streetEcon.depositCash(kioskId, 2000, this.playerController.state);
+                        return tx.smsReceiptMessage;
+                      }
+                    },
+                    {
+                      key: '3',
+                      label: 'Withdraw KSh 500 Cash (Fee: KSh 29)',
+                      priceText: 'Fee KSh 29',
+                      onSelect: () => {
+                        const tx = streetEcon.withdrawCash(kioskId, 500, this.playerController.state);
+                        return tx.smsReceiptMessage;
+                      }
+                    },
+                    {
+                      key: '4',
+                      label: 'Withdraw KSh 2,000 Cash (Fee: KSh 34)',
+                      priceText: 'Fee KSh 34',
+                      onSelect: () => {
+                        const tx = streetEcon.withdrawCash(kioskId, 2000, this.playerController.state);
+                        return tx.smsReceiptMessage;
+                      }
+                    }
+                  ]
+                );
+              }
+              break;
+            }
+          }
+        }
+
+        // 3. Check Boda Boda stages
+        if (!streetPromptShown) {
+          for (const [stageId, stage] of streetEcon.bodaStages) {
+            const dist = playerPos.distanceTo(stage.position);
+            if (dist <= 4.0) {
+              this.hudOverlay.updateInteractionPrompt({
+                hasTarget: true,
+                displayName: `[F] Hail Boda Boda (${stage.riderName})`,
+                distanceMeters: Math.round(dist)
+              });
+              streetPromptShown = true;
+              if (inputState.shop || (inputState.interact && !matatuPromptShown)) {
+                this.hudOverlay.showStreetEconomyModal(
+                  stage.name,
+                  `Rider: ${stage.riderName}`,
+                  [
+                    {
+                      key: '1',
+                      label: 'Ride to Kencom Stage (55m)',
+                      priceText: 'KSh 50',
+                      onSelect: () => {
+                        const res = streetEcon.hailBodaBoda(stageId, 'dest_kencom', this.playerController.state);
+                        if (res.success && res.destination) {
+                          this.playerController.motor.position.copy(res.destination.targetPosition);
+                        }
+                        return res.message;
+                      }
+                    },
+                    {
+                      key: '2',
+                      label: 'Ride to GPO / Teleposta (110m)',
+                      priceText: 'KSh 70',
+                      onSelect: () => {
+                        const res = streetEcon.hailBodaBoda(stageId, 'dest_gpo', this.playerController.state);
+                        if (res.success && res.destination) {
+                          this.playerController.motor.position.copy(res.destination.targetPosition);
+                        }
+                        return res.message;
+                      }
+                    },
+                    {
+                      key: '3',
+                      label: 'Ride to Railways Terminus (175m)',
+                      priceText: 'KSh 100',
+                      onSelect: () => {
+                        const res = streetEcon.hailBodaBoda(stageId, 'dest_railways', this.playerController.state);
+                        if (res.success && res.destination) {
+                          this.playerController.motor.position.copy(res.destination.targetPosition);
+                        }
+                        return res.message;
+                      }
+                    }
+                  ]
+                );
+              }
+              break;
+            }
+          }
+        }
+
+        if (!matatuPromptShown && !streetPromptShown) {
           const vehPrompt = this.vehicleManager.checkPlayerInteraction(playerPos);
           if (vehPrompt.canEnter || vehPrompt.canExit) {
             this.hudOverlay.updateInteractionPrompt({
@@ -522,7 +708,8 @@ export class GameLoop {
         this.playerController.state.getCash(),
         this.playerController.state.getReputation(),
         this.playerController.state.getMode(),
-        this.playerController.state.getStamina()
+        this.playerController.state.getStamina(),
+        this.playerController.state.getMpesaBalance()
       );
       this.hudOverlay.updateDrivingHUD(
         vehTelemetry.speedKph,

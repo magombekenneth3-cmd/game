@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { BuildingData } from './BuildingData';
 import { RoadGraphEdge } from './RoadGraph';
+import { AssetPipeline } from '../assets/AssetPipeline';
 
 export type ChunkLODLevel = 'LOD0' | 'LOD1' | 'LOD2' | 'UNLOADED';
 
@@ -61,8 +62,13 @@ export class WorldChunk {
   }
 
   private updateVisualDetail(lod: ChunkLODLevel): void {
+    const pipeline = AssetPipeline.getInstance();
+
     // Control visual mesh visibility based on LOD distance tier
     this.visualGroup.children.forEach((child) => {
+      // Delegate LOD switching for models supporting Geo_LOD0 / Geo_LOD1
+      pipeline.setInstanceLOD(child, lod);
+
       if (lod === 'LOD0') {
         child.visible = true;
       } else if (lod === 'LOD1') {

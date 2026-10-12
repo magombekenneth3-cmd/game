@@ -56,15 +56,39 @@ export class VehicleAssetKit {
     glass.position.set(0, 1.5, 1.2);
     group.add(glass);
 
+    // Super Metro Authentic Rear Livery Panel (KDG 842P, route header, taillights)
+    const rearTex = TextureGenerator.createSuperMetroRearTexture();
+    const rearMat = new THREE.MeshStandardMaterial({
+      map: rearTex,
+      roughness: 0.3,
+      metalness: 0.1
+    });
+    const rearPanel = new THREE.Mesh(new THREE.PlaneGeometry(1.96, 1.76), rearMat);
+    rearPanel.name = 'SuperMetro_RearLivery';
+    rearPanel.position.set(0, 1.1, -2.256);
+    rearPanel.rotation.y = Math.PI;
+    group.add(rearPanel);
+
     // 4 Wheels
     this.attachWheels(group, 0.95, 2.2, 0.45);
 
-    // Destination Signboard ("KILIMANI - CBD")
-    const signMat = new THREE.MeshStandardMaterial({ color: 0x111111, emissive: 0x0284c7, emissiveIntensity: 0.8 });
+    // Destination Signboard ("SUPER METRO • CBD EXPRESS")
+    const signMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, emissive: 0xfbbf24, emissiveIntensity: 0.85 });
     const signGeo = new THREE.BoxGeometry(1.4, 0.25, 0.1);
     const sign = new THREE.Mesh(signGeo, signMat);
     sign.position.set(0, 2.15, 2.0);
     group.add(sign);
+
+    // Front Chrome Bull-Bar & Kenyan Yellow License Plate
+    const bullBarMat = new THREE.MeshStandardMaterial({ color: 0xe2e8f0, metalness: 0.85, roughness: 0.15 });
+    const bullBar = new THREE.Mesh(new THREE.BoxGeometry(1.7, 0.35, 0.08), bullBarMat);
+    bullBar.position.set(0, 0.5, 2.29);
+    group.add(bullBar);
+
+    const plateMat = new THREE.MeshStandardMaterial({ color: 0xfacc15, roughness: 0.4 });
+    const frontPlate = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.18, 0.02), plateMat);
+    frontPlate.position.set(0, 0.45, 2.34);
+    group.add(frontPlate);
 
     return group;
   }

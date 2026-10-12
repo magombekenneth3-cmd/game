@@ -106,3 +106,27 @@ This document provides formal legal attribution, provenance records, and license
   - **Dynamic Transit Economics & Rush Hour Scoring**: Morning (07:00–09:30) and evening (16:30–19:30) peak fare multipliers (1.4x), commuter satisfaction tip bonuses (10%–20%), Sacco management fee deductions (15%), and fuel consumption costs.
   - **Driving Telemetry & Commuter Satisfaction**: Real-time satisfaction scoring (0–100%), collision detection penalties with passenger audio gasps (`playPassengerGasp`), speed violation monitoring, and smooth cruising satisfaction recovery.
   - **Matatu Operator Shift Dashboard**: Interactive glassmorphism HUD displaying Sacco badge, route code, next stage distance meter, seat occupancy counter, live shift revenue, and commuter satisfaction meter.
+
+### J. KINGMAKER Phase 12.0 — Street Economy & Hawker Micro-Interactions
+- **Copyright**: © 2026 KINGMAKER Studio Team
+- **License**: Creative Commons Attribution 4.0 International (CC-BY 4.0)
+- **Features**:
+  - **Authentic Nairobi Commercial Arcade & Streetscape**: Branded arcade colonnade featuring Safaricom & M-PESA Center, Java House, and Equity Bank storefronts; bilingual Kenyatta Ave / Kimathi St green street signpost on steel pole with collar; continuous black-and-yellow curb safety bollards separating pedestrians from vehicle lanes; interlocking Cabro terracotta/slate promenade tiles.
+  - **Kenyatta International Convention Centre (KICC) Landmark Vista**: 28-story cylindrical tower with terracotta vertical sun-shade fins, iconic revolving restaurant saucer helipad, and Kenyan national flag crowning the CBD skyline.
+  - **Mama Mboga Produce Micro-Economy**: High-fidelity produce stall with wooden crates of ripe field tomatoes (Nyanya), fresh sukuma wiki (collard greens), sweet bananas (Ndizi), Hass avocados (Parachichi), burlap sacks, chalkboard price sign, and green canvas market umbrella. Interactive shopping modal restoring health and stamina with vendor loyalty discounts (10% discount at reputation >= 25).
+  - **Dual Wallet Architecture & Tiered Safaricom M-PESA Tariffs**: Dynamic player state managing on-hand Cash and digital M-PESA balances; zero-fee deposits; official 12-tier Kenyan regulation withdrawal tariffs (KES 11 to 200); realistic SMS notification generation.
+  - **Mobile Hawkers & Boda Boda Transit**: Roaming street hawkers selling bottled water, phone airtime cards, and roasted groundnuts (njugu); designated Boda Boda passenger stage (rider Brian 'Nduthi' Mwangi on TVS Star 150) offering fast last-mile transit across CBD landmarks.
+  - **Synthesized Street Audio Landscape**: Authentic Web Audio sound effects for M-PESA transaction chimes (`playMPESATransactionChime`), Mama Mboga vocal callouts (`playMamaMbogaCallout`), roving hawker touts (`playHawkerCallout`), and Boda Boda 4-stroke single-cylinder engine revs (`playBodaBodaRev`).
+  - **Nairobi Realism Master Plan HUD Alignment**: Full viewport `#hud-overlay` integration, top-left objective tracker (`! Grow Your Business`), top-right player stats with level badge, dual wallet (`Cash` + `M-PESA`) and reputation star, bottom-left radar minimap, bottom-right quick action hotkeys (`[E] Talk`, `[F] Shop`, `[R] Enter`, `[M] Map`), and centered responsive interactive modals with number key shortcuts.
+
+### K. KINGMAKER Phase 12.1 — Kenyan Residential Bungalow Architecture (CC-BY 4.0)
+- **Copyright**: © 2026 KINGMAKER Studio Team
+- **License**: Creative Commons Attribution 4.0 International (CC-BY 4.0)
+- **Generator Script**: `scripts/generate_kenyan_bungalow_model.mjs`
+- **Asset ID**: `bld_bungalow_01`
+- **File**: `public/assets/models/buildings/bld_bungalow_01.glb` (12.0 m × 6.2 m × 14.0 m)
+- **Geometry & Hierarchy**:
+  - `Geo_LOD0`: High-fidelity primary mesh (~3,792 triangles) featuring authentic 4-way hipped terracotta clay tile roof with ridge capping, dark timber fascia eaves boards, perimeter rainwater gutters, 4 vertical corner downspouts with splash shoes, front veranda porch with concrete steps and 2 support pillars, panelled hardwood entry door with 3D architrave frame, glazed windows with recessed 3D sills, black wrought-iron burglar security grilles, and a black Roto rooftop water tank on a rear steel stand.
+  - `Geo_LOD1`: Optimized silhouette mesh (~350 triangles) for distant chunk LOD rendering.
+  - `Col_Building`: Low-cost physics collision box proxy covering the solid structure footprint.
+  - `Compound_Perimeter`: Separately configurable perimeter boundary wall and black double-swing metal security gate wrapping residential parcels without distorting the house geometry.

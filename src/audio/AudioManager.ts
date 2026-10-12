@@ -396,4 +396,102 @@ export class AudioManager {
       }
     }
   }
+
+  /**
+   * Iconic Safaricom M-PESA SMS transaction alert chime.
+   */
+  public playMPESATransactionChime(): void {
+    if (this.isMuted || !this.ctx || this.ctx.state !== 'running') return;
+    const now = this.ctx.currentTime;
+    // Classic two-tone alert chime (C5 then G5 with slight vibrato)
+    [523.25, 783.99].forEach((freq, idx) => {
+      const osc = this.ctx!.createOscillator();
+      const gain = this.ctx!.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(freq, now + idx * 0.12);
+
+      gain.gain.setValueAtTime(0.25, now + idx * 0.12);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.12 + 0.35);
+
+      osc.connect(gain);
+      gain.connect(this.masterGain!);
+      osc.start(now + idx * 0.12);
+      osc.stop(now + idx * 0.12 + 0.35);
+    });
+  }
+
+  /**
+   * Mama Mboga friendly produce market greeting callout.
+   */
+  public playMamaMbogaCallout(_phrase?: string): void {
+    if (this.isMuted || !this.ctx || this.ctx.state !== 'running') return;
+    const now = this.ctx.currentTime;
+    [440.0, 554.37, 659.25].forEach((freq, idx) => {
+      const osc = this.ctx!.createOscillator();
+      const gain = this.ctx!.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, now + idx * 0.08);
+
+      gain.gain.setValueAtTime(0.18, now + idx * 0.08);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.08 + 0.15);
+
+      osc.connect(gain);
+      gain.connect(this.masterGain!);
+      osc.start(now + idx * 0.08);
+      osc.stop(now + idx * 0.08 + 0.15);
+    });
+  }
+
+  /**
+   * Roadside hawker vocal sales cue ("Maji baridi!", "Njugu moto!").
+   */
+  public playHawkerCallout(_phrase?: string): void {
+    if (this.isMuted || !this.ctx || this.ctx.state !== 'running') return;
+    const now = this.ctx.currentTime;
+    [587.33, 739.99].forEach((freq, idx) => {
+      const osc = this.ctx!.createOscillator();
+      const gain = this.ctx!.createGain();
+      osc.type = 'square';
+      osc.frequency.setValueAtTime(freq, now + idx * 0.09);
+
+      gain.gain.setValueAtTime(0.12, now + idx * 0.09);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.09 + 0.14);
+
+      osc.connect(gain);
+      gain.connect(this.masterGain!);
+      osc.start(now + idx * 0.09);
+      osc.stop(now + idx * 0.09 + 0.14);
+    });
+  }
+
+  /**
+   * Boda Boda motorcycle 150cc engine rev.
+   */
+  public playBodaBodaRev(): void {
+    if (this.isMuted || !this.ctx || this.ctx.state !== 'running') return;
+    const now = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    const filter = this.ctx.createBiquadFilter();
+
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(75, now);
+    osc.frequency.exponentialRampToValueAtTime(180, now + 0.25);
+    osc.frequency.exponentialRampToValueAtTime(95, now + 0.55);
+
+    filter.type = 'lowpass';
+    filter.frequency.setValueAtTime(450, now);
+    filter.frequency.exponentialRampToValueAtTime(900, now + 0.25);
+    filter.frequency.exponentialRampToValueAtTime(500, now + 0.55);
+
+    gain.gain.setValueAtTime(0.2, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.55);
+
+    osc.connect(filter);
+    filter.connect(gain);
+    gain.connect(this.masterGain!);
+
+    osc.start(now);
+    osc.stop(now + 0.55);
+  }
 }

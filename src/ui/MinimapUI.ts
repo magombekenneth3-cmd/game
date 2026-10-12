@@ -5,29 +5,51 @@ export class MinimapUI {
   private canvas: HTMLCanvasElement;
   private ctx: CanvasRenderingContext2D;
 
+  private wrapper: HTMLDivElement;
+
   constructor(parent: HTMLElement) {
-    this.container = document.createElement('div');
-    this.container.id = 'minimap-container';
-    this.container.style.cssText = `
+    this.wrapper = document.createElement('div');
+    this.wrapper.id = 'minimap-wrapper';
+    this.wrapper.style.cssText = `
       position: absolute;
       bottom: 24px;
       left: 24px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      z-index: 1000;
+      pointer-events: none;
+    `;
+
+    this.container = document.createElement('div');
+    this.container.id = 'minimap-container';
+    this.container.style.cssText = `
       width: 170px;
       height: 170px;
       border-radius: 50%;
-      border: 3px solid rgba(255, 193, 7, 0.7);
-      box-shadow: 0 0 20px rgba(0, 0, 0, 0.6), inset 0 0 15px rgba(0, 0, 0, 0.5);
+      border: 3px solid rgba(250, 204, 21, 0.85);
+      box-shadow: 0 0 24px rgba(0, 0, 0, 0.7), inset 0 0 15px rgba(0, 0, 0, 0.5);
       overflow: hidden;
       background: #0f172a;
-      z-index: 1000;
-      pointer-events: none;
     `;
 
     this.canvas = document.createElement('canvas');
     this.canvas.width = 170;
     this.canvas.height = 170;
     this.container.appendChild(this.canvas);
-    parent.appendChild(this.container);
+    this.wrapper.appendChild(this.container);
+
+    const locationPill = document.createElement('div');
+    locationPill.className = 'minimap-location-pill';
+    locationPill.innerHTML = `
+      <span class="loc-pin">📍</span>
+      <div class="loc-text">
+        <div class="loc-primary">Kenyatta Avenue</div>
+        <div class="loc-secondary">Nairobi CBD</div>
+      </div>
+    `;
+    this.wrapper.appendChild(locationPill);
+    parent.appendChild(this.wrapper);
 
     this.ctx = this.canvas.getContext('2d')!;
   }
@@ -67,70 +89,91 @@ export class MinimapUI {
       this.ctx.stroke();
     }
 
-    // Draw Major Road Corridors (Ngong Rd, Kilimani Rd)
-    this.ctx.strokeStyle = 'rgba(56, 189, 248, 0.4)';
-    this.ctx.lineWidth = 8;
-    // Main Ngong Road (Z = 15)
-    const ngongScreenY = cy + (15 - playerPos.z) * scale;
-    if (ngongScreenY >= 0 && ngongScreenY <= height) {
+    // Draw Kenyatta Avenue Corridor (X = 0, running North-South)
+    this.ctx.strokeStyle = 'rgba(56, 189, 248, 0.35)';
+    this.ctx.lineWidth = 16;
+    const kenyattaScreenX = cx + (0 - playerPos.x) * scale;
+    if (kenyattaScreenX >= -20 && kenyattaScreenX <= width + 20) {
       this.ctx.beginPath();
-      this.ctx.moveTo(0, ngongScreenY);
-      this.ctx.lineTo(width, ngongScreenY);
+      this.ctx.moveTo(kenyattaScreenX, 0);
+      this.ctx.lineTo(kenyattaScreenX, height);
       this.ctx.stroke();
     }
 
-    // Draw NPCs (Green Dots)
-    this.ctx.fillStyle = '#10b981';
+    // Draw Kimathi Street Cross Corridor (Z = 12)
+    const kimathiScreenY = cy + (12 - playerPos.z) * scale;
+    if (kimathiScreenY >= -20 && kimathiScreenY <= height + 20) {
+      this.ctx.beginPath();
+      this.ctx.moveTo(0, kimathiScreenY);
+      this.ctx.lineTo(width, kimathiScreenY);
+      this.ctx.stroke();
+    }
+
+    // Draw NPCs (Pink / Light Coral Dots)
+    this.ctx.fillStyle = '#f472b6';
     npcs.forEach((npcPos) => {
       const dx = (npcPos.x - playerPos.x) * scale;
       const dz = (npcPos.z - playerPos.z) * scale;
-      if (Math.hypot(dx, dz) < cx - 10) {
+      if (Math.hypot(dx, dz) < cx - 8) {
         this.ctx.beginPath();
         this.ctx.arc(cx + dx, cy + dz, 2.5, 0, Math.PI * 2);
         this.ctx.fill();
       }
     });
 
-    // Draw Vehicles (Yellow for cars, Magenta for Matatus)
+    // Draw Vehicles (Yellow for cars, Cyan/Blue for Matatus)
     vehicles.forEach((veh) => {
       const dx = (veh.position.x - playerPos.x) * scale;
       const dz = (veh.position.z - playerPos.z) * scale;
-      if (Math.hypot(dx, dz) < cx - 10) {
-        this.ctx.fillStyle = veh.isMatatu ? '#ec4899' : '#fbbf24';
+      if (Math.hypot(dx, dz) < cx - 8) {
+        this.ctx.fillStyle = veh.isMatatu ? '#38bdf8' : '#fbbf24';
         this.ctx.beginPath();
         this.ctx.arc(cx + dx, cy + dz, veh.isMatatu ? 4 : 3, 0, Math.PI * 2);
         this.ctx.fill();
       }
     });
 
-    // Draw POIs (Club Velvet at X=45, Z=20)
-    const clubDx = (45 - playerPos.x) * scale;
-    const clubDz = (20 - playerPos.z) * scale;
-    if (Math.hypot(clubDx, clubDz) < cx - 10) {
-      this.ctx.fillStyle = '#a855f7';
+    // Draw Kenyatta Ave Matatu Stage POI (Green Icon at X = -11.5, Z = 26)
+    const stageDx = (-11.5 - playerPos.x) * scale;
+    const stageDz = (26.0 - playerPos.z) * scale;
+    if (Math.hypot(stageDx, stageDz) < cx - 8) {
+      this.ctx.fillStyle = '#22c55e';
       this.ctx.beginPath();
-      this.ctx.arc(cx + clubDx, cy + clubDz, 5, 0, Math.PI * 2);
+      this.ctx.arc(cx + stageDx, cy + stageDz, 5, 0, Math.PI * 2);
       this.ctx.fill();
     }
 
-    // Draw Player Arrow in Center
+    // Draw Commercial Arcade / Shop POI (Gold Icon at X = 14.5, Z = 16)
+    const shopDx = (14.5 - playerPos.x) * scale;
+    const shopDz = (16.0 - playerPos.z) * scale;
+    if (Math.hypot(shopDx, shopDz) < cx - 8) {
+      this.ctx.fillStyle = '#facc15';
+      this.ctx.beginPath();
+      this.ctx.arc(cx + shopDx, cy + shopDz, 5, 0, Math.PI * 2);
+      this.ctx.fill();
+    }
+
+    // Draw Player Arrow in Center (Cyan with Golden Border)
     this.ctx.save();
     this.ctx.translate(cx, cy);
     this.ctx.rotate(-playerYaw);
 
-    this.ctx.fillStyle = '#ffc107';
+    this.ctx.fillStyle = '#0ea5e9';
+    this.ctx.strokeStyle = '#facc15';
+    this.ctx.lineWidth = 1.5;
     this.ctx.beginPath();
-    this.ctx.moveTo(0, -8);
+    this.ctx.moveTo(0, -9);
     this.ctx.lineTo(6, 6);
     this.ctx.lineTo(0, 3);
     this.ctx.lineTo(-6, 6);
     this.ctx.closePath();
     this.ctx.fill();
+    this.ctx.stroke();
     this.ctx.restore();
 
-    // Compass Ring N badge
-    this.ctx.fillStyle = '#ffc107';
-    this.ctx.font = 'bold 11px sans-serif';
+    // Compass Ring N indicator
+    this.ctx.fillStyle = '#facc15';
+    this.ctx.font = 'bold 12px sans-serif';
     this.ctx.textAlign = 'center';
     this.ctx.fillText('N', cx, 16);
   }
