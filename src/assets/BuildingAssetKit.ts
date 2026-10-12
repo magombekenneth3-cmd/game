@@ -376,7 +376,23 @@ export class BuildingAssetKit {
       }
     });
 
-    // 5. Residential Compound Boundary Wall & Metal Security Gate (modular)
+    // 5. Multi-storey maisonette first-floor balcony & balustrade
+    if ((bld.floors && bld.floors >= 2) || bld.id.includes('maisonette')) {
+      const balconyFloorGeo = new THREE.BoxGeometry(4.2, 0.22, 1.4);
+      const balconyFloor = new THREE.Mesh(balconyFloorGeo, porchMat);
+      balconyFloor.name = `Detail_MaisonetteBalcony_${bld.id}`;
+      balconyFloor.position.set(0, 3.65, entranceZ + 0.8);
+      balconyFloor.castShadow = true;
+      group.add(balconyFloor);
+
+      const balustradeGeo = new THREE.BoxGeometry(4.2, 0.05, 0.05);
+      const balustrade = new THREE.Mesh(balustradeGeo, grillMat);
+      balustrade.name = `Detail_MaisonetteBalustrade_${bld.id}`;
+      balustrade.position.set(0, 4.65, entranceZ + 1.45);
+      group.add(balustrade);
+    }
+
+    // 6. Residential Compound Boundary Wall & Metal Security Gate (modular)
     const compound = BuildingAssetKit.createCompoundPerimeter(bld);
     if (compound && compound.children.length > 0) {
       group.add(compound);

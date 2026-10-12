@@ -113,6 +113,23 @@ export const ASSET_MANIFEST: Record<string, AssetManifestEntry> = {
     author: 'KINGMAKER Authored Original Art (Kenyan Architecture Team)',
     fallbackAssetId: 'fallback_bld_bungalow'
   },
+  'bld_maisonette_01': {
+    id: 'bld_maisonette_01',
+    category: 'building',
+    sourceFile: '/assets/models/buildings/bld_maisonette_01.glb',
+    variantFamily: 'kenyan_maisonette',
+    intendedScale: new THREE.Vector3(1.0, 1.0, 1.0),
+    lodLevels: [0, 80, 200, 450],
+    boundingDimensions: { width: 10.0, height: 9.5, depth: 12.0 },
+    attachmentPoints: {
+      entrance: { x: 0, y: 0.25, z: 4.8 },
+      porch: { x: 0, y: 0.0, z: 6.2 },
+      balcony: { x: 0, y: 3.65, z: 5.8 }
+    },
+    license: 'CC-BY 4.0 (Creative Commons Attribution 4.0 International)',
+    author: 'KINGMAKER Authored Original Art (Kenyan Architecture Team)',
+    fallbackAssetId: 'fallback_bld_maisonette'
+  },
   'bld_residential_villa_01': {
     id: 'bld_residential_villa_01',
     category: 'building',

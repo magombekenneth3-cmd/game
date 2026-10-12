@@ -138,6 +138,7 @@ export class NairobiDistrictScene {
       { id: 'bld_infill_7', name: 'Chaka Road Arcade Shops', x: -130, z: 45, width: 20, depth: 16, floors: 3, height: 11, category: 'shop' },
       { id: 'bld_infill_9', name: 'Dennis Pritt Townhouses', x: -65, z: 110, width: 30, depth: 24, floors: 4, height: 14, category: 'residential_house' },
       { id: 'bld_kilimani_bungalow_01', name: 'Kilimani Green Estate Bungalow', x: -48, z: 85, width: 18, depth: 20, floors: 1, height: 6.2, category: 'residential_house' },
+      { id: 'bld_kilimani_maisonette_01', name: 'Kilimani Dennis Pritt Maisonette', x: -78, z: 85, width: 16, depth: 18, floors: 2, height: 9.5, category: 'residential_house' },
 
       // Block D: Hurlingham & Upper Hill South-East Infill (Excludes Kenyatta Ave Commercial Corridor)
       { id: 'bld_infill_11', name: 'Rose Avenue Suites Phase II', x: 65, z: 65, width: 28, depth: 22, floors: 8, height: 27, category: 'apartment_block' },

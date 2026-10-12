@@ -89,7 +89,7 @@ export class AssetPipeline {
       'env_mpesa_kiosk_01', 'env_streetlight_01', 'env_mama_mboga_stall_01',
       'interior_sofa_01', 'interior_table_01', 'interior_chair_01', 'interior_dj_booth_rig_01',
       // Additional Secondary Core Assets
-      'bld_bungalow_01', 'bld_mixed_use_01', 'bld_office_block_01', 'bld_residential_villa_01', 'bld_nightclub_01', 'bld_industrial_warehouse_01', 'bld_informal_kiosk_01',
+      'bld_bungalow_01', 'bld_maisonette_01', 'bld_mixed_use_01', 'bld_office_block_01', 'bld_residential_villa_01', 'bld_nightclub_01', 'bld_industrial_warehouse_01', 'bld_informal_kiosk_01',
       'veh_boda_boda_01', 'veh_truck_01', 'char_pedestrian_student_01', 'env_palm_tree_01', 'interior_vip_lounge_sofa_01'
     ];
     // Preload warms the template cache and does not allocate gameplay instances
@@ -655,12 +655,18 @@ export class AssetPipeline {
     if (assetId.includes('interior_table')) return InteriorAssetKit.createDJBoothRig();
     if (assetId.includes('interior_chair')) return InteriorAssetKit.createVIPLoungeMesh();
 
-    if (assetId.includes('bld_') || assetId.includes('bungalow')) {
-      const isResidential = assetId.includes('bungalow') || assetId.includes('villa') || assetId.includes('residential');
+    if (assetId.includes('bld_') || assetId.includes('bungalow') || assetId.includes('maisonette')) {
+      const isMaisonette = assetId.includes('maisonette');
+      const isResidential = isMaisonette || assetId.includes('bungalow') || assetId.includes('villa') || assetId.includes('residential');
       const dummyBld: BuildingData = {
         id: `fallback_${assetId}`,
-        name: isResidential ? 'Fallback Kenyan Bungalow' : 'Fallback Building',
-        footprintPolygon: isResidential ? [
+        name: isMaisonette ? 'Fallback Kenyan Maisonette' : (isResidential ? 'Fallback Kenyan Bungalow' : 'Fallback Building'),
+        footprintPolygon: isMaisonette ? [
+          { x: -5, z: -6 },
+          { x: 5, z: -6 },
+          { x: 5, z: 6 },
+          { x: -5, z: 6 }
+        ] : (isResidential ? [
           { x: -6, z: -7 },
           { x: 6, z: -7 },
           { x: 6, z: 7 },
@@ -670,14 +676,14 @@ export class AssetPipeline {
           { x: 5, z: -5 },
           { x: 5, z: 5 },
           { x: -5, z: 5 }
-        ],
+        ]),
         center: new THREE.Vector3(0, 0, 0),
-        height: isResidential ? 6.2 : 10,
-        floors: isResidential ? 1 : 3,
+        height: isMaisonette ? 9.5 : (isResidential ? 6.2 : 10),
+        floors: isMaisonette ? 2 : (isResidential ? 1 : 3),
         zone: isResidential ? 'residential_estate' : 'commercial_corridor',
         districtId: 'district_nairobi',
         buildingCategory: isResidential ? 'residential_house' : (assetId.includes('tower') ? 'commercial_tower' : (assetId.includes('mixed') ? 'mixed_use' : 'shop')),
-        entrances: [{ id: 'ent1', position: new THREE.Vector3(0, 0, isResidential ? 7 : 5), type: 'main' }],
+        entrances: [{ id: 'ent1', position: new THREE.Vector3(0, 0, isMaisonette ? 6 : (isResidential ? 7 : 5)), type: 'main' }],
         hasGroundFloorShops: !isResidential,
         rooftopEquipment: ['water_tank']
       };
@@ -720,7 +726,19 @@ export class AssetPipeline {
         candidateIds = ['bld_commercial_tower_01'];
         break;
       case 'residential_house':
-        candidateIds = ['bld_bungalow_01'];
+        // Semantic Kenyan residential selection:
+        // Multi-storey residential parcels (floors >= 2 or height >= 8m or maisonette/townhouse ID/name) select bld_maisonette_01
+        // Single-storey residential parcels (floors === 1 or height < 8m) select bld_bungalow_01
+        if (
+          (bld.floors && bld.floors >= 2) ||
+          (bld.height && bld.height >= 8.0) ||
+          bld.id.includes('maisonette') ||
+          (bld.name && (bld.name.toLowerCase().includes('maisonette') || bld.name.toLowerCase().includes('townhouse')))
+        ) {
+          candidateIds = ['bld_maisonette_01'];
+        } else {
+          candidateIds = ['bld_bungalow_01'];
+        }
         break;
       case 'warehouse':
         candidateIds = ['bld_industrial_warehouse_01'];
@@ -783,9 +801,9 @@ export class AssetPipeline {
       ];
 
       for (const orient of orientations) {
-        // For residential bungalows: strictly preserve true proportions (never stretch non-uniformly)
-        if (candId === 'bld_bungalow_01') {
-          // If parcel accommodates the bungalow, use exact 1:1 metric scale
+        // For residential houses (bungalow & maisonette): strictly preserve true proportions (never stretch non-uniformly)
+        if (candId === 'bld_bungalow_01' || candId === 'bld_maisonette_01') {
+          // If parcel accommodates the house, use exact 1:1 metric scale
           // If slightly smaller or larger within residential plot range, clamp uniform scale to [0.85, 1.15]
           const uniformS = (orient.targetW >= nativeW && orient.targetD >= nativeD)
             ? 1.0

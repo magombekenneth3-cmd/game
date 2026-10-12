@@ -130,3 +130,18 @@ This document provides formal legal attribution, provenance records, and license
   - `Geo_LOD1`: Optimized silhouette mesh (~350 triangles) for distant chunk LOD rendering.
   - `Col_Building`: Low-cost physics collision box proxy covering the solid structure footprint.
   - `Compound_Perimeter`: Separately configurable perimeter boundary wall and black double-swing metal security gate wrapping residential parcels without distorting the house geometry.
+
+### L. KINGMAKER Phase 12.2 — Kenyan Residential Maisonette Architecture (CC-BY 4.0)
+- **Copyright**: © 2026 KINGMAKER Studio Team
+- **License**: Creative Commons Attribution 4.0 International (CC-BY 4.0)
+- **Generator Scripts**: `scripts/generate_kenyan_maisonette_model.mjs`, `scripts/blender_author_kenyan_maisonette.py`
+- **Asset ID**: `bld_maisonette_01`
+- **File**: `public/assets/models/buildings/bld_maisonette_01.glb` (10.0 m × 9.5 m × 12.0 m)
+- **Geometry & Hierarchy**:
+  - `Geo_LOD0`: High-fidelity 2-storey primary mesh (~4,740 triangles) featuring ground floor living area with damp-proof quarry stone plinth, covered entrance porch with support pillars and concrete entry steps, panelled timber door with brass knob, ground-floor windows with 3D frames and wrought-iron burglar bars, intermediate floor band, cantilevered first-floor balcony with decorative steel balustrades (1.05m high), double French balcony doors, upper bedroom casement windows with transoms, 4-way hipped terracotta tile roof, timber eaves fascia boards, perimeter rainwater gutters, two-storey vertical downspouts with splash shoes, and rooftop black Roto water tank on elevated steel stand.
+  - `Geo_LOD1`: Optimized 2-storey silhouette mesh (~400 triangles) for distant chunk LOD rendering.
+  - `Col_Building`: Low-cost convex physics box collider covering the two-storey structure footprint ($10.4\text{m} \times 9.5\text{m} \times 12.4\text{m}$).
+  - `Socket_Entrance`: Ground door locator at (0, 0.25, 4.8).
+  - `Socket_Porch`: Ground porch locator at (0, 0.0, 6.2).
+  - `Socket_Balcony`: Upper balcony locator at (0, 3.65, 5.8).
+  - `Compound_Perimeter`: Separately configurable perimeter boundary wall and black double-swing security gate wrapping multi-storey residential parcels.
