@@ -357,7 +357,7 @@ export const ASSET_MANIFEST: Record<string, AssetManifestEntry> = {
     attachmentPoints: { head: { x: 0, y: 1.65, z: 0 }, root: { x: 0, y: 0, z: 0 } },
     license: 'CC-BY 4.0 (Creative Commons Attribution 4.0 International)',
     author: 'Ready Player Me / KINGMAKER Studio Art (East African Urban Protagonist)',
-    fallbackAssetId: 'fallback_char_humanoid'
+    fallbackAssetId: 'char_pedestrian_business_01'
   },
   'char_pedestrian_business_01': {
     id: 'char_pedestrian_business_01',
@@ -369,7 +369,7 @@ export const ASSET_MANIFEST: Record<string, AssetManifestEntry> = {
     boundingDimensions: { width: 0.7, height: 1.88, depth: 0.4 },
     license: 'CC-BY 4.0 (Creative Commons Attribution 4.0 International)',
     author: 'Ready Player Me / KINGMAKER Studio Art (Nairobi CBD Corporate Professional)',
-    fallbackAssetId: 'fallback_char_humanoid'
+    fallbackAssetId: 'char_driver_01'
   },
   'char_pedestrian_student_01': {
     id: 'char_pedestrian_student_01',
@@ -381,7 +381,31 @@ export const ASSET_MANIFEST: Record<string, AssetManifestEntry> = {
     boundingDimensions: { width: 0.6, height: 1.75, depth: 0.4 },
     license: 'CC-BY 4.0 (Creative Commons Attribution 4.0 International)',
     author: 'Adobe Mixamo / Khronos Group (University Student Michelle)',
-    fallbackAssetId: 'fallback_char_humanoid'
+    fallbackAssetId: 'char_pedestrian_casual_01'
+  },
+  'char_pedestrian_casual_01': {
+    id: 'char_pedestrian_casual_01',
+    category: 'character',
+    sourceFile: '/assets/models/characters/char_pedestrian_casual_01.glb',
+    variantFamily: 'humanoid_everyday',
+    intendedScale: new THREE.Vector3(1, 1, 1),
+    lodLevels: [0, 80, 200],
+    boundingDimensions: { width: 0.65, height: 1.78, depth: 0.4 },
+    license: 'CC-BY 4.0 (Creative Commons Attribution 4.0 International)',
+    author: 'Adobe Mixamo / Khronos Group (Casual Pedestrian)',
+    fallbackAssetId: 'char_pedestrian_business_01'
+  },
+  'char_worker_street_01': {
+    id: 'char_worker_street_01',
+    category: 'character',
+    sourceFile: '/assets/models/characters/char_worker_street_01.glb',
+    variantFamily: 'humanoid_workwear',
+    intendedScale: new THREE.Vector3(1, 1, 1),
+    lodLevels: [0, 80, 200],
+    boundingDimensions: { width: 0.68, height: 1.8, depth: 0.42 },
+    license: 'CC-BY 4.0 (Creative Commons Attribution 4.0 International)',
+    author: 'Adobe Mixamo / Khronos Group (Street Worker)',
+    fallbackAssetId: 'char_pedestrian_business_01'
   },
   'char_driver_01': {
     id: 'char_driver_01',
@@ -393,7 +417,7 @@ export const ASSET_MANIFEST: Record<string, AssetManifestEntry> = {
     boundingDimensions: { width: 0.7, height: 1.88, depth: 0.4 },
     license: 'CC-BY 4.0 (Creative Commons Attribution 4.0 International)',
     author: 'Ready Player Me / KINGMAKER Studio Art (Urban Matatu Driver)',
-    fallbackAssetId: 'fallback_char_humanoid'
+    fallbackAssetId: 'char_pedestrian_business_01'
   },
   'char_guard_security_01': {
     id: 'char_guard_security_01',
@@ -405,7 +429,7 @@ export const ASSET_MANIFEST: Record<string, AssetManifestEntry> = {
     boundingDimensions: { width: 0.7, height: 1.88, depth: 0.4 },
     license: 'CC-BY 4.0 (Creative Commons Attribution 4.0 International)',
     author: 'Ready Player Me / KINGMAKER Studio Art (Commercial Security Guard)',
-    fallbackAssetId: 'fallback_char_humanoid'
+    fallbackAssetId: 'char_driver_01'
   },
   'char_humanoid_animations': {
     id: 'char_humanoid_animations',
@@ -417,7 +441,7 @@ export const ASSET_MANIFEST: Record<string, AssetManifestEntry> = {
     boundingDimensions: { width: 1.0, height: 1.8, depth: 1.0 },
     license: 'CC-BY 4.0 / Mixamo Animation Standard',
     author: 'Adobe Mixamo / Khronos Group (Humanoid Motion Clips)',
-    fallbackAssetId: 'fallback_char_humanoid'
+    fallbackAssetId: 'char_pedestrian_business_01'
   },
 
   // --- 4. ENVIRONMENT PROPS ---

@@ -94,7 +94,7 @@ export class NPC {
     const group = new THREE.Group();
     group.name = `NPCMesh_${this.state.data.id}`;
 
-    const charMesh = AssetPipeline.getInstance().getCharacterMesh(this.state.data.archetype);
+    const charMesh = AssetPipeline.getInstance().getCharacterMesh(this.state.data.archetype, this.state.data.seed);
     group.add(charMesh);
 
     const anims = (charMesh.userData?.animations as THREE.AnimationClip[]) ||

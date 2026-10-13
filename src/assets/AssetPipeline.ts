@@ -5,12 +5,16 @@ import { ASSET_MANIFEST } from './AssetManifest';
 import { TextureGenerator } from './TextureGenerator';
 import { BuildingAssetKit } from './BuildingAssetKit';
 import { VehicleAssetKit } from './VehicleAssetKit';
-import { CharacterAssetKit } from './CharacterAssetKit';
 import { EnvironmentAssetKit } from './EnvironmentAssetKit';
 import { InteriorAssetKit } from './InteriorAssetKit';
 import { BuildingData } from '../world/BuildingData';
 import { VehicleCategory } from '../vehicles/VehicleTypes';
 import { NPCArchetype } from '../npc/NPCTypes';
+import {
+  CharacterAppearanceOptions,
+  CharacterVisualProfile,
+  getCharacterVisualProfile
+} from './CharacterVisualLibrary';
 
 export type AssetState =
   | 'not-requested'
@@ -90,7 +94,8 @@ export class AssetPipeline {
       'interior_sofa_01', 'interior_table_01', 'interior_chair_01', 'interior_dj_booth_rig_01',
       // Additional Secondary Core Assets
       'bld_bungalow_01', 'bld_maisonette_01', 'bld_mixed_use_01', 'bld_office_block_01', 'bld_residential_villa_01', 'bld_nightclub_01', 'bld_industrial_warehouse_01', 'bld_informal_kiosk_01',
-      'veh_boda_boda_01', 'veh_truck_01', 'char_pedestrian_student_01', 'env_palm_tree_01', 'interior_vip_lounge_sofa_01'
+      'veh_boda_boda_01', 'veh_truck_01', 'char_pedestrian_student_01', 'char_driver_01', 'char_guard_security_01',
+      'char_worker_street_01', 'char_pedestrian_casual_01', 'env_palm_tree_01', 'interior_vip_lounge_sofa_01'
     ];
     // Preload warms the template cache and does not allocate gameplay instances
     await Promise.all(coreAssetIds.map((id) => this.ensureAssetLoaded(id).catch(() => {})));
@@ -337,19 +342,9 @@ export class AssetPipeline {
     return [];
   }
 
-  public getCharacterMeshAnimations(archetype: NPCArchetype | 'player'): THREE.AnimationClip[] {
-    let assetId = 'char_player_01';
-    switch (archetype) {
-      case 'player': assetId = 'char_player_01'; break;
-      case 'young_professional':
-      case 'office_worker':
-      case 'business_owner': assetId = 'char_pedestrian_business_01'; break;
-      case 'student': assetId = 'char_pedestrian_student_01'; break;
-      case 'driver': assetId = 'char_driver_01'; break;
-      case 'security_guard': assetId = 'char_guard_security_01'; break;
-      default: assetId = 'char_pedestrian_business_01'; break;
-    }
-    return this.getAnimations(assetId);
+  public getCharacterMeshAnimations(archetype: NPCArchetype | 'player', seed?: number): THREE.AnimationClip[] {
+    const profile = getCharacterVisualProfile(archetype, seed ?? 0);
+    return this.getAnimations(profile.assetId);
   }
 
   private retargetMixamoClipsToPlayer(clips: THREE.AnimationClip[]): THREE.AnimationClip[] {
@@ -407,6 +402,7 @@ export class AssetPipeline {
   }
 
   public cloneAssetTemplate(assetId: string, template: THREE.Group): THREE.Group {
+    const sourceAssetId = (template.userData.assetId as string | undefined) || assetId;
     let hasSkinnedMesh = false;
     template.traverse((child) => {
       if ((child as THREE.SkinnedMesh).isSkinnedMesh) {
@@ -418,9 +414,29 @@ export class AssetPipeline {
       ? (SkeletonUtils.clone(template) as THREE.Group)
       : template.clone(true);
 
+    instance.userData.assetId = assetId;
+    instance.userData.animationAssetId = sourceAssetId;
+
+    const materialCopies = new Map<THREE.Material, THREE.Material>();
     instance.traverse((child) => {
       const mesh = child as THREE.Mesh;
       if (mesh.isMesh) {
+        // Each person needs private materials so their wardrobe and skin tint never
+        // modify another character sharing this authored source model.
+        if (assetId.startsWith('char_')) {
+          const copyMaterial = (material: THREE.Material): THREE.Material => {
+            let copy = materialCopies.get(material);
+            if (!copy) {
+              copy = material.clone();
+              materialCopies.set(material, copy);
+            }
+            return copy;
+          };
+          mesh.material = Array.isArray(mesh.material)
+            ? mesh.material.map(copyMaterial)
+            : copyMaterial(mesh.material);
+        }
+
         if (child.name.startsWith('Col_') || child.name.toLowerCase().includes('collision')) {
           mesh.visible = false;
           mesh.castShadow = false;
@@ -432,9 +448,41 @@ export class AssetPipeline {
       }
     });
 
-    const anims = this.getAnimations(assetId);
+    const anims = this.getAnimations(sourceAssetId);
     instance.userData.animations = anims;
     return instance;
+  }
+
+  private applyCharacterVisualProfile(group: THREE.Group, profile: CharacterVisualProfile): void {
+    if (!profile.skinToneMultiplier && profile.outfitTopColor === undefined && profile.outfitBottomColor === undefined) {
+      return;
+    }
+
+    group.traverse((child) => {
+      const mesh = child as THREE.Mesh;
+      if (!mesh.isMesh) return;
+
+      const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+      materials.forEach((material) => {
+        const standardMaterial = material as THREE.MeshStandardMaterial;
+        const materialName = (material.name || mesh.name || '').toLowerCase();
+
+        if (profile.skinToneMultiplier && (materialName.includes('wolf3d_skin') || materialName.includes('wolf3d_body'))) {
+          standardMaterial.color.setRGB(
+            profile.skinToneMultiplier.r,
+            profile.skinToneMultiplier.g,
+            profile.skinToneMultiplier.b
+          );
+          standardMaterial.needsUpdate = true;
+        } else if (profile.outfitTopColor !== undefined && materialName.includes('outfit_top')) {
+          standardMaterial.color.setHex(profile.outfitTopColor);
+          standardMaterial.needsUpdate = true;
+        } else if (profile.outfitBottomColor !== undefined && materialName.includes('outfit_bottom')) {
+          standardMaterial.color.setHex(profile.outfitBottomColor);
+          standardMaterial.needsUpdate = true;
+        }
+      });
+    });
   }
 
   /**
@@ -583,11 +631,12 @@ export class AssetPipeline {
   /**
    * Creates an active scene instance for an asset. Tracks the allocated instance.
    */
-  public createInstance(assetId: string): THREE.Group {
+  public createInstance(assetId: string, characterProfile?: CharacterVisualProfile): THREE.Group {
     if (this.glbCache.has(assetId)) {
       this.cacheHitCount++;
       const template = this.glbCache.get(assetId)!;
       const instance = this.cloneAssetTemplate(assetId, template);
+      if (characterProfile) this.applyCharacterVisualProfile(instance, characterProfile);
       this.activeInstances.add(instance);
       return instance;
     }
@@ -595,13 +644,17 @@ export class AssetPipeline {
     // Create a proxy group that will be populated once ensureAssetLoaded finishes
     const proxyGroup = new THREE.Group();
     proxyGroup.name = `ProxyGroup_${assetId}`;
+    proxyGroup.userData.characterProfile = characterProfile;
     this.activeInstances.add(proxyGroup);
 
     this.ensureAssetLoaded(assetId).then((template) => {
       proxyGroup.clear();
       const instance = this.cloneAssetTemplate(assetId, template);
+      const resolvedProfile = proxyGroup.userData.characterProfile as CharacterVisualProfile | undefined;
+      if (resolvedProfile) this.applyCharacterVisualProfile(instance, resolvedProfile);
       proxyGroup.add(instance);
       proxyGroup.userData.animations = this.getAnimations(assetId);
+      proxyGroup.userData.assetId = assetId;
     }).catch((_err) => {
       const fallback = this.createFallbackMesh(assetId);
       proxyGroup.clear();
@@ -632,7 +685,38 @@ export class AssetPipeline {
     if (assetId.includes('veh_compact')) return VehicleAssetKit.createVehicleMesh('compact_car');
     if (assetId.includes('veh_pickup')) return VehicleAssetKit.createVehicleMesh('pickup');
 
-    if (assetId.includes('char')) return CharacterAssetKit.createHumanoidMesh('young_professional');
+    if (assetId.startsWith('char_')) {
+      if (assetId === 'char_humanoid_animations') {
+        const animationProxy = new THREE.Group();
+        animationProxy.name = 'UnavailableCharacterAnimationLibrary';
+        return animationProxy;
+      }
+
+      const authoredCharacterFallbacks = [
+        'char_pedestrian_business_01',
+        'char_player_01',
+        'char_driver_01',
+        'char_guard_security_01',
+        'char_pedestrian_student_01',
+        'char_worker_street_01',
+        'char_pedestrian_casual_01'
+      ];
+      const fallbackId = authoredCharacterFallbacks.find((candidateId) => candidateId !== assetId && this.glbCache.has(candidateId));
+      if (fallbackId) {
+        const source = this.glbCache.get(fallbackId)!;
+        const fallback = this.cloneAssetTemplate(fallbackId, source);
+        fallback.userData.assetId = assetId;
+        return fallback;
+      }
+
+      // If every authored character asset is unavailable, leave the slot empty and
+      // expose the failure in diagnostics instead of inventing a primitive person.
+      const unavailable = new THREE.Group();
+      unavailable.name = `UnavailableCharacter_${assetId}`;
+      unavailable.visible = false;
+      unavailable.userData.assetUnavailable = true;
+      return unavailable;
+    }
 
     if (assetId.includes('jacaranda')) return EnvironmentAssetKit.createJacarandaTreeMesh(true);
     if (assetId.includes('bougainvillea')) return EnvironmentAssetKit.createBougainvilleaPlanter();
@@ -897,22 +981,25 @@ export class AssetPipeline {
   }
 
   // --- CHARACTERS ---
-  public getCharacterMesh(archetype: NPCArchetype | 'player', _skinTone?: number, _outfitColor?: number): THREE.Group {
 
+  /**
+   * Returns a fully-skinned authored character mesh for the given archetype.
+   * When a seed is provided, CharacterVisualLibrary selects a role-appropriate
+   * source model and applies seeded skin-tone, outfit-top, and outfit-bottom
+   * color variation — so two office_worker NPCs with different seeds will look
+   * like different people rather than clones.
+   */
+  public getCharacterMesh(
+    archetype: NPCArchetype | 'player',
+    seed?: number,
+    overrides?: CharacterAppearanceOptions
+  ): THREE.Group {
     this.characterCount++;
-    let assetId = 'char_player_01';
-    switch (archetype) {
-      case 'player': assetId = 'char_player_01'; break;
-      case 'young_professional':
-      case 'office_worker':
-      case 'business_owner': assetId = 'char_pedestrian_business_01'; break;
-      case 'student': assetId = 'char_pedestrian_student_01'; break;
-      case 'driver': assetId = 'char_driver_01'; break;
-      case 'security_guard': assetId = 'char_guard_security_01'; break;
-      default: assetId = 'char_player_01'; break;
-    }
 
-    return this.getCachedGLB(assetId);
+    // Use CharacterVisualLibrary for seed-driven per-person looks
+    const effectiveSeed = seed ?? this.characterCount;
+    const profile = getCharacterVisualProfile(archetype, effectiveSeed, overrides);
+    return this.createInstance(profile.assetId, profile);
   }
 
   // --- ENVIRONMENT FOLIAGE & PROPS ---
