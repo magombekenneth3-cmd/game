@@ -12,4 +12,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   const gameLoop = new GameLoop(appContainer);
   await gameLoop.start();
+
+  // Expose for debugging / measurement scripts
+  (window as any).__gameLoop = gameLoop;
 });

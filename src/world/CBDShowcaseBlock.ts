@@ -4,6 +4,7 @@ import { AssetPipeline } from '../assets/AssetPipeline';
 import { BuildingData } from './BuildingData';
 import { BuildingAssetKit } from '../assets/BuildingAssetKit';
 import { EnvironmentAssetKit } from '../assets/EnvironmentAssetKit';
+import { SharedMaterialLibrary } from '../assets/SharedMaterialLibrary';
 import { TextureGenerator } from '../assets/TextureGenerator';
 import { DistrictBlockBoundary } from './UrbanLayout';
 
@@ -73,7 +74,7 @@ export class CBDShowcaseBlock {
     this.group.add(eastMesh);
 
     // Mid-block Pedestrian Zebra Crossing (Z = 12, width 14m across carriageway)
-    const zebraWhiteMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.4 });
+    const zebraWhiteMat = SharedMaterialLibrary.barrierWhite;
     for (let s = -6.0; s <= 6.0; s += 1.2) {
       const stripeGeo = new THREE.BoxGeometry(0.7, 0.02, 3.2);
       const stripe = new THREE.Mesh(stripeGeo, zebraWhiteMat);
@@ -335,7 +336,7 @@ export class CBDShowcaseBlock {
     });
     const billboardFrame = new THREE.Mesh(
       new THREE.BoxGeometry(0.3, 5.0, 9.4),
-      new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.8, roughness: 0.3 })
+      SharedMaterialLibrary.steelDark
     );
     billboardFrame.name = 'CBD_Facade_Billboard_Frame';
     billboardFrame.position.set(13.85, 13.5, 16.0);
@@ -388,7 +389,7 @@ export class CBDShowcaseBlock {
 
     // Yellow bus-stop curb marking box (painted on asphalt at stage bay)
     const stageBoxGeo = new THREE.BoxGeometry(3.2, 0.02, 12.0);
-    const stageBoxMat = new THREE.MeshStandardMaterial({ color: 0xfacc15, roughness: 0.4 });
+    const stageBoxMat = SharedMaterialLibrary.signYellow;
     const stageBox = new THREE.Mesh(stageBoxGeo, stageBoxMat);
     stageBox.position.set(-5.5, 0.07, 26);
     stageBox.receiveShadow = true;

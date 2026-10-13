@@ -8,7 +8,7 @@
  */
 import puppeteer from 'puppeteer';
 
-const URL = 'http://localhost:5173';
+const URL = 'http://localhost:3000';
 const WAIT_MS = 12000; // Allow scene to fully load and batch
 
 async function main() {
@@ -17,6 +17,7 @@ async function main() {
 
   const browser = await puppeteer.launch({
     headless: 'new',
+    executablePath: '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
     args: ['--no-sandbox', '--disable-gpu']
   });
 
@@ -29,24 +30,30 @@ async function main() {
   await new Promise(r => setTimeout(r, WAIT_MS));
 
   const metrics = await page.evaluate(() => {
-    const game = window.game;
-    if (!game) return { error: 'No game instance found' };
+    const gl = window.__gameLoop;
+    if (!gl) {
+      // Debug: list what's on window
+      const keys = Object.keys(window).filter(k => k.startsWith('__') || k === 'game' || k === 'gameLoop');
+      return { error: `No __gameLoop found. Window keys with __ prefix: ${keys.join(', ') || 'none'}` };
+    }
 
-    const scene = game.scene;
-    const renderer = game.renderer;
-    if (!scene || !renderer) return { error: 'No scene/renderer found' };
+    const scene = gl.scene;
+    const rendererManager = gl.rendererManager;
+    const renderer = rendererManager?.renderer;
+
+    if (!scene) return { error: 'scene is null/undefined on __gameLoop' };
 
     // Renderer info
-    const info = renderer.info;
+    const info = renderer?.info;
     const rendererStats = {
-      drawCalls: info.render?.calls ?? 'unknown',
-      triangles: info.render?.triangles ?? 'unknown',
-      points: info.render?.points ?? 'unknown',
-      lines: info.render?.lines ?? 'unknown',
-      frame: info.render?.frame ?? 'unknown',
-      geometries: info.memory?.geometries ?? 'unknown',
-      textures: info.memory?.textures ?? 'unknown',
-      programs: info.programs?.length ?? 'unknown'
+      drawCalls: info?.render?.calls ?? 'no-renderer',
+      triangles: info?.render?.triangles ?? 'no-renderer',
+      points: info?.render?.points ?? 'no-renderer',
+      lines: info?.render?.lines ?? 'no-renderer',
+      frame: info?.render?.frame ?? 'no-renderer',
+      geometries: info?.memory?.geometries ?? 'no-renderer',
+      textures: info?.memory?.textures ?? 'no-renderer',
+      programs: info?.programs?.length ?? 'no-renderer'
     };
 
     // Scene traversal
@@ -105,7 +112,7 @@ async function main() {
 
     // Chunk manager stats
     let chunkStats = null;
-    const chunkManager = game.chunkManager || game.worldChunkManager;
+    const chunkManager = gl.sceneGenerator?.chunkManager;
     if (chunkManager) {
       chunkStats = {
         activeChunks: chunkManager.getActiveChunkCount?.() ?? 'unknown',

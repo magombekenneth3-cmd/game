@@ -4,6 +4,7 @@ import { BuildingData } from './BuildingData';
 import { BuildingAssetKit } from '../assets/BuildingAssetKit';
 import { EnvironmentAssetKit } from '../assets/EnvironmentAssetKit';
 import { AssetPipeline } from '../assets/AssetPipeline';
+import { SharedMaterialLibrary } from '../assets/SharedMaterialLibrary';
 import { CommercialBuildingSpec, DistrictBlockBoundary } from './UrbanLayout';
 
 export class CBDAdjacentCommercialBlock {
@@ -53,7 +54,7 @@ export class CBDAdjacentCommercialBlock {
    */
   private createContinuousCabroPromenades(): void {
     const cabroMat = this.assetManager.getMaterial('sidewalk_cabro') || this.assetManager.getMaterial('sidewalk_concrete');
-    const curbMat = new THREE.MeshStandardMaterial({ color: 0x64748b, roughness: 0.6 });
+    const curbMat = SharedMaterialLibrary.concrete;
 
     const promenadeLength = 85.0; // Z: 55 to 140
     const promenadeWidth = 18.7;  // X: 7.3 to 26 (and -26 to -7.3)
@@ -112,7 +113,7 @@ export class CBDAdjacentCommercialBlock {
     this.group.add(roadMesh);
 
     // Double Yellow Centerline Divider Lines
-    const yellowMat = new THREE.MeshStandardMaterial({ color: 0xf59e0b, roughness: 0.4 });
+    const yellowMat = SharedMaterialLibrary.bollardBandYellow;
     const lineGeo = new THREE.BoxGeometry(0.12, 0.02, roadLength);
 
     const centerLineL = new THREE.Mesh(lineGeo, yellowMat);
@@ -126,7 +127,7 @@ export class CBDAdjacentCommercialBlock {
     this.group.add(centerLineR);
 
     // Dashed White Lane Divider Lines (lanes 2 and 3)
-    const whiteMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.4 });
+    const whiteMat = SharedMaterialLibrary.barrierWhite;
     for (let z = 56; z <= 139; z += 6.0) {
       const dashGeo = new THREE.BoxGeometry(0.15, 0.02, 3.2);
 
@@ -436,7 +437,7 @@ export class CBDAdjacentCommercialBlock {
 
     // 2. Yellow Bus-Stop Painted Marking Box at Curb Bay (X = 5.5, Z = 72.0)
     const stageBoxGeo = new THREE.BoxGeometry(3.2, 0.02, 14.0);
-    const stageBoxMat = new THREE.MeshStandardMaterial({ color: 0xfacc15, roughness: 0.4 });
+    const stageBoxMat = SharedMaterialLibrary.signYellow;
     const stageBox = new THREE.Mesh(stageBoxGeo, stageBoxMat);
     stageBox.name = 'CBD_Adjacent_Stage_KencomBox';
     stageBox.position.set(5.5, 0.07, 72.0);
