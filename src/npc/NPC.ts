@@ -11,6 +11,8 @@ export class NPC {
   public animController?: CharacterAnimationController;
   private scene: THREE.Scene;
   private walkSpeed: number = 2.8;
+  /** Tracks which LOD mesh is currently spawned so we can swap on tier change. */
+  private currentMeshLod: 0 | 1 | null = null;
 
   constructor(data: NPCData, scene: THREE.Scene) {
     this.scene = scene;
@@ -83,39 +85,74 @@ export class NPC {
   }
 
   public updateVisualMeshPresence(): void {
-    const isDetailed = this.state.simulationTier === 'TIER0_VICINITY' || this.state.simulationTier === 'TIER1_NEARBY';
+    const tier = this.state.simulationTier;
+    const isDetailed = tier === 'TIER0_VICINITY' || tier === 'TIER1_NEARBY';
+    const targetLod: 0 | 1 = tier === 'TIER0_VICINITY' ? 0 : 1;
 
-    if (isDetailed && !this.visualMesh) {
-      // Create 3D Visual Mesh for detailed simulation
-      this.visualMesh = this.createVisualMesh();
+    if (!isDetailed) {
+      // Transition to abstract — remove any existing mesh
+      if (this.visualMesh) {
+        if (this.animController) {
+          this.animController.dispose();
+          this.animController = undefined;
+        }
+        this.scene.remove(this.visualMesh);
+        this.visualMesh = undefined;
+        this.currentMeshLod = null;
+      }
+      return;
+    }
+
+    // Spawn or swap mesh when LOD tier changes
+    if (!this.visualMesh || this.currentMeshLod !== targetLod) {
+      // Remove old mesh if present
+      if (this.visualMesh) {
+        if (this.animController) {
+          this.animController.dispose();
+          this.animController = undefined;
+        }
+        this.scene.remove(this.visualMesh);
+        this.visualMesh = undefined;
+      }
+      // Create correct LOD mesh
+      this.visualMesh = this.createVisualMesh(targetLod);
       this.visualMesh.position.copy(this.state.currentPosition);
       this.scene.add(this.visualMesh);
-    } else if (!isDetailed && this.visualMesh) {
-      // Remove 3D Visual Mesh when transitioning to abstract Tier 2/3 simulation
-      if (this.animController) {
-        this.animController.dispose();
-        this.animController = undefined;
-      }
-      this.scene.remove(this.visualMesh);
-      this.visualMesh = undefined;
+      this.currentMeshLod = targetLod;
     }
   }
 
-  private createVisualMesh(): THREE.Group {
+  private createVisualMesh(lod: 0 | 1 = 0): THREE.Group {
     const group = new THREE.Group();
     group.name = `NPCMesh_${this.state.data.id}`;
 
-    const charMesh = AssetPipeline.getInstance().getCharacterMesh(this.state.data.archetype, this.state.data.seed);
+    let charMesh: THREE.Group;
+
+    if (lod === 1) {
+      // LOD-1 (80–200m): lightweight 3-part silhouette — saves ~12 draw calls
+      charMesh = ProceduralHumanFigure.createSimplifiedFigure({
+        archetype: this.state.data.archetype,
+        seed: this.state.data.seed
+      });
+      charMesh.userData.isProceduralFallback = true;
+    } else {
+      // LOD-0 (≤80m): full 16-part articulated figure with hair and clothing
+      charMesh = AssetPipeline.getInstance().getCharacterMesh(this.state.data.archetype, this.state.data.seed);
+    }
+
     group.add(charMesh);
 
-    const anims = (charMesh.userData?.animations as THREE.AnimationClip[]) ||
-      AssetPipeline.getInstance().getCharacterMeshAnimations(this.state.data.archetype);
-    let hasBones = false;
-    charMesh.traverse((c) => { if ((c as THREE.Bone).isBone) hasBones = true; });
+    // Wire skeleton animation controller if the mesh has bones (GLB route)
+    if (lod === 0) {
+      const anims = (charMesh.userData?.animations as THREE.AnimationClip[]) ||
+        AssetPipeline.getInstance().getCharacterMeshAnimations(this.state.data.archetype);
+      let hasBones = false;
+      charMesh.traverse((c) => { if ((c as THREE.Bone).isBone) hasBones = true; });
 
-    if (hasBones && anims.length > 0) {
-      this.animController = new CharacterAnimationController(charMesh, anims);
-      this.animController.setState('idle');
+      if (hasBones && anims.length > 0) {
+        this.animController = new CharacterAnimationController(charMesh, anims);
+        this.animController.setState('idle');
+      }
     }
 
     // Phase 12.4.5: seed walk timer so sibling NPCs are phase-offset

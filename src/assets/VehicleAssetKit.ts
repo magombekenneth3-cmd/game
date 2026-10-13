@@ -79,6 +79,8 @@ export class VehicleAssetKit {
     sign.position.set(0, 2.15, 2.0);
     group.add(sign);
 
+    VehicleAssetKit.attachVehicleLights(group, 2.0, 4.5, 0.95);
+
     // Front Chrome Bull-Bar & Kenyan Yellow License Plate
     const bullBarMat = new THREE.MeshStandardMaterial({ color: 0xe2e8f0, metalness: 0.85, roughness: 0.15 });
     const bullBar = new THREE.Mesh(new THREE.BoxGeometry(1.7, 0.35, 0.08), bullBarMat);
@@ -129,6 +131,7 @@ export class VehicleAssetKit {
     group.add(glass);
 
     this.attachWheels(group, 0.85, 2.0, 0.35);
+    VehicleAssetKit.attachVehicleLights(group, 1.8, 4.2, 0.52);
 
     return group;
   }
@@ -161,6 +164,7 @@ export class VehicleAssetKit {
     group.add(spareTire);
 
     this.attachWheels(group, 1.0, 2.3, 0.45);
+    VehicleAssetKit.attachVehicleLights(group, 2.1, 4.6, 0.80);
 
     return group;
   }
@@ -219,6 +223,7 @@ export class VehicleAssetKit {
     group.add(cargo);
 
     this.attachWheels(group, 1.2, 3.2, 0.55);
+    VehicleAssetKit.attachVehicleLights(group, 2.4, 7.2, 1.20);
 
     return group;
   }
@@ -249,4 +254,137 @@ export class VehicleAssetKit {
       group.add(wheelGroup);
     });
   }
+
+  /**
+   * Phase 12.5: Attach vehicle light lenses to a vehicle mesh group.
+   * Creates named Mesh children so VehicleLightSystem can toggle emissive state.
+   *
+   * Named children added:
+   *  HeadlightL / HeadlightR  — white, front
+   *  BrakelightL / BrakelightR — red, rear
+   *  IndicatorFL / IndicatorFR — amber, front corners
+   *  IndicatorRL / IndicatorRR — amber, rear corners
+   *
+   * @param bodyWidth   Overall vehicle body width in metres
+   * @param bodyLength  Overall vehicle body length in metres
+   * @param mountHeight Y centre of the light cluster (typically 0.5–1.1m)
+   */
+  public static attachVehicleLights(
+    group: THREE.Group,
+    bodyWidth: number,
+    bodyLength: number,
+    mountHeight: number
+  ): void {
+    const halfW  = bodyWidth  / 2 - 0.12;
+    const halfL  = bodyLength / 2 - 0.06;
+    const h      = mountHeight;
+
+    // -- Materials (base emissiveIntensity = 0 = off) --
+    const headMat = new THREE.MeshStandardMaterial({
+      color: 0xffffff, emissive: 0xffffff, emissiveIntensity: 0,
+      roughness: 0.1, metalness: 0.1,
+      transparent: true, opacity: 0.90
+    });
+    const brakeMat = new THREE.MeshStandardMaterial({
+      color: 0xcc0000, emissive: 0xff2200, emissiveIntensity: 0,
+      roughness: 0.1, metalness: 0.1,
+      transparent: true, opacity: 0.88
+    });
+    const indicatorMat = new THREE.MeshStandardMaterial({
+      color: 0xe08000, emissive: 0xff9900, emissiveIntensity: 0,
+      roughness: 0.15, metalness: 0.0,
+      transparent: true, opacity: 0.85
+    });
+
+    const lensGeo = new THREE.BoxGeometry(0.22, 0.10, 0.04);
+    const indGeo  = new THREE.BoxGeometry(0.12, 0.08, 0.04);
+
+    const make = (name: string, mat: THREE.MeshStandardMaterial, geo: THREE.BufferGeometry, x: number, y: number, z: number): THREE.Mesh => {
+      const m = new THREE.Mesh(geo, mat.clone()); // clone so each lens is independently addressable
+      m.name = name;
+      m.position.set(x, y, z);
+      return m;
+    };
+
+    // Headlights — front face
+    group.add(make('HeadlightL',    headMat, lensGeo, -halfW, h,  halfL));
+    group.add(make('HeadlightR',    headMat, lensGeo,  halfW, h,  halfL));
+
+    // Brake lights — rear face
+    group.add(make('BrakelightL',   brakeMat, lensGeo, -halfW, h, -halfL));
+    group.add(make('BrakelightR',   brakeMat, lensGeo,  halfW, h, -halfL));
+
+    // Indicators — front corners
+    group.add(make('IndicatorFL',   indicatorMat, indGeo, -halfW - 0.05, h,  halfL - 0.05));
+    group.add(make('IndicatorFR',   indicatorMat, indGeo,  halfW + 0.05, h,  halfL - 0.05));
+
+    // Indicators — rear corners
+    group.add(make('IndicatorRL',   indicatorMat, indGeo, -halfW - 0.05, h, -halfL + 0.05));
+    group.add(make('IndicatorRR',   indicatorMat, indGeo,  halfW + 0.05, h, -halfL + 0.05));
+  }
 }
+
+// ---------------------------------------------------------------------------
+// VehicleLightSystem — Phase 12.5
+// Drives headlight, brake light, and turn indicator emissive state at runtime.
+// Call update() once per frame from TrafficController or VehiclePhysics.
+// ---------------------------------------------------------------------------
+
+export type TurnSignalState = 'off' | 'left' | 'right' | 'hazard';
+
+export class VehicleLightSystem {
+  private vehicleGroup: THREE.Group;
+  private headlightsOn: boolean = false;
+  private brakeLightsOn: boolean = false;
+  private turnSignal: TurnSignalState = 'off';
+  private blinkTimer: number = 0;
+  private blinkOn: boolean = false;
+
+  /** Blink period: Kenyan highway code = 60 blinks per minute = 0.5s per cycle */
+  static readonly BLINK_PERIOD = 0.5;
+
+  constructor(vehicleGroup: THREE.Group) {
+    this.vehicleGroup = vehicleGroup;
+  }
+
+  public setHeadlights(on: boolean): void { this.headlightsOn = on; }
+  public setBrakeLights(on: boolean): void { this.brakeLightsOn = on; }
+  public setTurnSignal(state: TurnSignalState): void { this.turnSignal = state; }
+
+  public update(deltaSeconds: number): void {
+    // Advance blink timer
+    this.blinkTimer += deltaSeconds;
+    if (this.blinkTimer >= VehicleLightSystem.BLINK_PERIOD / 2) {
+      this.blinkTimer = 0;
+      this.blinkOn = !this.blinkOn;
+    }
+
+    // Headlights
+    this.setLensEmissive('HeadlightL', this.headlightsOn ? 1.6 : 0);
+    this.setLensEmissive('HeadlightR', this.headlightsOn ? 1.6 : 0);
+
+    // Brake lights
+    const brakeIntensity = this.brakeLightsOn ? 2.4 : (this.headlightsOn ? 0.4 : 0);
+    this.setLensEmissive('BrakelightL', brakeIntensity);
+    this.setLensEmissive('BrakelightR', brakeIntensity);
+
+    // Turn indicators
+    const leftActive  = this.turnSignal === 'left'   || this.turnSignal === 'hazard';
+    const rightActive = this.turnSignal === 'right'  || this.turnSignal === 'hazard';
+    const blink       = this.blinkOn ? 2.0 : 0;
+
+    this.setLensEmissive('IndicatorFL', leftActive  ? blink : 0);
+    this.setLensEmissive('IndicatorRL', leftActive  ? blink : 0);
+    this.setLensEmissive('IndicatorFR', rightActive ? blink : 0);
+    this.setLensEmissive('IndicatorRR', rightActive ? blink : 0);
+  }
+
+  private setLensEmissive(name: string, intensity: number): void {
+    const lens = this.vehicleGroup.getObjectByName(name) as THREE.Mesh | undefined;
+    if (!lens) return;
+    const mat = lens.material as THREE.MeshStandardMaterial;
+    mat.emissiveIntensity = intensity;
+    mat.needsUpdate = false; // emissiveIntensity change doesn't need full recompile
+  }
+}
+

@@ -5,6 +5,7 @@ import { TrafficLane, LaneSystem } from './LaneSystem';
 import { IntersectionController } from './IntersectionController';
 import { TrafficRules, NAIROBI_TRAFFIC_RULES } from './TrafficRules';
 import { MatatuTransitSystem } from './MatatuTransitSystem';
+import { VehicleLightSystem, TurnSignalState } from '../assets/VehicleAssetKit';
 
 export class TrafficController {
   public driver: TrafficDriver;
@@ -20,6 +21,8 @@ export class TrafficController {
   public dwellTimer: number = 0;
 
   private rules: TrafficRules = NAIROBI_TRAFFIC_RULES;
+  /** Phase 12.5: runtime light system — drives brake, headlight & indicator emissive state. */
+  public lightSystem: VehicleLightSystem;
 
   constructor(
     driver: TrafficDriver,
@@ -31,6 +34,10 @@ export class TrafficController {
     this.vehicle = vehicle;
     this.routeLanes = routeLanes;
     this.transitRoute = transitRoute;
+    // Initialise light system bound to this vehicle's visual mesh
+    this.lightSystem = new VehicleLightSystem(vehicle.visualMesh);
+    // Headlights always on (Nairobi traffic runs lights at all hours for safety)
+    this.lightSystem.setHeadlights(true);
   }
 
   public update(
@@ -249,5 +256,22 @@ export class TrafficController {
       fixedDt,
       environmentMeshes
     );
+
+    // 8. Phase 12.5 — Update vehicle lights from AI state
+    // Brake lights: on when decelerating hard, stopped, or handbrake active
+    const isBraking = handbrakeInput || this.aiState === 'STOPPED' || this.aiState === 'WAITING_SIGNAL';
+    this.lightSystem.setBrakeLights(isBraking);
+
+    // Turn indicators: matatu approaching stage → left indicator; lane steer → natural
+    let desiredSignal: TurnSignalState = 'off';
+    if (this.aiState === 'STOPPED' && this.transitRoute) {
+      desiredSignal = 'hazard'; // matatu at stage — hazard lights
+    } else if (this.aiState === 'APPROACHING_STAGE') {
+      desiredSignal = 'left';   // pulling over to left kerb
+    } else if (Math.abs(steerInput) > 0.35) {
+      desiredSignal = steerInput < 0 ? 'left' : 'right';
+    }
+    this.lightSystem.setTurnSignal(desiredSignal);
+    this.lightSystem.update(fixedDt);
   }
 }
