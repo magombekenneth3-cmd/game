@@ -249,6 +249,7 @@ export class NPC {
       this.animController = undefined;
     }
     if (this.visualMesh) {
+      NPC.disposeGroup(this.visualMesh);  // D1: release owned GPU resources
       this.scene.remove(this.visualMesh);
       this.visualMesh = undefined;
     }

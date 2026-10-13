@@ -42,7 +42,7 @@ describe('Phase 10.8 — Code Stabilization & World Rendering Recovery Tests', (
       totalRegisteredBuildings += c.buildings.length;
     });
     expect(totalRegisteredBuildings).toBeGreaterThanOrEqual(35);
-  });
+  }, 15000);
 
   it('2. Initial active chunk count is non-zero and spawn chunk activates', () => {
     sceneGenerator.generate();

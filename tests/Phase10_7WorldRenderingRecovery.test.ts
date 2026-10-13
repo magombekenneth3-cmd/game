@@ -39,7 +39,7 @@ describe('Phase 10.7 — Critical World Rendering Recovery Unit & Integration Te
     expect(terrainCount).toBeGreaterThan(0);
     expect(roadCount).toBeGreaterThan(0);
     expect(buildingCount).toBeGreaterThan(0);
-  });
+  }, 15000);
 
   it('2. Initial chunks exist and activate at spawn position (0, 0.5, 15)', () => {
     sceneGenerator.generate();

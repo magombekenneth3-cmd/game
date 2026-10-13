@@ -106,7 +106,8 @@ export class TrafficManager {
           playerPos,
           playerVehicle,
           pedestrianPositions,
-          environmentMeshes
+          environmentMeshes,
+          hours
         );
 
         totalSpeedSum += ctrl.vehicle.state.currentSpeedKph;
