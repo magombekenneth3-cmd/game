@@ -320,43 +320,60 @@ export class GameLoop {
     // Populate 40 Deterministic NPCs from Seed 1337
     const initialSeed = 1337;
 
-    // ── Ring 1: 8 NPCs in TIER0 range (≤80m) immediately visible on foot ──
-    // Placed within 12–40m of player spawn (0, 0.5, 15)
-    const ring1Offsets = [
-      [12, 8], [-14, 5], [8, -12], [-10, -18],
-      [22, 20], [-25, 12], [18, -30], [-20, 28]
+    // ── Ring 1: 12 NPCs in TIER0 range — immediately visible, immediately walking ──
+    // Placed 10–42m from player spawn at (0, 0.5, 15). Each gets an initial
+    // wander waypoint so they walk from the very first frame without waiting
+    // for the activity planner's first tick.
+    const ring1Offsets: [number, number, number, number][] = [
+      // [spawnX, spawnZ, wanderToX, wanderToZ]
+      [ 12,  8,  -18,   5],
+      [-14,  5,   20,  -8],
+      [  8, -12,  -5,  25],
+      [-10, -18,  15,  10],
+      [ 22,  20, -10,  -5],
+      [-25,  12,  10, -15],
+      [ 18, -30,  -8,  18],
+      [-20,  28,  16,  -2],
+      [  5,  38, -20,  10],
+      [-32, -12,  28,  -8],
+      [ 36,  -8, -15,  20],
+      [-15,  -5,  22,  32]
     ];
-    for (let i = 0; i < 8; i++) {
-      const [ox, oz] = ring1Offsets[i];
-      const spawnPos = new THREE.Vector3(ox, 0.3, 15 + oz);
+    for (let i = 0; i < ring1Offsets.length; i++) {
+      const [ox, oz, wx, wz] = ring1Offsets[i];
+      const spawnPos  = new THREE.Vector3(ox, 0.3, 15 + oz);
+      const wanderPos = new THREE.Vector3(wx, 0.3, 15 + wz);
       const npcData = spawner.generateDeterministicNPC(`npc_${i}`, initialSeed + i * 17, spawnPos);
       const npc = new NPC(npcData, this.scene);
-      // Pre-assign TIER0 so updateVisualMeshPresence creates mesh immediately
+      // Pre-assign TIER0 → mesh spawns immediately before simulation first runs
       npc.state.simulationTier = 'TIER0_VICINITY';
       npc.updateVisualMeshPresence();
+      // Give an initial wander waypoint so the NPC walks from frame 1
+      npc.state.setPath([wanderPos]);
       this.npcManager.registerNPC(npc);
     }
 
-    // ── Ring 2: 7 NPCs at 40–80m (TIER1 silhouette, visible mid-range) ──
-    const ring2Offsets = [
+    // ── Ring 2: 10 NPCs at 45–85m — TIER1 silhouettes on the horizon ──
+    const ring2Offsets: [number, number][] = [
       [45, 5], [-50, -10], [30, 55], [-40, 60],
-      [60, -20], [-55, 40], [0, -65]
+      [60, -20], [-55, 40], [0, -65], [70, 35],
+      [-65, -30], [38, -70]
     ];
-    for (let i = 0; i < 7; i++) {
+    for (let i = 0; i < ring2Offsets.length; i++) {
       const [ox, oz] = ring2Offsets[i];
       const spawnPos = new THREE.Vector3(ox, 0.3, 15 + oz);
-      const npcData = spawner.generateDeterministicNPC(`npc_${8 + i}`, initialSeed + (8 + i) * 17, spawnPos);
+      const npcData = spawner.generateDeterministicNPC(`npc_${12 + i}`, initialSeed + (12 + i) * 17, spawnPos);
       const npc = new NPC(npcData, this.scene);
       npc.state.simulationTier = 'TIER1_NEARBY';
       npc.updateVisualMeshPresence();
       this.npcManager.registerNPC(npc);
     }
 
-    // ── Spread: 25 NPCs across the district (Tier 2/3 until player approaches) ──
-    for (let i = 15; i < 40; i++) {
+    // ── District spread: 18 NPCs on a radial ring (Tier 2/3 until player approaches) ──
+    for (let i = 22; i < 40; i++) {
       const npcSeed = initialSeed + i * 17;
-      const angle = (i / 25) * Math.PI * 2;
-      const radius = 100 + (i % 5) * 40;
+      const angle   = (i / 18) * Math.PI * 2;
+      const radius  = 100 + (i % 5) * 40;
       const homePos = new THREE.Vector3(
         Math.cos(angle) * radius,
         0.3,

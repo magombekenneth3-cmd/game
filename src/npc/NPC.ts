@@ -43,11 +43,19 @@ export class NPC {
 
     // Phase 12.4.5: Apply procedural walk cycle to ProceduralHumanFigure meshes.
     // These have no AnimationClip rig, so we drive limb transforms directly.
-    if (isMoving && this.visualMesh && this.visualMesh.userData.proceduralWalkTime !== undefined) {
+    if (this.visualMesh && this.visualMesh.userData.proceduralWalkTime !== undefined) {
       this.visualMesh.userData.proceduralWalkTime += deltaSeconds;
       const charMesh = this.visualMesh.children[0] as THREE.Group;
       if (charMesh && charMesh.userData.isProceduralFallback) {
-        ProceduralHumanFigure.applyWalkCycle(charMesh, this.visualMesh.userData.proceduralWalkTime, this.walkSpeed);
+        const t      = this.visualMesh.userData.proceduralWalkTime as number;
+        const offset = this.state.data.seed * 0.37;
+        if (isMoving) {
+          // Walking: full gait cycle — limbs swing, torso bobs
+          ProceduralHumanFigure.applyWalkCycle(charMesh, t, this.walkSpeed);
+        } else {
+          // Idle: subtle breathing + weight-shift so NPCs never look frozen
+          ProceduralHumanFigure.applyIdlePose(charMesh, t, offset);
+        }
       }
     }
 

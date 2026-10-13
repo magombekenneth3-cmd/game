@@ -345,6 +345,58 @@ export class ProceduralHumanFigure {
     }
   }
 
+  /**
+   * Applies a subtle idle breathing + weight-shift pose.
+   * Called every frame for stationary NPCs. Prevents the rigid-statue look.
+   *
+   * Amplitudes are deliberately tiny so the effect reads as natural breathing
+   * rather than animation at close range and is imperceptible at >40m.
+   *
+   * @param figure  Root group returned by createFullFigure()
+   * @param time    Accumulated seconds (same clock as walk cycle)
+   * @param phaseOffset  Per-NPC offset (seed * 0.37) so crowd doesn't sync
+   */
+  public static applyIdlePose(figure: THREE.Group, time: number, phaseOffset: number = 0): void {
+    const t = time + phaseOffset;
+
+    // Breathing: slow chest rise/fall at ~0.25 Hz (one breath every 4s)
+    const breathPhase = t * Math.PI * 2 * 0.25;
+    const breathRise  = Math.sin(breathPhase) * 0.003; // 3mm chest rise
+
+    const upperBody = figure.getObjectByName('UpperBody');
+    if (upperBody) {
+      upperBody.position.y = (1.04 + this.PELVIS_H) + breathRise;
+      // Reset walk sway when idle
+      upperBody.rotation.z = 0;
+    }
+
+    // Weight shift: very slow side lean at ~0.12 Hz (one shift every ~8s)
+    const weightPhase = t * Math.PI * 2 * 0.12;
+    const weightShift = Math.sin(weightPhase) * 0.018; // 1° lean
+
+    // Lean the whole figure slightly — simulates resting weight on one foot
+    figure.rotation.z = weightShift;
+
+    // Arms: slight natural droop variation (breathing tension)
+    const armPhase = breathPhase * 0.5;
+    const armFloat = Math.sin(armPhase) * 0.015;
+    this.applyRotX(figure, 'UpperArmL', armFloat);
+    this.applyRotX(figure, 'UpperArmR', -armFloat);
+    // Reset legs to neutral
+    this.applyRotX(figure, 'ThighL', 0);
+    this.applyRotX(figure, 'ThighR', 0);
+    this.applyRotX(figure, 'ShinL', 0);
+    this.applyRotX(figure, 'ShinR', 0);
+
+    // Head: occasional slow look-around at ~0.08 Hz
+    const headPhase = t * Math.PI * 2 * 0.08;
+    const head = figure.getObjectByName('Head');
+    if (head) {
+      head.rotation.y = Math.sin(headPhase) * 0.12; // ±7 degrees
+      head.rotation.x = Math.sin(headPhase * 0.6) * 0.04; // slight nod
+    }
+  }
+
   // --------------------------------------------------------------------------
   // Private helpers
   // --------------------------------------------------------------------------
