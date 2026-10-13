@@ -48,10 +48,13 @@ export class StaticGeometryBatcher {
     for (const [material, group_meshes] of byMaterial) {
       if (group_meshes.length < 2) continue;
 
-      // Transform each geometry into world space relative to the group
+      // Transform each geometry into world space relative to the group.
+      // All geometries are converted to non-indexed form before merging so
+      // that BufferGeometryUtils.mergeGeometries does not emit compatibility
+      // warnings when mixing indexed and non-indexed buffers.
       const geometries: THREE.BufferGeometry[] = [];
       for (const mesh of group_meshes) {
-        const cloned = mesh.geometry.clone();
+        let cloned = mesh.geometry.clone();
         mesh.updateWorldMatrix(true, false);
 
         // Compute relative transform from mesh to group
@@ -62,7 +65,29 @@ export class StaticGeometryBatcher {
         relativeMatrix.multiplyMatrices(groupWorldInverse, mesh.matrixWorld);
 
         cloned.applyMatrix4(relativeMatrix);
+
+        // Normalise to non-indexed so all geometries are attribute-compatible
+        if (cloned.index !== null) {
+          const nonIndexed = cloned.toNonIndexed();
+          cloned.dispose();
+          cloned = nonIndexed;
+        }
+
         geometries.push(cloned);
+      }
+
+      // Ensure all geometries in this material group share the same optional
+      // attributes so mergeGeometries does not emit compatibility warnings.
+      // If ANY geometry has 'uv', ALL must have it (pad missing ones with zeros).
+      const hasUV = geometries.some(g => g.getAttribute('uv') !== null && g.getAttribute('uv') !== undefined);
+      if (hasUV) {
+        for (const geo of geometries) {
+          if (!geo.getAttribute('uv')) {
+            const pos = geo.getAttribute('position') as THREE.BufferAttribute;
+            const uvData = new Float32Array(pos ? (pos.count * 2) : 0);
+            geo.setAttribute('uv', new THREE.BufferAttribute(uvData, 2));
+          }
+        }
       }
 
       try {

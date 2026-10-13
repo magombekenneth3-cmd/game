@@ -37,12 +37,28 @@ export class CBDShowcaseBlock {
    * Generates continuous commercial street walls, ground-floor active shops with awnings,
    * seamless Cabro paving promenades, street trees in iron grates, traffic signals,
    * street name posts, and a dedicated Matatu Stage.
+   *
+   * Phase 12.4.2: Asset-pipeline diagnostic logging is emitted for every authored
+   * building so that build logs confirm GLB vs procedural-fallback status on each boot.
    */
   public generate(): { buildings: BuildingData[]; group: THREE.Group; boundary: DistrictBlockBoundary } {
+    console.info('[CBDShowcaseBlock] Phase 12.4.2 — generating Kenyatta Avenue showcase block');
+
     this.createContinuousCabroPromenades();
     this.createStreetWallBuildings();
     this.createStreetFurniture();
     this.createMatatuStage();
+
+    // Diagnostic summary: report how many authored GLBs vs procedural fallbacks
+    // are present in this block so acceptance screenshots are traceable to asset state.
+    const pipeline = AssetPipeline.getInstance();
+    const pipelineStats = pipeline.getStats();
+    console.info(
+      `[CBDShowcaseBlock] ✅ Block generated — ${this.buildings.length} buildings placed.`,
+      `Asset pipeline: ${pipelineStats.assetLoadedCount} loaded, ` +
+      `${pipelineStats.assetFallbacksCount} fallbacks, ` +
+      `${pipelineStats.assetFailuresCount} failures.`
+    );
 
     this.scene.add(this.group);
     return { buildings: this.buildings, group: this.group, boundary: this.getBoundary() };
@@ -220,11 +236,20 @@ export class CBDShowcaseBlock {
 
       this.buildings.push(bldData);
 
-      // Use authored GLB assets through AssetPipeline instead of procedural geometry.
-      // getBuildingMesh() calls fitBuildingToFootprint() to select the best
-      // commercial GLB (bld_commercial_tower_01, bld_office_block_01, etc.)
-      // and scales it to match the parcel dimensions.
+      // Phase 12.4.2: Route every CBD building through getBuildingMesh() which
+      // calls fitBuildingToFootprint() to select the best authored commercial GLB
+      // (bld_commercial_tower_01, bld_office_block_01, etc.) and scale it to the
+      // parcel dimensions.  The pipeline resolves to a loaded GLB when
+      // preloadCoreAssets() has completed, or to a proxy/fallback otherwise.
       const pipeline = AssetPipeline.getInstance();
+      const fit = pipeline.fitBuildingToFootprint(bldData);
+      const assetStatus = pipeline.getAssetStatus(fit.assetId) ?? { state: 'not-requested' };
+      console.info(
+        `[CBDShowcaseBlock] Building '${cfg.name}': assetId=${fit.assetId} ` +
+        `state=${assetStatus.state} ` +
+        `scale=(${fit.scale.x.toFixed(2)}, ${fit.scale.y.toFixed(2)}, ${fit.scale.z.toFixed(2)})`
+      );
+
       const bldGroup = pipeline.getBuildingMesh(bldData);
       bldGroup.userData.noMerge = true; // Preserve per-building LOD and collision
       this.group.add(bldGroup);
