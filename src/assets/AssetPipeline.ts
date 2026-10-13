@@ -6,6 +6,7 @@ import { TextureGenerator } from './TextureGenerator';
 import { BuildingAssetKit } from './BuildingAssetKit';
 import { VehicleAssetKit } from './VehicleAssetKit';
 import { EnvironmentAssetKit } from './EnvironmentAssetKit';
+import { ProceduralHumanFigure } from './ProceduralHumanFigure';
 import { InteriorAssetKit } from './InteriorAssetKit';
 import { BuildingData } from '../world/BuildingData';
 import { VehicleCategory } from '../vehicles/VehicleTypes';
@@ -709,13 +710,21 @@ export class AssetPipeline {
         return fallback;
       }
 
-      // If every authored character asset is unavailable, leave the slot empty and
-      // expose the failure in diagnostics instead of inventing a primitive person.
-      const unavailable = new THREE.Group();
-      unavailable.name = `UnavailableCharacter_${assetId}`;
-      unavailable.visible = false;
-      unavailable.userData.assetUnavailable = true;
-      return unavailable;
+      // Phase 12.4.5: No authored GLB found — generate a procedural East African
+      // human figure so NPCs are always visually present in the world.
+      // Archetype is inferred from assetId naming conventions.
+      let inferredArchetype: import('../npc/NPCTypes').NPCArchetype = 'young_professional';
+      if (assetId.includes('student'))    inferredArchetype = 'student';
+      if (assetId.includes('business'))   inferredArchetype = 'business_owner';
+      if (assetId.includes('driver'))     inferredArchetype = 'driver';
+      if (assetId.includes('guard'))      inferredArchetype = 'security_guard';
+      if (assetId.includes('worker'))     inferredArchetype = 'market_vendor';
+      if (assetId.includes('casual'))     inferredArchetype = 'unemployed';
+
+      const figure = ProceduralHumanFigure.createFullFigure({ archetype: inferredArchetype, seed: assetId.length * 31 });
+      figure.userData.assetId = assetId;
+      figure.userData.isProceduralFallback = true;
+      return figure;
     }
 
     if (assetId.includes('jacaranda')) return EnvironmentAssetKit.createJacarandaTreeMesh(true);

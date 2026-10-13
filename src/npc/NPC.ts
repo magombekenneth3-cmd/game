@@ -3,6 +3,7 @@ import { NPCData } from './NPCTypes';
 import { NPCState } from './NPCState';
 import { AssetPipeline } from '../assets/AssetPipeline';
 import { CharacterAnimationController } from '../assets/CharacterAnimationController';
+import { ProceduralHumanFigure } from '../assets/ProceduralHumanFigure';
 
 export class NPC {
   public state: NPCState;
@@ -36,6 +37,16 @@ export class NPC {
     if (this.animController) {
       this.animController.setState(isMoving ? 'walk' : 'idle');
       this.animController.update(deltaSeconds);
+    }
+
+    // Phase 12.4.5: Apply procedural walk cycle to ProceduralHumanFigure meshes.
+    // These have no AnimationClip rig, so we drive limb transforms directly.
+    if (isMoving && this.visualMesh && this.visualMesh.userData.proceduralWalkTime !== undefined) {
+      this.visualMesh.userData.proceduralWalkTime += deltaSeconds;
+      const charMesh = this.visualMesh.children[0] as THREE.Group;
+      if (charMesh && charMesh.userData.isProceduralFallback) {
+        ProceduralHumanFigure.applyWalkCycle(charMesh, this.visualMesh.userData.proceduralWalkTime, this.walkSpeed);
+      }
     }
 
     if (!isMoving) return;
@@ -107,6 +118,8 @@ export class NPC {
       this.animController.setState('idle');
     }
 
+    // Phase 12.4.5: seed walk timer so sibling NPCs are phase-offset
+    group.userData.proceduralWalkTime = this.state.data.seed * 0.37;
     return group;
   }
 
