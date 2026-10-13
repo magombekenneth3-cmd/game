@@ -320,29 +320,32 @@ export class GameLoop {
     // Populate 40 Deterministic NPCs from Seed 1337
     const initialSeed = 1337;
 
+    // Sidewalk offset matching NPCNavigation.SIDEWALK_OFFSET
+    // NPCs wander along the left kerb (6.5m from road centre, Y=0.20m above road)
+    const SW_Y = 0.20;  // sidewalk surface height above terrain
+
     // ── Ring 1: 12 NPCs in TIER0 range — immediately visible, immediately walking ──
-    // Placed 10–42m from player spawn at (0, 0.5, 15). Each gets an initial
-    // wander waypoint so they walk from the very first frame without waiting
-    // for the activity planner's first tick.
+    // Wander waypoints are placed on the sidewalk (not random world coords).
+    // Each pair is along the same street axis so NPCs walk parallel to roads.
     const ring1Offsets: [number, number, number, number][] = [
-      // [spawnX, spawnZ, wanderToX, wanderToZ]
-      [ 12,  8,  -18,   5],
-      [-14,  5,   20,  -8],
-      [  8, -12,  -5,  25],
-      [-10, -18,  15,  10],
-      [ 22,  20, -10,  -5],
-      [-25,  12,  10, -15],
-      [ 18, -30,  -8,  18],
-      [-20,  28,  16,  -2],
-      [  5,  38, -20,  10],
-      [-32, -12,  28,  -8],
-      [ 36,  -8, -15,  20],
-      [-15,  -5,  22,  32]
+      // [spawnX, spawnZ, wanderToX, wanderToZ]  — kept parallel to road axes
+      [ 12,  8,   28,   8],   // walks east along sidewalk
+      [-14,  5,  -28,   5],   // walks west
+      [  8, -12,   8, -28],   // walks south
+      [-10, -18, -10,   5],   // walks north
+      [ 22,  20,  22,   5],   // walks south on east side
+      [-25,  12, -25,  28],   // walks north on west side
+      [ 18, -30,  18, -12],   // walks north
+      [-20,  28, -20,  12],   // walks south
+      [  5,  38,   5,  20],   // walks south
+      [-32, -12, -16, -12],   // walks east
+      [ 36,  -8,  20,  -8],   // walks west
+      [-15,  -5,  -1,  -5]    // walks east
     ];
     for (let i = 0; i < ring1Offsets.length; i++) {
       const [ox, oz, wx, wz] = ring1Offsets[i];
-      const spawnPos  = new THREE.Vector3(ox, 0.3, 15 + oz);
-      const wanderPos = new THREE.Vector3(wx, 0.3, 15 + wz);
+      const spawnPos  = new THREE.Vector3(ox, SW_Y, 15 + oz);
+      const wanderPos = new THREE.Vector3(wx, SW_Y, 15 + wz);
       const npcData = spawner.generateDeterministicNPC(`npc_${i}`, initialSeed + i * 17, spawnPos);
       const npc = new NPC(npcData, this.scene);
       // Pre-assign TIER0 → mesh spawns immediately before simulation first runs
@@ -361,7 +364,7 @@ export class GameLoop {
     ];
     for (let i = 0; i < ring2Offsets.length; i++) {
       const [ox, oz] = ring2Offsets[i];
-      const spawnPos = new THREE.Vector3(ox, 0.3, 15 + oz);
+      const spawnPos = new THREE.Vector3(ox, SW_Y, 15 + oz);
       const npcData = spawner.generateDeterministicNPC(`npc_${12 + i}`, initialSeed + (12 + i) * 17, spawnPos);
       const npc = new NPC(npcData, this.scene);
       npc.state.simulationTier = 'TIER1_NEARBY';
@@ -376,7 +379,7 @@ export class GameLoop {
       const radius  = 100 + (i % 5) * 40;
       const homePos = new THREE.Vector3(
         Math.cos(angle) * radius,
-        0.3,
+        0.0,
         15 + Math.sin(angle) * radius
       );
       const npcData = spawner.generateDeterministicNPC(`npc_${i}`, npcSeed, homePos);

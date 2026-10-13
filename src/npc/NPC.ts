@@ -14,6 +14,24 @@ export class NPC {
   /** Tracks which LOD mesh is currently spawned so we can swap on tier change. */
   private currentMeshLod: 0 | 1 | null = null;
 
+  /**
+   * Releases all GPU resources (BufferGeometry + Material) held by a Three.js Group.
+   * Call this before scene.remove() to prevent accumulating GPU memory leaks each
+   * time an NPC crosses the LOD-0/LOD-1 boundary.
+   */
+  private static disposeGroup(group: THREE.Group): void {
+    group.traverse((obj) => {
+      const mesh = obj as THREE.Mesh;
+      if (!mesh.isMesh) return;
+      if (mesh.geometry) mesh.geometry.dispose();
+      if (Array.isArray(mesh.material)) {
+        mesh.material.forEach((m) => m.dispose());
+      } else if (mesh.material) {
+        (mesh.material as THREE.Material).dispose();
+      }
+    });
+  }
+
   constructor(data: NPCData, scene: THREE.Scene) {
     this.scene = scene;
     this.state = new NPCState(data);
@@ -98,12 +116,13 @@ export class NPC {
     const targetLod: 0 | 1 = tier === 'TIER0_VICINITY' ? 0 : 1;
 
     if (!isDetailed) {
-      // Transition to abstract — remove any existing mesh
+      // Transition to abstract — remove and dispose any existing mesh
       if (this.visualMesh) {
         if (this.animController) {
           this.animController.dispose();
           this.animController = undefined;
         }
+        NPC.disposeGroup(this.visualMesh);  // D1: release GPU geometry/material
         this.scene.remove(this.visualMesh);
         this.visualMesh = undefined;
         this.currentMeshLod = null;
@@ -119,6 +138,7 @@ export class NPC {
           this.animController.dispose();
           this.animController = undefined;
         }
+        NPC.disposeGroup(this.visualMesh);  // D1: release GPU geometry/material
         this.scene.remove(this.visualMesh);
         this.visualMesh = undefined;
       }

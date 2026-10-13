@@ -36,8 +36,7 @@ export class TrafficController {
     this.transitRoute = transitRoute;
     // Initialise light system bound to this vehicle's visual mesh
     this.lightSystem = new VehicleLightSystem(vehicle.visualMesh);
-    // Headlights always on (Nairobi traffic runs lights at all hours for safety)
-    this.lightSystem.setHeadlights(true);
+    // Headlights are gated on time of day — set in update() each frame
   }
 
   public update(
@@ -258,6 +257,10 @@ export class TrafficController {
     );
 
     // 8. Phase 12.5 — Update vehicle lights from AI state
+    // Headlights: on between 18:00–06:00 (dusk to dawn)
+    const nighttime = currentHours >= 18.0 || currentHours < 6.0;
+    this.lightSystem.setHeadlights(nighttime);
+
     // Brake lights: on when decelerating hard, stopped, or handbrake active
     const isBraking = handbrakeInput || this.aiState === 'STOPPED' || this.aiState === 'WAITING_SIGNAL';
     this.lightSystem.setBrakeLights(isBraking);
