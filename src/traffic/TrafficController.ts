@@ -267,10 +267,12 @@ export class TrafficController {
     this.lightSystem.setBrakeLights(isBraking);
 
     // Turn indicators: matatu approaching stage → left indicator; lane steer → natural
+    // Snapshot to local const so TS control-flow narrowing doesn't drop APPROACHING_STAGE
+    const aiSnapshot: string = this.aiState;
     let desiredSignal: TurnSignalState = 'off';
-    if (this.aiState === 'STOPPED' && this.transitRoute) {
+    if (aiSnapshot === 'STOPPED' && this.transitRoute) {
       desiredSignal = 'hazard'; // matatu at stage — hazard lights
-    } else if (this.aiState === 'APPROACHING_STAGE') {
+    } else if (aiSnapshot === 'APPROACHING_STAGE') {
       desiredSignal = 'left';   // pulling over to left kerb
     } else if (Math.abs(steerInput) > 0.35) {
       desiredSignal = steerInput < 0 ? 'left' : 'right';

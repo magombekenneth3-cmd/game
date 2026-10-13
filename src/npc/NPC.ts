@@ -15,17 +15,54 @@ export class NPC {
   private currentMeshLod: 0 | 1 | null = null;
 
   /**
-   * Releases all GPU resources (BufferGeometry + Material) held by a Three.js Group.
-   * Call this before scene.remove() to prevent accumulating GPU memory leaks each
-   * time an NPC crosses the LOD-0/LOD-1 boundary.
+   * Releases GPU resources owned EXCLUSIVELY by this NPC's visual mesh.
+   *
+   * Ownership rules (Three.js semantics):
+   *
+   *   Procedural figures (isProceduralFallback=true on the figure child):
+   *     ProceduralHumanFigure.createFullFigure() allocates fresh BufferGeometry
+   *     and MeshStandardMaterial for every call — both are privately owned.
+   *     → Dispose geometry AND material.
+   *
+   *   GLB-sourced characters (cloneAssetTemplate, no isProceduralFallback flag):
+   *     template.clone(true) copies the scene graph but SHARES BufferGeometry
+   *     references with the cache template. Only materials are cloned
+   *     (see cloneAssetTemplate → copyMaterial). Disposing geometry here would
+   *     corrupt the shared cache template and break every other NPC using it.
+   *     → Dispose material only, never geometry.
+   *
+   *   Vehicles (isProceduralVehicle=true set by VehicleAssetKit):
+   *     VehicleAssetKit.createVehicleMesh() creates fresh geometry per call.
+   *     → Dispose geometry AND material.
+   *     Note: NPC.disposeGroup() is not called on vehicles, but the flag is
+   *     documented here for completeness.
    */
   private static disposeGroup(group: THREE.Group): void {
     group.traverse((obj) => {
       const mesh = obj as THREE.Mesh;
       if (!mesh.isMesh) return;
-      if (mesh.geometry) mesh.geometry.dispose();
+
+      // Determine geometry ownership from the figure child's userData.
+      // The figure group (ProceduralHuman or the cloned GLB root) is the
+      // first child of the wrapper group. Check from the object itself
+      // upward to the group root.
+      let ownsGeometry = false;
+      let current: THREE.Object3D | null = mesh;
+      while (current && current !== group.parent) {
+        if (current.userData.isProceduralFallback === true) {
+          ownsGeometry = true;
+          break;
+        }
+        current = current.parent;
+      }
+
+      if (ownsGeometry && mesh.geometry) {
+        mesh.geometry.dispose();
+      }
+      // Materials: always safe to dispose — they are cloned per-NPC in both
+      // cloneAssetTemplate (char_* branch) and ProceduralHumanFigure.
       if (Array.isArray(mesh.material)) {
-        mesh.material.forEach((m) => m.dispose());
+        mesh.material.forEach((m) => (m as THREE.Material).dispose());
       } else if (mesh.material) {
         (mesh.material as THREE.Material).dispose();
       }
@@ -80,10 +117,16 @@ export class NPC {
     if (!isMoving) return;
 
     const targetWaypoint = this.state.pathWaypoints[this.state.currentWaypointIndex];
-    const distToWaypoint = this.state.currentPosition.distanceTo(targetWaypoint);
 
-    if (distToWaypoint <= 1.0) {
-      // Arrived at waypoint
+    // D2: Use XZ-plane distance only so vertical elevation differences between
+    // waypoints don't prevent arrival detection or cause vertical drift.
+    const dx = targetWaypoint.x - this.state.currentPosition.x;
+    const dz = targetWaypoint.z - this.state.currentPosition.z;
+    const distToWaypointXZ = Math.sqrt(dx * dx + dz * dz);
+
+    if (distToWaypointXZ <= 1.0) {
+      // Arrived at waypoint — snap Y to waypoint height to follow terrain/sidewalk slope
+      this.state.currentPosition.y = targetWaypoint.y;
       this.state.currentWaypointIndex++;
       if (this.state.currentWaypointIndex >= this.state.pathWaypoints.length) {
         // Arrived at final destination!
@@ -92,13 +135,15 @@ export class NPC {
       }
     }
 
-    // Move toward current waypoint
-    const moveDir = targetWaypoint.clone().sub(this.state.currentPosition).normalize();
-    this.state.currentPosition.add(moveDir.multiplyScalar(this.walkSpeed * deltaSeconds));
+    // Move toward current waypoint on XZ plane — never drift vertically mid-step.
+    // Y is updated only on waypoint arrival (above) so feet stay on surface.
+    const moveDirXZ = new THREE.Vector3(dx, 0, dz).normalize();
+    this.state.currentPosition.x += moveDirXZ.x * this.walkSpeed * deltaSeconds;
+    this.state.currentPosition.z += moveDirXZ.z * this.walkSpeed * deltaSeconds;
 
     if (this.visualMesh) {
       this.visualMesh.position.copy(this.state.currentPosition);
-      this.visualMesh.rotation.y = Math.atan2(moveDir.x, moveDir.z);
+      this.visualMesh.rotation.y = Math.atan2(moveDirXZ.x, moveDirXZ.z);
     }
   }
 
@@ -162,6 +207,9 @@ export class NPC {
         archetype: this.state.data.archetype,
         seed: this.state.data.seed
       });
+      // Both LOD-0 and LOD-1 procedural figures own their geometry privately
+      // (ProceduralHumanFigure allocates fresh BufferGeometry per call).
+      // This flag lets disposeGroup() safely dispose geometry on LOD swap.
       charMesh.userData.isProceduralFallback = true;
     } else {
       // LOD-0 (≤80m): full 16-part articulated figure with hair and clothing

@@ -30,7 +30,6 @@ export class NPCSimulation {
 
     this.manager.npcs.forEach((npc) => {
       // 1. Evaluate Simulation Tier (LOD) based on distance to player
-      const previousTier = npc.state.simulationTier;
       const newTier = NPCLODManager.evaluateTier(npc.state.currentPosition, playerPos);
       npc.state.simulationTier = newTier;
 

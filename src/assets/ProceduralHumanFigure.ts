@@ -131,7 +131,7 @@ export class ProceduralHumanFigure {
     const chestY = waistY  + this.TORSO_H;
     const neckY  = chestY;
     const headY  = neckY   + this.NECK_H;
-    const crownY = headY   + this.HEAD_H;
+    // crownY omitted: total height documented in class header (TOTAL_HEIGHT = 1.72m)
 
     // --- FEET ---
     const footGeo = new THREE.BoxGeometry(0.11, 0.05, this.FOOT_L);

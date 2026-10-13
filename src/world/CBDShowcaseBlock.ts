@@ -2,7 +2,6 @@ import * as THREE from 'three';
 import { AssetManager } from '../engine/AssetManager';
 import { AssetPipeline } from '../assets/AssetPipeline';
 import { BuildingData } from './BuildingData';
-import { BuildingAssetKit } from '../assets/BuildingAssetKit';
 import { EnvironmentAssetKit } from '../assets/EnvironmentAssetKit';
 import { SharedMaterialLibrary } from '../assets/SharedMaterialLibrary';
 import { TextureGenerator } from '../assets/TextureGenerator';
