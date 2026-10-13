@@ -106,8 +106,9 @@ export class ProceduralRoadGenerator {
       roadGroup.add(dashedRightMesh);
     }
 
-    // --- 2. SEPARATE CURBS & SIDEWALKS ---
-    // --- 2. SEPARATE CURBS & SIDEWALKS ---
+    // --- 2. SEPARATE CURBS, SIDEWALKS & GRASS VERGE ---
+    // Phase 12.4.4: grass_verge ribbon added between sidewalk outer edge and
+    // road-to-terrain shoulder so the material assignment is visually complete.
     if (road.hasSidewalks) {
       const isUrbanAvenue = road.width >= 10 || road.category === 'highway' || road.category === 'arterial';
       const sidewalkMat = isUrbanAvenue
@@ -115,6 +116,7 @@ export class ProceduralRoadGenerator {
         : this.assetManager.getMaterial('sidewalk_concrete');
       const curbMat = SharedMaterialLibrary.concrete;
       const sidewalkWidth = 3.0;
+      const grassVergeWidth = 1.2; // narrow grass strip between sidewalk and shoulder
 
       // Concrete Curb Edges
       const leftCurbGeo = this.createSidewalkRibbon(curvePoints, curve, samples, halfWidth, halfWidth + 0.3, 0.25);
@@ -138,6 +140,27 @@ export class ProceduralRoadGenerator {
 
       roadGroup.add(leftMesh);
       roadGroup.add(rightMesh);
+
+      // Grass verge ribbons — 1.2m strip of compacted savanna grass between
+      // the sidewalk outer edge and the bitumen-to-soil shoulder transition.
+      // innerOffset = halfWidth + sidewalkWidth (sidewalk outer edge)
+      // outerOffset = halfWidth + sidewalkWidth + grassVergeWidth
+      const grassVergeMat = this.assetManager.getMaterial('grass_verge');
+      const sidewalkOuterLeft  =  halfWidth + sidewalkWidth;
+      const sidewalkOuterRight = -halfWidth - sidewalkWidth;
+
+      const leftVergeGeo  = this.createSidewalkRibbon(curvePoints, curve, samples,  sidewalkOuterLeft,  sidewalkOuterLeft  + grassVergeWidth, 0.18);
+      const rightVergeGeo = this.createSidewalkRibbon(curvePoints, curve, samples,  sidewalkOuterRight - grassVergeWidth, sidewalkOuterRight, 0.18);
+
+      const leftVergeMesh  = new THREE.Mesh(leftVergeGeo,  grassVergeMat);
+      const rightVergeMesh = new THREE.Mesh(rightVergeGeo, grassVergeMat);
+      leftVergeMesh.name  = 'GrassVerge_Left';
+      rightVergeMesh.name = 'GrassVerge_Right';
+      leftVergeMesh.receiveShadow  = true;
+      rightVergeMesh.receiveShadow = true;
+
+      roadGroup.add(leftVergeMesh);
+      roadGroup.add(rightVergeMesh);
     }
 
     // --- 2b. ROAD-TO-TERRAIN TRANSITION SHOULDER RIBBONS ---
@@ -352,6 +375,7 @@ export class ProceduralRoadGenerator {
   ): THREE.BufferGeometry {
     const geo = new THREE.BufferGeometry();
     const vertices: number[] = [];
+    const uvs: number[] = [];
     const indices: number[] = [];
 
     for (let i = 0; i <= samples; i++) {
@@ -367,6 +391,10 @@ export class ProceduralRoadGenerator {
       vertices.push(inner.x, height, inner.z);
       vertices.push(outer.x, height, outer.z);
 
+      const v = i / samples;
+      uvs.push(0, v);
+      uvs.push(1, v);
+
       if (i < samples && ((i + 1) % 6) >= 3) {
         const base = vertices.length / 3 - 2;
         indices.push(base, base + 1, base + 2);
@@ -375,6 +403,7 @@ export class ProceduralRoadGenerator {
     }
 
     geo.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+    geo.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
     geo.setIndex(indices);
     geo.computeVertexNormals();
     return geo;
@@ -386,17 +415,28 @@ export class ProceduralRoadGenerator {
     samples: number,
     offsetInner: number,
     offsetOuter: number,
-    height: number
+    height: number,
+    /** Phase 12.4.4: physical length of one UV repeat in world metres.
+     *  Paver tiles are ~0.5m long so one UV cycle = 0.5m of real road. */
+    paverRepeatMeters: number = 0.5
   ): THREE.BufferGeometry {
     const geo = new THREE.BufferGeometry();
     const vertices: number[] = [];
     const uvs: number[] = [];
     const indices: number[] = [];
 
+    // Accumulate arc-length in world space so UV v-coordinate is physically scaled
+    // regardless of the number of samples or road length.
+    let arcLength = 0;
+
     for (let i = 0; i <= samples; i++) {
       const pt = curvePoints[i];
       const tangent = curve.getTangentAt(i / samples).normalize();
       const normal = new THREE.Vector3(-tangent.z, 0, tangent.x).normalize();
+
+      if (i > 0) {
+        arcLength += pt.distanceTo(curvePoints[i - 1]);
+      }
 
       const inner = pt.clone().add(normal.clone().multiplyScalar(offsetInner));
       const outer = pt.clone().add(normal.clone().multiplyScalar(offsetOuter));
@@ -404,8 +444,9 @@ export class ProceduralRoadGenerator {
       vertices.push(inner.x, height, inner.z);
       vertices.push(outer.x, height, outer.z);
 
-      // UV: u across paver width, v along road length for correct texture tiling
-      const v = i / samples * 10.0;
+      // v is derived from cumulative world-space arc length so paver tiles
+      // maintain a consistent physical size regardless of road length.
+      const v = arcLength / paverRepeatMeters;
       uvs.push(0, v);
       uvs.push(1, v);
 
@@ -446,7 +487,13 @@ export class ProceduralRoadGenerator {
       indices.push(base, base + 1, base + 2, base + 1, base + 3, base + 2);
     }
 
+    // Build UV per quad: p1→(0,0), p2→(1,0), p3→(0,1), p4→(1,1)
+    const uvData: number[] = [];
+    for (let s = 0; s < stripeCount; s++) {
+      uvData.push(0, 0,  1, 0,  0, 1,  1, 1);
+    }
     groupGeo.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+    groupGeo.setAttribute('uv', new THREE.Float32BufferAttribute(uvData, 2));
     groupGeo.setIndex(indices);
     groupGeo.computeVertexNormals();
     return groupGeo;
