@@ -47,7 +47,8 @@ export class TrafficController {
     _playerPos?: THREE.Vector3,
     playerVehicle?: Vehicle,
     pedestrianPositions?: THREE.Vector3[],
-    environmentMeshes: THREE.Object3D[] = []
+    environmentMeshes: THREE.Object3D[] = [],
+    currentHours: number = 14.0   // default midday — headlights off
   ): void {
     if (this.aiState === 'PARKED') return;
 
