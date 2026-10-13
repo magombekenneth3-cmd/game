@@ -219,7 +219,14 @@ export class CBDShowcaseBlock {
       };
 
       this.buildings.push(bldData);
-      const bldGroup = BuildingAssetKit.createBuildingGroup(bldData);
+
+      // Use authored GLB assets through AssetPipeline instead of procedural geometry.
+      // getBuildingMesh() calls fitBuildingToFootprint() to select the best
+      // commercial GLB (bld_commercial_tower_01, bld_office_block_01, etc.)
+      // and scales it to match the parcel dimensions.
+      const pipeline = AssetPipeline.getInstance();
+      const bldGroup = pipeline.getBuildingMesh(bldData);
+      bldGroup.userData.noMerge = true; // Preserve per-building LOD and collision
       this.group.add(bldGroup);
     });
   }
