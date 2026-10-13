@@ -39,9 +39,18 @@ export class TerrainChunkManager {
     return this.getRawRidgeElevation(x, z) * mask;
   }
 
-  public createTerrainChunkMesh(chunkX: number, chunkZ: number, resolution: number = 16): THREE.Mesh {
+  public createTerrainChunkMesh(chunkX: number, chunkZ: number, resolution?: number): THREE.Mesh {
     const minX = chunkX * this.chunkSize;
     const minZ = chunkZ * this.chunkSize;
+
+    // Phase 12.4.3: Adaptive LOD resolution.
+    // Chunks in the urban core (Chebyshev distance ≤1 from origin) use 32 subdivisions
+    // (3.125m grid) so road edges, building bases, and paving transitions align cleanly.
+    // Mid-range chunks use 24. Outer chunks use 16.
+    if (resolution === undefined) {
+      const chebDist = Math.max(Math.abs(chunkX), Math.abs(chunkZ));
+      resolution = chebDist <= 1 ? 32 : chebDist <= 2 ? 24 : 16;
+    }
 
     const geo = new THREE.PlaneGeometry(this.chunkSize, this.chunkSize, resolution, resolution);
     geo.rotateX(-Math.PI / 2);

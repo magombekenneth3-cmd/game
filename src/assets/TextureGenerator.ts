@@ -584,33 +584,77 @@ export class TextureGenerator {
 
   /**
    * Generates realistic Concrete Paver Sidewalk texture.
+   * Phase 12.4.3: Upgraded to 512x512 with deterministic SeededRandom(99).
+   * Each paver block is individually tinted with micro-cracking on joints.
    */
   public static createSidewalkPaverTexture(): THREE.CanvasTexture {
     if (this.cache.has('sidewalk')) return this.cache.get('sidewalk')!;
 
-    const { canvas, ctx } = this.createCanvas(256, 256);
+    const { canvas, ctx } = this.createCanvas(512, 512);
     if (!ctx.fillRect) {
       const tex = this.createFallbackTexture(true);
       this.cache.set('sidewalk', tex);
       return tex;
     }
 
-    ctx.fillStyle = '#94a3b8';
-    ctx.fillRect(0, 0, 256, 256);
+    const rng = new SeededRandom(99);
 
-    // Paver noise
-    for (let i = 0; i < 4000; i++) {
-      const shade = 140 + Math.floor(Math.random() * 30);
-      ctx.fillStyle = `rgb(${shade},${shade},${shade})`;
-      ctx.fillRect(Math.random() * 256, Math.random() * 256, 2, 2);
+    // Base mid-grey concrete slab
+    ctx.fillStyle = '#8a9bb0';
+    ctx.fillRect(0, 0, 512, 512);
+
+    // Individual paver tiles: 4 cols x 8 rows (each 128x64px)
+    const cols = 4;
+    const rows = 8;
+    const tileW = Math.floor(512 / cols);
+    const tileH = Math.floor(512 / rows);
+    const jointPad = 3;
+
+    for (let row = 0; row < rows; row++) {
+      for (let col = 0; col < cols; col++) {
+        const tx = col * tileW + jointPad;
+        const ty = row * tileH + jointPad;
+        const tw = tileW - jointPad * 2;
+        const th = tileH - jointPad * 2;
+
+        // Per-paver colour jitter (aged weathered concrete)
+        const baseL = Math.floor(138 + rng.nextFloat() * 18);
+        const warm = Math.floor((rng.nextFloat() - 0.5) * 12);
+        const pr = Math.min(255, baseL + warm);
+        const pg = Math.min(255, baseL + Math.floor(warm * 0.4));
+        const pb = Math.min(255, baseL - warm);
+        ctx.fillStyle = `rgb(${pr},${pg},${pb})`;
+        ctx.fillRect(tx, ty, tw, th);
+
+        // Surface micro-speckle
+        for (let k = 0; k < 100; k++) {
+          const sx = tx + rng.nextFloat() * tw;
+          const sy = ty + rng.nextFloat() * th;
+          const shade = Math.floor(90 + rng.nextFloat() * 90);
+          ctx.fillStyle = `rgba(${shade},${shade},${shade},0.16)`;
+          ctx.fillRect(sx, sy, 1, 1);
+        }
+
+        // AO highlight bevel (top-left)
+        ctx.fillStyle = 'rgba(255,255,255,0.13)';
+        ctx.fillRect(tx, ty, tw, 2);
+        ctx.fillRect(tx, ty, 2, th);
+
+        // Shadow bevel (bottom-right)
+        ctx.fillStyle = 'rgba(0,0,0,0.20)';
+        ctx.fillRect(tx, ty + th - 2, tw, 2);
+        ctx.fillRect(tx + tw - 2, ty, 2, th);
+      }
     }
 
-    // Grid paver lines
-    ctx.strokeStyle = '#475569';
-    ctx.lineWidth = 3;
-    ctx.strokeRect(2, 2, 252, 252);
-    ctx.strokeRect(2, 2, 126, 126);
-    ctx.strokeRect(128, 128, 126, 126);
+    // Dark sand-filled mortar joints
+    ctx.fillStyle = '#393e47';
+    for (let col = 1; col < cols; col++) {
+      ctx.fillRect(col * tileW - 1, 0, jointPad, 512);
+    }
+    for (let row = 1; row < rows; row++) {
+      ctx.fillRect(0, row * tileH - 1, 512, jointPad);
+    }
 
     const texture = new THREE.CanvasTexture(canvas);
     texture.colorSpace = THREE.SRGBColorSpace;
@@ -1910,6 +1954,144 @@ export class TextureGenerator {
     const texture = new THREE.CanvasTexture(canvas);
     texture.colorSpace = THREE.SRGBColorSpace;
     this.cache.set(cacheKey, texture);
+    return texture;
+  }
+
+  /**
+   * Phase 12.4.3: Nairobi roadside grass verge diffuse texture.
+   * Short compacted savanna grass with red laterite soil patches and dry grass tips.
+   * Seed: 7331.
+   */
+  public static createGrassVergeTexture(): THREE.CanvasTexture {
+    if (this.cache.has('grass_verge')) return this.cache.get('grass_verge')!;
+
+    const { canvas, ctx } = this.createCanvas(512, 512);
+    if (!ctx.fillRect) {
+      const tex = this.createFallbackTexture(true);
+      this.cache.set('grass_verge', tex);
+      return tex;
+    }
+
+    const rng = new SeededRandom(7331);
+
+    // Base: compacted dry savanna grass (olive-khaki)
+    ctx.fillStyle = '#5c6832';
+    ctx.fillRect(0, 0, 512, 512);
+
+    // Tonal macro variation patches (lighter/darker grass clumps)
+    for (let i = 0; i < 80; i++) {
+      const cx = rng.nextFloat() * 512;
+      const cy = rng.nextFloat() * 512;
+      const r = 15 + rng.nextFloat() * 40;
+      const roll = rng.nextFloat();
+      let color: string;
+      if (roll < 0.25) {
+        color = 'rgba(78, 90, 40, 0.35)'; // Darker clump
+      } else if (roll < 0.55) {
+        color = 'rgba(110, 124, 52, 0.30)'; // Mid grass
+      } else if (roll < 0.78) {
+        color = 'rgba(150, 140, 72, 0.30)'; // Dry/straw tips
+      } else {
+        color = 'rgba(126, 50, 27, 0.28)'; // Exposed laterite soil patch
+      }
+      const grad = ctx.createRadialGradient(cx, cy, 2, cx, cy, r);
+      grad.addColorStop(0, color);
+      grad.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.arc(cx, cy, r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // Fine grass blade micro-texture
+    for (let i = 0; i < 20000; i++) {
+      const x = rng.nextFloat() * 512;
+      const y = rng.nextFloat() * 512;
+      const roll = rng.nextFloat();
+      if (roll < 0.50) {
+        // Green grass blade
+        const shade = Math.floor(80 + rng.nextFloat() * 40);
+        ctx.fillStyle = `rgba(${Math.floor(shade * 0.8)},${shade},${Math.floor(shade * 0.4)},0.55)`;
+        ctx.fillRect(x, y, 1, 2);
+      } else if (roll < 0.75) {
+        // Dry straw tip
+        const v = Math.floor(160 + rng.nextFloat() * 40);
+        ctx.fillStyle = `rgba(${v},${Math.floor(v * 0.85)},${Math.floor(v * 0.5)},0.45)`;
+        ctx.fillRect(x, y, 1, 1);
+      } else {
+        // Small laterite pebble / bare soil
+        ctx.fillStyle = `rgba(152, 62, 34, 0.40)`;
+        ctx.fillRect(x, y, 1, 1);
+      }
+    }
+
+    // Scattered small roadside pebbles
+    for (let i = 0; i < 200; i++) {
+      const x = rng.nextFloat() * 512;
+      const y = rng.nextFloat() * 512;
+      const sz = 1.0 + rng.nextFloat() * 2.5;
+      ctx.fillStyle = rng.nextFloat() > 0.5 ? '#4a3f35' : '#6b5a4e';
+      ctx.beginPath();
+      ctx.arc(x, y, sz, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.colorSpace = THREE.SRGBColorSpace;
+    texture.wrapS = THREE.RepeatWrapping;
+    texture.wrapT = THREE.RepeatWrapping;
+    this.cache.set('grass_verge', texture);
+    return texture;
+  }
+
+  /**
+   * Phase 12.4.3: Grass verge normal map (coarse grass blade and pebble micro-relief).
+   */
+  public static createGrassVergeNormalMap(): THREE.CanvasTexture {
+    if (this.cache.has('grass_verge_normal')) return this.cache.get('grass_verge_normal')!;
+
+    const { canvas, ctx } = this.createCanvas(512, 512);
+    if (!ctx.fillRect) {
+      const tex = this.createFallbackTexture(false);
+      this.cache.set('grass_verge_normal', tex);
+      return tex;
+    }
+
+    const rng = new SeededRandom(7331);
+
+    // Flat base normal
+    ctx.fillStyle = 'rgb(128, 128, 255)';
+    ctx.fillRect(0, 0, 512, 512);
+
+    // Coarse grass blade normals (vertical micro-perturbation)
+    for (let i = 0; i < 16000; i++) {
+      const x = rng.nextFloat() * 512;
+      const y = rng.nextFloat() * 512;
+      const dx = (rng.nextFloat() - 0.5) * 28;
+      const dy = (rng.nextFloat() - 0.5) * 28;
+      ctx.fillStyle = `rgb(${Math.floor(128 + dx)},${Math.floor(128 + dy)},255)`;
+      ctx.fillRect(x, y, 1, 2);
+    }
+
+    // Pebble normal bumps
+    for (let i = 0; i < 200; i++) {
+      const cx = rng.nextFloat() * 512;
+      const cy = rng.nextFloat() * 512;
+      const r = 1.5 + rng.nextFloat() * 2.5;
+      ctx.fillStyle = 'rgb(100, 128, 255)';
+      ctx.beginPath();
+      ctx.arc(cx - 0.6, cy, r, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = 'rgb(156, 128, 255)';
+      ctx.beginPath();
+      ctx.arc(cx + 0.6, cy, r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.wrapS = THREE.RepeatWrapping;
+    texture.wrapT = THREE.RepeatWrapping;
+    this.cache.set('grass_verge_normal', texture);
     return texture;
   }
 }

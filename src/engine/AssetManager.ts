@@ -171,6 +171,28 @@ export class AssetManager {
     this.materials.set('foliage_green', new THREE.MeshStandardMaterial({ color: 0x2E7D32, roughness: 0.75, metalness: 0.0 }));
     this.materials.set('tree_wood', new THREE.MeshStandardMaterial({ color: 0x4E3629, roughness: 0.9, metalness: 0.0 }));
 
+    // 7b. Phase 12.4.3: Grass verge material — used on road-side green strips between
+    // the tarmac shoulder transition and building plot boundaries.
+    // Short compacted savanna grass with exposed laterite soil patches.
+    const grassVergeTexture = TextureGenerator.createGrassVergeTexture();
+    grassVergeTexture.wrapS = THREE.RepeatWrapping;
+    grassVergeTexture.wrapT = THREE.RepeatWrapping;
+    grassVergeTexture.repeat.set(4, 8);
+
+    const grassVergeNormal = TextureGenerator.createGrassVergeNormalMap();
+    grassVergeNormal.wrapS = THREE.RepeatWrapping;
+    grassVergeNormal.wrapT = THREE.RepeatWrapping;
+    grassVergeNormal.repeat.set(4, 8);
+
+    this.materials.set('grass_verge', new THREE.MeshStandardMaterial({
+      map: grassVergeTexture,
+      normalMap: grassVergeNormal,
+      normalScale: new THREE.Vector2(0.5, 0.5),
+      roughness: 0.92,
+      metalness: 0.0
+    }));
+
+
     // 8. Vehicle Materials (Matatu Yellow/White & Metallic Clearcoat)
     this.materials.set('matatu_yellow', new THREE.MeshStandardMaterial({ color: 0xFBC02D, metalness: 0.4, roughness: 0.25 }));
     this.materials.set('vehicle_metal', new THREE.MeshStandardMaterial({ color: 0x1A237E, metalness: 0.65, roughness: 0.2 }));

@@ -310,6 +310,7 @@ export class ProceduralRoadGenerator {
   ): THREE.BufferGeometry {
     const geo = new THREE.BufferGeometry();
     const vertices: number[] = [];
+    const uvs: number[] = [];
     const indices: number[] = [];
 
     for (let i = 0; i <= samples; i++) {
@@ -323,6 +324,11 @@ export class ProceduralRoadGenerator {
       vertices.push(inner.x, height, inner.z);
       vertices.push(outer.x, height, outer.z);
 
+      // UV: u=0 on inner edge, u=1 on outer edge; v advances along ribbon
+      const v = i / samples;
+      uvs.push(0, v);
+      uvs.push(1, v);
+
       if (i < samples) {
         const base = i * 2;
         indices.push(base, base + 1, base + 2);
@@ -331,6 +337,7 @@ export class ProceduralRoadGenerator {
     }
 
     geo.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+    geo.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
     geo.setIndex(indices);
     geo.computeVertexNormals();
     return geo;
@@ -383,6 +390,7 @@ export class ProceduralRoadGenerator {
   ): THREE.BufferGeometry {
     const geo = new THREE.BufferGeometry();
     const vertices: number[] = [];
+    const uvs: number[] = [];
     const indices: number[] = [];
 
     for (let i = 0; i <= samples; i++) {
@@ -396,6 +404,11 @@ export class ProceduralRoadGenerator {
       vertices.push(inner.x, height, inner.z);
       vertices.push(outer.x, height, outer.z);
 
+      // UV: u across paver width, v along road length for correct texture tiling
+      const v = i / samples * 10.0;
+      uvs.push(0, v);
+      uvs.push(1, v);
+
       if (i < samples) {
         const base = i * 2;
         indices.push(base, base + 1, base + 2);
@@ -404,6 +417,7 @@ export class ProceduralRoadGenerator {
     }
 
     geo.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+    geo.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
     geo.setIndex(indices);
     geo.computeVertexNormals();
     return geo;
