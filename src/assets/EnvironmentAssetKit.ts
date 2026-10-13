@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { TextureGenerator } from './TextureGenerator';
+import { SharedMaterialLibrary } from './SharedMaterialLibrary';
 
 export class EnvironmentAssetKit {
   // --- FOLIAGE ---
@@ -13,38 +14,10 @@ export class EnvironmentAssetKit {
     const group = new THREE.Group();
     group.name = 'AcaciaTreeMesh';
 
-    const barkTex = TextureGenerator.createBarkTexture('acacia');
-    const barkNorm = TextureGenerator.createBarkNormalMap('acacia');
-    const trunkMat = new THREE.MeshStandardMaterial({
-      map: barkTex,
-      normalMap: barkNorm,
-      color: 0x4e3629,
-      roughness: 0.90,
-      metalness: 0.05
-    });
-
-    const foliageTex = TextureGenerator.createFoliageTexture('acacia_umbrella');
-    const foliageMatTop = new THREE.MeshStandardMaterial({
-      map: foliageTex,
-      color: 0x2e7d32,
-      roughness: 0.70,
-      metalness: 0.0,
-      side: THREE.DoubleSide
-    });
-    const foliageMatMid = new THREE.MeshStandardMaterial({
-      map: foliageTex,
-      color: 0x1b5e20,
-      roughness: 0.75,
-      metalness: 0.0,
-      side: THREE.DoubleSide
-    });
-    const foliageMatUnderside = new THREE.MeshStandardMaterial({
-      map: foliageTex,
-      color: 0x14532d,
-      roughness: 0.85,
-      metalness: 0.0,
-      side: THREE.DoubleSide
-    });
+    const trunkMat = SharedMaterialLibrary.barkAcacia;
+    const foliageMatTop = SharedMaterialLibrary.foliageAcaciaTop;
+    const foliageMatMid = SharedMaterialLibrary.foliageAcaciaMid;
+    const foliageMatUnderside = SharedMaterialLibrary.foliageAcaciaUnder;
 
     // Lower trunk with organic taper and root flare
     const trunkBaseGeo = new THREE.CylinderGeometry(0.36, 0.48, 1.2, 10);
@@ -142,47 +115,12 @@ export class EnvironmentAssetKit {
     const group = new THREE.Group();
     group.name = 'JacarandaTreeMesh';
 
-    const barkTex = TextureGenerator.createBarkTexture('jacaranda');
-    const barkNorm = TextureGenerator.createBarkNormalMap('jacaranda');
-    const barkMat = new THREE.MeshStandardMaterial({
-      map: barkTex,
-      normalMap: barkNorm,
-      color: 0x3d322a,
-      roughness: 0.88,
-      metalness: 0.05
-    });
+    const barkMat = SharedMaterialLibrary.barkJacaranda;
 
-    const blossomTex = TextureGenerator.createFoliageTexture('jacaranda_blossom');
-    const leafTex = TextureGenerator.createFoliageTexture('jacaranda_leaf');
-
-    const blossomMatViolet = new THREE.MeshStandardMaterial({
-      map: blossomTex,
-      color: flowering ? 0x7c3aed : 0x22c55e,
-      roughness: 0.65,
-      metalness: 0.0,
-      side: THREE.DoubleSide
-    });
-    const blossomMatDeep = new THREE.MeshStandardMaterial({
-      map: blossomTex,
-      color: flowering ? 0x6d28d9 : 0x15803d,
-      roughness: 0.70,
-      metalness: 0.0,
-      side: THREE.DoubleSide
-    });
-    const blossomMatLavender = new THREE.MeshStandardMaterial({
-      map: blossomTex,
-      color: flowering ? 0x9333ea : 0x16a34a,
-      roughness: 0.60,
-      metalness: 0.0,
-      side: THREE.DoubleSide
-    });
-    const leafMatGreen = new THREE.MeshStandardMaterial({
-      map: leafTex,
-      color: 0x166534,
-      roughness: 0.75,
-      metalness: 0.0,
-      side: THREE.DoubleSide
-    });
+    const blossomMatViolet = flowering ? SharedMaterialLibrary.blossomViolet : SharedMaterialLibrary.jacarandaGreenLight;
+    const blossomMatDeep = flowering ? SharedMaterialLibrary.blossomDeep : SharedMaterialLibrary.jacarandaGreenMid;
+    const blossomMatLavender = flowering ? SharedMaterialLibrary.blossomLavender : SharedMaterialLibrary.jacarandaGreenDark;
+    const leafMatGreen = SharedMaterialLibrary.jacarandaLeaf;
 
     // Root flare
     const rootGeo = new THREE.CylinderGeometry(0.38, 0.52, 0.6, 10);
@@ -299,35 +237,12 @@ export class EnvironmentAssetKit {
     const pWidth = options.width || 0.9;
     const isMagenta = options.color !== 'red';
 
-    const concreteMat = new THREE.MeshStandardMaterial({
-      color: 0x475569,
-      roughness: 0.65,
-      metalness: 0.10
-    });
-    const soilMat = new THREE.MeshStandardMaterial({
-      color: 0x78350f,
-      roughness: 0.95
-    });
+    const concreteMat = SharedMaterialLibrary.concrete;
+    const soilMat = SharedMaterialLibrary.soilPlanter;
 
-    const flowerTex = TextureGenerator.createFoliageTexture(isMagenta ? 'bougainvillea_magenta' : 'bougainvillea_magenta');
-    const flowerMatPrimary = new THREE.MeshStandardMaterial({
-      map: flowerTex,
-      color: isMagenta ? 0xd946ef : 0xe11d48,
-      roughness: 0.55,
-      side: THREE.DoubleSide
-    });
-    const flowerMatDeep = new THREE.MeshStandardMaterial({
-      map: flowerTex,
-      color: isMagenta ? 0xa21caf : 0x9f1239,
-      roughness: 0.60,
-      side: THREE.DoubleSide
-    });
-    const leafMat = new THREE.MeshStandardMaterial({
-      map: flowerTex,
-      color: 0x14532d,
-      roughness: 0.65,
-      side: THREE.DoubleSide
-    });
+    const flowerMatPrimary = SharedMaterialLibrary.bougainvilleaPrimary(isMagenta);
+    const flowerMatDeep = SharedMaterialLibrary.bougainvilleaDeep(isMagenta);
+    const leafMat = SharedMaterialLibrary.bougainvilleaLeaf(isMagenta);
 
     // Concrete Planter Box
     const boxGeo = new THREE.BoxGeometry(pLength, 0.45, pWidth);
@@ -378,28 +293,12 @@ export class EnvironmentAssetKit {
     group.name = 'BougainvilleaShrub';
 
     const isMagenta = color !== 'red';
-    const flowerTex = TextureGenerator.createFoliageTexture('bougainvillea_magenta');
-    const flowerMatPrimary = new THREE.MeshStandardMaterial({
-      map: flowerTex,
-      color: isMagenta ? 0xd946ef : 0xe11d48,
-      roughness: 0.55,
-      side: THREE.DoubleSide
-    });
-    const flowerMatDeep = new THREE.MeshStandardMaterial({
-      map: flowerTex,
-      color: isMagenta ? 0xa21caf : 0x9f1239,
-      roughness: 0.60,
-      side: THREE.DoubleSide
-    });
-    const leafMat = new THREE.MeshStandardMaterial({
-      map: flowerTex,
-      color: 0x14532d,
-      roughness: 0.65,
-      side: THREE.DoubleSide
-    });
+    const flowerMatPrimary = SharedMaterialLibrary.bougainvilleaPrimary(isMagenta);
+    const flowerMatDeep = SharedMaterialLibrary.bougainvilleaDeep(isMagenta);
+    const leafMat = SharedMaterialLibrary.bougainvilleaLeaf(isMagenta);
 
     // Soil mound base
-    const moundMat = new THREE.MeshStandardMaterial({ color: 0x78350f, roughness: 0.95 });
+    const moundMat = SharedMaterialLibrary.soilPlanter;
     const moundGeo = new THREE.CylinderGeometry(0.8, 1.2, 0.3, 12);
     const mound = new THREE.Mesh(moundGeo, moundMat);
     mound.position.y = 0.15;
@@ -429,8 +328,7 @@ export class EnvironmentAssetKit {
     const group = new THREE.Group();
     group.name = 'PalmTreeMesh';
 
-    const trunkTex = TextureGenerator.createBarkTexture('palm');
-    const trunkMat = new THREE.MeshStandardMaterial({ map: trunkTex, color: 0x654321, roughness: 0.9 });
+    const trunkMat = SharedMaterialLibrary.barkPalm;
     const trunkGeo = new THREE.CylinderGeometry(0.24, 0.36, 6.2, 10);
     const trunk = new THREE.Mesh(trunkGeo, trunkMat);
     trunk.position.y = 3.1;
@@ -439,7 +337,7 @@ export class EnvironmentAssetKit {
     group.add(trunk);
 
     // 12 Arching fronds arranged in natural drooping crown
-    const leafMat = new THREE.MeshStandardMaterial({ color: 0x16a34a, roughness: 0.5, side: THREE.DoubleSide });
+    const leafMat = SharedMaterialLibrary.palmLeaf;
     for (let i = 0; i < 12; i++) {
       const angle = (i * Math.PI) / 6;
       const frondGeo = new THREE.BoxGeometry(0.5, 0.04, 3.2);
@@ -461,7 +359,7 @@ export class EnvironmentAssetKit {
     const group = new THREE.Group();
     group.name = 'StreetlightMesh';
 
-    const poleMat = new THREE.MeshStandardMaterial({ color: 0x334155, metalness: 0.8, roughness: 0.3 });
+    const poleMat = SharedMaterialLibrary.steelLight;
     const poleGeo = new THREE.CylinderGeometry(0.08, 0.12, 6.0, 8);
     const pole = new THREE.Mesh(poleGeo, poleMat);
     pole.position.y = 3.0;
@@ -476,8 +374,7 @@ export class EnvironmentAssetKit {
     group.add(arm);
 
     // Glass lantern fixture & emissive lamp bulb
-    const lampMat = new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0xf59e0b, emissiveIntensity: 0.0 });
-    lampMat.name = 'streetlight_emissive';
+    const lampMat = SharedMaterialLibrary.streetlightEmissive;
     const lampGeo = new THREE.SphereGeometry(0.2, 12, 12);
     const lamp = new THREE.Mesh(lampGeo, lampMat);
     lamp.position.set(1.1, 6.0, 0);
@@ -491,7 +388,7 @@ export class EnvironmentAssetKit {
     group.name = 'MamaMbogaStallMesh';
 
     // Wooden table
-    const tableMat = new THREE.MeshStandardMaterial({ color: 0x78350f, roughness: 0.9 });
+    const tableMat = SharedMaterialLibrary.woodDark;
     const tableGeo = new THREE.BoxGeometry(2.2, 0.85, 1.2);
     const table = new THREE.Mesh(tableGeo, tableMat);
     table.position.y = 0.425;
@@ -499,9 +396,8 @@ export class EnvironmentAssetKit {
     group.add(table);
 
     // Colorful fruit crates (Tomatoes, Bananas, Mangoes)
-    const produceColors = [0xef4444, 0xeab308, 0xf97316];
-    produceColors.forEach((color, idx) => {
-      const crateMat = new THREE.MeshStandardMaterial({ color, roughness: 0.6 });
+    const produceMats = [SharedMaterialLibrary.produceTomato, SharedMaterialLibrary.produceBanana, SharedMaterialLibrary.produceMango];
+    produceMats.forEach((crateMat, idx) => {
       const crateGeo = new THREE.BoxGeometry(0.5, 0.25, 0.4);
       const crate = new THREE.Mesh(crateGeo, crateMat);
       crate.position.set((idx - 1) * 0.6, 0.975, 0);
@@ -509,7 +405,7 @@ export class EnvironmentAssetKit {
     });
 
     // Market Umbrella
-    const umbrellaMat = new THREE.MeshStandardMaterial({ color: 0xd97706, roughness: 0.4 });
+    const umbrellaMat = SharedMaterialLibrary.umbrellaOrange;
     const poleGeo = new THREE.CylinderGeometry(0.04, 0.04, 2.4, 8);
     const pole = new THREE.Mesh(poleGeo, tableMat);
     pole.position.set(0, 1.2, 0);
@@ -528,7 +424,7 @@ export class EnvironmentAssetKit {
     group.name = 'MPesaKioskMesh';
 
     // Green/Red wooden kiosk structure
-    const kioskMat = new THREE.MeshStandardMaterial({ color: 0x16a34a, roughness: 0.5 });
+    const kioskMat = SharedMaterialLibrary.kioskGreen;
     const bodyGeo = new THREE.BoxGeometry(1.6, 2.2, 1.4);
     const body = new THREE.Mesh(bodyGeo, kioskMat);
     body.position.y = 1.1;
@@ -536,7 +432,7 @@ export class EnvironmentAssetKit {
     group.add(body);
 
     // M-Pesa Signboard
-    const signMat = new THREE.MeshStandardMaterial({ color: 0xd97706, emissive: 0x15803d, emissiveIntensity: 0.3 });
+    const signMat = SharedMaterialLibrary.signEmissiveOrange;
     const signGeo = new THREE.BoxGeometry(1.4, 0.35, 0.08);
     const sign = new THREE.Mesh(signGeo, signMat);
     sign.position.set(0, 2.0, 0.72);
@@ -549,7 +445,7 @@ export class EnvironmentAssetKit {
     const group = new THREE.Group();
     group.name = 'RoadBarrierMesh';
 
-    const barrierMat = new THREE.MeshStandardMaterial({ color: 0xe2e8f0, roughness: 0.8 });
+    const barrierMat = SharedMaterialLibrary.barrierWhite;
     const barrierGeo = new THREE.BoxGeometry(2.0, 0.8, 0.5);
     const barrier = new THREE.Mesh(barrierGeo, barrierMat);
     barrier.position.y = 0.4;
@@ -563,7 +459,7 @@ export class EnvironmentAssetKit {
     const group = new THREE.Group();
     group.name = 'UtilityPoleMesh';
 
-    const poleMat = new THREE.MeshStandardMaterial({ color: 0x5c4033, roughness: 0.9 });
+    const poleMat = SharedMaterialLibrary.woodPole;
     const poleGeo = new THREE.CylinderGeometry(0.1, 0.14, 8.0, 8);
     const pole = new THREE.Mesh(poleGeo, poleMat);
     pole.position.y = 4.0;
@@ -589,7 +485,7 @@ export class EnvironmentAssetKit {
     const group = new THREE.Group();
     group.name = 'TrafficLightMesh';
 
-    const steelMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.8, roughness: 0.3 });
+    const steelMat = SharedMaterialLibrary.steelDark;
     const mastGeo = new THREE.CylinderGeometry(0.12, 0.16, 6.2, 10);
     const mast = new THREE.Mesh(mastGeo, steelMat);
     mast.position.y = 3.1;
@@ -604,7 +500,7 @@ export class EnvironmentAssetKit {
     group.add(arm);
 
     // Overhead Vehicular Signal Head (Yellow housing)
-    const headMat = new THREE.MeshStandardMaterial({ color: 0xf59e0b, roughness: 0.5 });
+    const headMat = SharedMaterialLibrary.signalYellow;
     const headGeo = new THREE.BoxGeometry(0.4, 1.2, 0.35);
     const head = new THREE.Mesh(headGeo, headMat);
     head.position.set(3.2, 5.4, 0);
@@ -612,9 +508,9 @@ export class EnvironmentAssetKit {
     group.add(head);
 
     // 3 Lenses: Red (top), Amber (mid), Green (bottom)
-    const redMat = new THREE.MeshStandardMaterial({ color: 0xef4444, emissive: 0xef4444, emissiveIntensity: 0.9 });
-    const amberMat = new THREE.MeshStandardMaterial({ color: 0x332200, roughness: 0.8 });
-    const greenMat = new THREE.MeshStandardMaterial({ color: 0x003311, roughness: 0.8 });
+    const redMat = SharedMaterialLibrary.trafficRed;
+    const amberMat = SharedMaterialLibrary.trafficAmberOff;
+    const greenMat = SharedMaterialLibrary.trafficGreenOff;
 
     const lensGeo = new THREE.CylinderGeometry(0.12, 0.12, 0.08, 12);
     lensGeo.rotateX(Math.PI / 2);
@@ -637,7 +533,7 @@ export class EnvironmentAssetKit {
     pedHead.position.set(0.3, 2.5, 0);
     group.add(pedHead);
 
-    const pedWalkMat = new THREE.MeshStandardMaterial({ color: 0x10b981, emissive: 0x10b981, emissiveIntensity: 0.8 });
+    const pedWalkMat = SharedMaterialLibrary.pedestrianWalk;
     const pedLens = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.2, 0.05), pedWalkMat);
     pedLens.position.set(0.3, 2.35, 0.14);
     group.add(pedLens);
@@ -652,7 +548,7 @@ export class EnvironmentAssetKit {
     const group = new THREE.Group();
     group.name = `StreetSign_${streetName}_${crossStreet}`;
 
-    const poleMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.85, roughness: 0.25 });
+    const poleMat = SharedMaterialLibrary.steelDark;
     const poleGeo = new THREE.CylinderGeometry(0.06, 0.08, 3.8, 10);
     const pole = new THREE.Mesh(poleGeo, poleMat);
     pole.position.y = 1.9;
@@ -698,7 +594,7 @@ export class EnvironmentAssetKit {
     group.name = `TreeInPaving_${type}`;
 
     // Square Cast-Iron Tree Grate (1.6m x 1.6m at pavement level y = 0.21)
-    const grateMat = new THREE.MeshStandardMaterial({ color: 0x1f2937, metalness: 0.9, roughness: 0.4 });
+    const grateMat = SharedMaterialLibrary.castIronDark;
     const grateGeo = new THREE.BoxGeometry(1.6, 0.04, 1.6);
     const grate = new THREE.Mesh(grateGeo, grateMat);
     grate.position.y = 0.21;
@@ -706,7 +602,7 @@ export class EnvironmentAssetKit {
     group.add(grate);
 
     // Laterite soil inside inner circular hole
-    const soilMat = new THREE.MeshStandardMaterial({ color: 0x7c2d12, roughness: 0.95 });
+    const soilMat = SharedMaterialLibrary.soilLaterite;
     const soilGeo = new THREE.CylinderGeometry(0.4, 0.4, 0.05, 12);
     const soil = new THREE.Mesh(soilGeo, soilMat);
     soil.position.y = 0.22;
@@ -736,14 +632,8 @@ export class EnvironmentAssetKit {
     const group = new THREE.Group();
     group.name = 'MatatuStageShelter';
 
-    const steelMat = new THREE.MeshStandardMaterial({ color: 0x0284c7, metalness: 0.7, roughness: 0.3 });
-    const glassMat = new THREE.MeshPhysicalMaterial({
-      color: 0x94a3b8,
-      transparent: true,
-      opacity: 0.45,
-      roughness: 0.1,
-      metalness: 0.0
-    });
+    const steelMat = SharedMaterialLibrary.steelBlue;
+    const glassMat = SharedMaterialLibrary.glassPanel;
 
     // 4 Steel Support Posts
     const postGeo = new THREE.CylinderGeometry(0.05, 0.05, 2.8, 8);
@@ -757,7 +647,7 @@ export class EnvironmentAssetKit {
     });
 
     // Curved Polycarbonate Roof
-    const roofMat = new THREE.MeshStandardMaterial({ color: 0x38bdf8, roughness: 0.3 });
+    const roofMat = SharedMaterialLibrary.polycarbonateBlue;
     const roofGeo = new THREE.BoxGeometry(5.0, 0.1, 2.0);
     const roof = new THREE.Mesh(roofGeo, roofMat);
     roof.position.set(0, 2.85, 0);
@@ -771,7 +661,7 @@ export class EnvironmentAssetKit {
     group.add(glass);
 
     // Wooden Waiting Bench
-    const woodMat = new THREE.MeshStandardMaterial({ color: 0x78350f, roughness: 0.8 });
+    const woodMat = SharedMaterialLibrary.woodDark;
     const benchGeo = new THREE.BoxGeometry(3.6, 0.1, 0.5);
     const bench = new THREE.Mesh(benchGeo, woodMat);
     bench.position.set(0, 0.5, -0.4);
@@ -779,7 +669,7 @@ export class EnvironmentAssetKit {
     group.add(bench);
 
     // Yellow / Navy Stage Signboard Header
-    const signMat = new THREE.MeshStandardMaterial({ color: 0xfacc15, roughness: 0.4 });
+    const signMat = SharedMaterialLibrary.signYellow;
     const signBox = new THREE.BoxGeometry(4.8, 0.45, 0.08);
     const sign = new THREE.Mesh(signBox, signMat);
     sign.position.set(0, 2.65, 0.98);
@@ -795,7 +685,7 @@ export class EnvironmentAssetKit {
     const group = new THREE.Group();
     group.name = 'StreetBollard';
 
-    const steelMat = new THREE.MeshStandardMaterial({ color: 0x18181b, metalness: 0.8, roughness: 0.3 });
+    const steelMat = SharedMaterialLibrary.steelDark;
     const postGeo = new THREE.CylinderGeometry(0.1, 0.1, 0.9, 12);
     const post = new THREE.Mesh(postGeo, steelMat);
     post.position.y = 0.45;

@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { RoadSegment, IntersectionNode } from './GISDataTypes';
 import { AssetManager } from '../engine/AssetManager';
 import { EnvironmentAssetKit } from '../assets/EnvironmentAssetKit';
+import { SharedMaterialLibrary } from '../assets/SharedMaterialLibrary';
 
 export interface ElevationProvider {
   getElevationAt(x: number, z: number): number;
@@ -81,8 +82,8 @@ export class ProceduralRoadGenerator {
     roadGroup.add(roadMesh);
 
     // --- 1. 3D LANE MARKING GEOMETRY OVERLAYS ---
-    const laneMarkingMatYellow = new THREE.MeshStandardMaterial({ color: 0xf59e0b, roughness: 0.4 });
-    const laneMarkingMatWhite = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.4 });
+    const laneMarkingMatYellow = SharedMaterialLibrary.bollardBandYellow;
+    const laneMarkingMatWhite = SharedMaterialLibrary.barrierWhite;
 
     // Double Yellow Center Divider Lines
     const centerDoubleLineLeftGeo = this.createLaneLineRibbon(curvePoints, curve, samples, -0.15, -0.05, 0.07);
@@ -112,7 +113,7 @@ export class ProceduralRoadGenerator {
       const sidewalkMat = isUrbanAvenue
         ? (this.assetManager.getMaterial('sidewalk_cabro') || this.assetManager.getMaterial('sidewalk_concrete'))
         : this.assetManager.getMaterial('sidewalk_concrete');
-      const curbMat = new THREE.MeshStandardMaterial({ color: 0x64748b, roughness: 0.6 });
+      const curbMat = SharedMaterialLibrary.concrete;
       const sidewalkWidth = 3.0;
 
       // Concrete Curb Edges
@@ -193,7 +194,7 @@ export class ProceduralRoadGenerator {
     const islandRadius = r - 4;
 
     // Raised Outer Curb Ring for Roundabout Island
-    const curbMat = new THREE.MeshStandardMaterial({ color: 0x64748b, roughness: 0.6 });
+    const curbMat = SharedMaterialLibrary.concrete;
     const curbGeo = new THREE.RingGeometry(islandRadius, islandRadius + 0.4, 32);
     const curbRing = new THREE.Mesh(curbGeo, curbMat);
     curbRing.rotation.x = -Math.PI / 2;

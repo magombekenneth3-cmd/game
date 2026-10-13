@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { BuildingData } from '../world/BuildingData';
 import { TextureGenerator } from './TextureGenerator';
+import { SharedMaterialLibrary } from './SharedMaterialLibrary';
 
 export class BuildingAssetKit {
   /**
@@ -37,42 +38,13 @@ export class BuildingAssetKit {
     geom.rotateX(-Math.PI / 2);
     geom.computeVertexNormals();
 
-    // 2. Select Hyperrealistic PBR Facade Textures & Materials
     const isCBD = bld.zone === 'cbd_commercial' || bld.buildingCategory === 'commercial_tower' || bld.buildingCategory === 'office_block';
-    let facadeTexture: THREE.CanvasTexture;
-    if (isCBD) {
-      const cbdStyle = bld.buildingCategory === 'commercial_tower'
+    const cbdStyle = isCBD
+      ? (bld.buildingCategory === 'commercial_tower'
         ? 'curtain_glass'
-        : (bld.height > 30 ? 'brutalist_concrete' : (bld.id.includes('brick') ? 'commercial_brick' : 'modernist_render'));
-      facadeTexture = TextureGenerator.createCBDFacadeTexture(cbdStyle);
-    } else {
-      const facadeStyle = this.getStyleForCategory(bld.buildingCategory);
-      facadeTexture = TextureGenerator.createFacadePanelTexture(facadeStyle);
-    }
-
-    const facadeNormalMap = TextureGenerator.createFacadeNormalMap();
-    const facadeRoughnessMap = TextureGenerator.createFacadeRoughnessMap();
-    const facadeEmissiveMap = TextureGenerator.createEmissiveWindowMap();
-
-    const tileU = Math.max(1, Math.floor(bld.height / 6));
-    const tileV = Math.max(1, bld.floors);
-
-    facadeTexture.repeat.set(tileU, tileV);
-    facadeNormalMap.repeat.set(tileU, tileV);
-    facadeRoughnessMap.repeat.set(tileU, tileV);
-    facadeEmissiveMap.repeat.set(tileU, tileV);
-
-    const facadeMat = new THREE.MeshStandardMaterial({
-      map: facadeTexture,
-      normalMap: facadeNormalMap,
-      normalScale: new THREE.Vector2(0.8, 0.8),
-      roughnessMap: facadeRoughnessMap,
-      emissiveMap: facadeEmissiveMap,
-      emissive: new THREE.Color(0xfff0dd),
-      emissiveIntensity: 0.35,
-      roughness: 0.75,
-      metalness: 0.02
-    });
+        : (bld.height > 30 ? 'brutalist_concrete' : (bld.id.includes('brick') ? 'commercial_brick' : 'modernist_render')))
+      : this.getStyleForCategory(bld.buildingCategory);
+    const facadeMat = SharedMaterialLibrary.facadeMaterial(cbdStyle, { height: bld.height, floors: bld.floors });
 
     const bodyMesh = new THREE.Mesh(geom, facadeMat);
     bodyMesh.name = `BuildingBody_${bld.id}`;
@@ -83,15 +55,7 @@ export class BuildingAssetKit {
     // 3. Ground-Floor Podium Storefront & Signboard Banners
     if (bld.hasGroundFloorShops) {
       const storefrontHeight = Math.min(4.0, bld.height * 0.35);
-      const glassMat = new THREE.MeshPhysicalMaterial({
-        color: 0x64748b,
-        roughness: 0.05,
-        metalness: 0.0,
-        transparent: true,
-        opacity: 0.45,
-        clearcoat: 0.9,
-        clearcoatRoughness: 0.05
-      });
+      const glassMat = SharedMaterialLibrary.glassPanel;
 
       const glassGeom = new THREE.ExtrudeGeometry(shape, { depth: storefrontHeight, bevelEnabled: false });
       glassGeom.rotateX(-Math.PI / 2);
@@ -157,7 +121,7 @@ export class BuildingAssetKit {
 
     // 4. Balconies & Architectural Detailing for Apartment Blocks
     if (bld.buildingCategory === 'apartment_block') {
-      const balconyMat = new THREE.MeshStandardMaterial({ color: 0x334155, metalness: 0.7, roughness: 0.4 });
+      const balconyMat = SharedMaterialLibrary.steelLight;
       for (let floor = 1; floor < bld.floors; floor++) {
         const balconyGeo = new THREE.BoxGeometry(2.6, 0.9, 0.9);
         const balcony = new THREE.Mesh(balconyGeo, balconyMat);
@@ -176,7 +140,7 @@ export class BuildingAssetKit {
     // 5. Parapet Perimeter Roof Wall & Rooftop Infrastructure
     const roofY = bld.height + 0.1;
     if (bld.buildingCategory !== 'residential_house') {
-      const parapetMat = new THREE.MeshStandardMaterial({ color: 0x475569, roughness: 0.7 });
+      const parapetMat = SharedMaterialLibrary.concrete;
       const parapetBox = new THREE.BoxGeometry(4.0, 0.8, 0.3);
       const parapet = new THREE.Mesh(parapetBox, parapetMat);
       parapet.position.set(0, roofY + 0.4, 0);
@@ -198,7 +162,7 @@ export class BuildingAssetKit {
           tankGroup.add(tank);
 
           // Steel stand legs
-          const legMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.85 });
+          const legMat = SharedMaterialLibrary.steelDark;
           const legGeo = new THREE.CylinderGeometry(0.06, 0.06, 1.0, 8);
           for (let l = 0; l < 4; l++) {
             const angle = (l * Math.PI) / 2;
@@ -241,7 +205,7 @@ export class BuildingAssetKit {
 
     // 6. Perimeter Security Wall & Entry Gate for Commercial / Apartment Blocks
     if (bld.buildingCategory === 'apartment_block' || bld.buildingCategory === 'office_block' || bld.buildingCategory === 'commercial_tower') {
-      const wallMat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, roughness: 0.8 });
+      const wallMat = SharedMaterialLibrary.barrierWhite;
       const wallBox = new THREE.BoxGeometry(0.4, 2.4, 9.0);
 
       const wallWest = new THREE.Mesh(wallBox, wallMat);
@@ -259,7 +223,7 @@ export class BuildingAssetKit {
       group.add(wallEast);
 
       // Security Gate Booth
-      const boothMat = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.5 });
+      const boothMat = SharedMaterialLibrary.steelLight;
       const boothBox = new THREE.BoxGeometry(1.8, 2.2, 1.8);
       const booth = new THREE.Mesh(boothBox, boothMat);
       booth.name = `Detail_SecurityBooth_${bld.id}`;
@@ -298,11 +262,7 @@ export class BuildingAssetKit {
 
     // 2. Recognizable Pitched Hipped Roof (Terracotta / Galvanized Iron Sheets)
     const roofHeight = 2.4;
-    const roofMat = new THREE.MeshStandardMaterial({
-      color: 0x991b1b, // Nairobi red clay tile
-      roughness: 0.60,
-      metalness: 0.10
-    });
+    const roofMat = SharedMaterialLibrary.roofRedOxide;
     const roofGeo = new THREE.ConeGeometry(Math.hypot(width + 1.2, depth + 1.2) * 0.52, roofHeight, 4);
     roofGeo.rotateY(Math.PI / 4);
     const roofMesh = new THREE.Mesh(roofGeo, roofMat);
@@ -322,10 +282,10 @@ export class BuildingAssetKit {
 
     // 3. Front Veranda / Porch with Columns & Steps
     const entranceZ = maxZ;
-    const porchMat = new THREE.MeshStandardMaterial({ color: 0xe2e8f0, roughness: 0.7 });
-    const columnMat = new THREE.MeshStandardMaterial({ color: 0xd4d4d8, roughness: 0.5 });
-    const doorMat = new THREE.MeshStandardMaterial({ color: 0x5c4033, roughness: 0.7 });
-    const grillMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.85, roughness: 0.3 });
+    const porchMat = SharedMaterialLibrary.barrierWhite;
+    const columnMat = SharedMaterialLibrary.concrete;
+    const doorMat = SharedMaterialLibrary.woodDark;
+    const grillMat = SharedMaterialLibrary.steelDark;
 
     // Porch floor slab
     const porchFloorGeo = new THREE.BoxGeometry(4.0, 0.3, 2.2);
@@ -427,9 +387,9 @@ export class BuildingAssetKit {
     const wallMarginX = Math.max(8.0, width / 2);
     const wallMarginZ = Math.max(9.0, depth / 2);
 
-    const wallMat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, roughness: 0.85 });
-    const columnMat = new THREE.MeshStandardMaterial({ color: 0xd4d4d8, roughness: 0.5 });
-    const grillMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.85, roughness: 0.3 });
+    const wallMat = SharedMaterialLibrary.barrierWhite;
+    const columnMat = SharedMaterialLibrary.concrete;
+    const grillMat = SharedMaterialLibrary.steelDark;
 
     // West and East boundary walls
     const sideWallGeo = new THREE.BoxGeometry(0.35, 2.2, wallMarginZ * 2);

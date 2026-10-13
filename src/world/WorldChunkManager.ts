@@ -3,6 +3,7 @@ import { WorldChunk, ChunkLODLevel } from './WorldChunk';
 import { SpatialIndex } from './SpatialIndex';
 import { RoadGraph } from './RoadGraph';
 import { BuildingData } from './BuildingData';
+import { StaticGeometryBatcher } from '../engine/StaticGeometryBatcher';
 
 export interface ChunkManagerConfig {
   chunkSize: number;        // meters (default 100.0)
@@ -20,6 +21,8 @@ export class WorldChunkManager {
   private scene: THREE.Scene;
   private config: ChunkManagerConfig;
   private activeChunksCount: number = 0;
+  private batchedChunks: Set<string> = new Set();
+  private totalMeshesRemoved: number = 0;
 
   constructor(scene: THREE.Scene, config?: Partial<ChunkManagerConfig>) {
     this.scene = scene;
@@ -81,6 +84,13 @@ export class WorldChunkManager {
       }
 
       chunk.setLOD(targetLOD, this.scene);
+
+      // Batch static geometry on first load
+      if (targetLOD !== 'UNLOADED' && !this.batchedChunks.has(chunk.key)) {
+        this.batchedChunks.add(chunk.key);
+        const removed = StaticGeometryBatcher.batchGroup(chunk.visualGroup);
+        this.totalMeshesRemoved += removed;
+      }
     });
 
     this.activeChunksCount = activeCount;
@@ -152,5 +162,12 @@ export class WorldChunkManager {
 
   public getActiveChunkCount(): number {
     return this.activeChunksCount;
+  }
+
+  public getBatchingStats(): { batchedChunks: number; meshesRemoved: number } {
+    return {
+      batchedChunks: this.batchedChunks.size,
+      meshesRemoved: this.totalMeshesRemoved
+    };
   }
 }
