@@ -34,10 +34,12 @@ export class NPCSimulation {
       const newTier = NPCLODManager.evaluateTier(npc.state.currentPosition, playerPos);
       npc.state.simulationTier = newTier;
 
-      // 2. Manage 3D Visual Mesh Presence on Tier Transitions
-      if (previousTier !== newTier) {
-        npc.updateVisualMeshPresence();
-      }
+      // 2. Manage 3D Visual Mesh Presence — call every frame.
+      // The guard inside NPC.updateVisualMeshPresence() is a fast identity check
+      // (currentMeshLod === targetLod) so calling each frame is safe and cheap.
+      // Previously this only fired on tier change, which caused meshes to never
+      // appear for NPCs whose initial tier was Tier2/3 and who later entered range.
+      npc.updateVisualMeshPresence();
 
       // 3. Throttled Tick Update Check
       if (!NPCLODManager.shouldUpdateThisFrame(newTier, this.frameCounter)) {

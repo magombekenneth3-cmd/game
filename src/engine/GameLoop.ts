@@ -319,12 +319,49 @@ export class GameLoop {
 
     // Populate 40 Deterministic NPCs from Seed 1337
     const initialSeed = 1337;
-    for (let i = 0; i < 40; i++) {
-      const npcSeed = initialSeed + i * 17;
-      const homeX = (i % 8) * 35 - 120;
-      const homeZ = Math.floor(i / 8) * 35 - 120;
-      const homePos = new THREE.Vector3(homeX, 0.3, homeZ);
 
+    // ── Ring 1: 8 NPCs in TIER0 range (≤80m) immediately visible on foot ──
+    // Placed within 12–40m of player spawn (0, 0.5, 15)
+    const ring1Offsets = [
+      [12, 8], [-14, 5], [8, -12], [-10, -18],
+      [22, 20], [-25, 12], [18, -30], [-20, 28]
+    ];
+    for (let i = 0; i < 8; i++) {
+      const [ox, oz] = ring1Offsets[i];
+      const spawnPos = new THREE.Vector3(ox, 0.3, 15 + oz);
+      const npcData = spawner.generateDeterministicNPC(`npc_${i}`, initialSeed + i * 17, spawnPos);
+      const npc = new NPC(npcData, this.scene);
+      // Pre-assign TIER0 so updateVisualMeshPresence creates mesh immediately
+      npc.state.simulationTier = 'TIER0_VICINITY';
+      npc.updateVisualMeshPresence();
+      this.npcManager.registerNPC(npc);
+    }
+
+    // ── Ring 2: 7 NPCs at 40–80m (TIER1 silhouette, visible mid-range) ──
+    const ring2Offsets = [
+      [45, 5], [-50, -10], [30, 55], [-40, 60],
+      [60, -20], [-55, 40], [0, -65]
+    ];
+    for (let i = 0; i < 7; i++) {
+      const [ox, oz] = ring2Offsets[i];
+      const spawnPos = new THREE.Vector3(ox, 0.3, 15 + oz);
+      const npcData = spawner.generateDeterministicNPC(`npc_${8 + i}`, initialSeed + (8 + i) * 17, spawnPos);
+      const npc = new NPC(npcData, this.scene);
+      npc.state.simulationTier = 'TIER1_NEARBY';
+      npc.updateVisualMeshPresence();
+      this.npcManager.registerNPC(npc);
+    }
+
+    // ── Spread: 25 NPCs across the district (Tier 2/3 until player approaches) ──
+    for (let i = 15; i < 40; i++) {
+      const npcSeed = initialSeed + i * 17;
+      const angle = (i / 25) * Math.PI * 2;
+      const radius = 100 + (i % 5) * 40;
+      const homePos = new THREE.Vector3(
+        Math.cos(angle) * radius,
+        0.3,
+        15 + Math.sin(angle) * radius
+      );
       const npcData = spawner.generateDeterministicNPC(`npc_${i}`, npcSeed, homePos);
       const npc = new NPC(npcData, this.scene);
       this.npcManager.registerNPC(npc);
